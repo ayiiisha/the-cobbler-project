@@ -165,9 +165,19 @@
   function cells(doc, shared, styles, date1904) {
     const grid = [];
     let maxCol = 0;
-    for (const c of doc.getElementsByTagName("c")) {
-      const where = ref(c.getAttribute("r") || "");
-      if (!where) continue;
+    // Cells usually say where they are (r="B3"); some writers leave it out, so count along the row
+    const placed = [];
+    for (const row of doc.getElementsByTagName("row")) {
+      const rowIndex = Number(row.getAttribute("r")) - 1;
+      let col = 0;
+      for (const c of row.getElementsByTagName("c")) {
+        const where = ref(c.getAttribute("r") || "") || (rowIndex >= 0 ? { row: rowIndex, col } : null);
+        if (!where) continue;
+        col = where.col + 1;
+        placed.push([c, where]);
+      }
+    }
+    for (const [c, where] of placed) {
       const type = c.getAttribute("t") || "";
       const v = c.getElementsByTagName("v")[0]?.textContent ?? "";
       let value;

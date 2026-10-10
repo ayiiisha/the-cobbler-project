@@ -39,6 +39,9 @@
    36. Collaboration polish, dashboard, connections
    37. Shot List
    38. Ideas panel (every page)
+   39. Backups and browser support (Settings)
+   40. Search across the project (every page)
+   41. Phones and tablets
    ========================================================= */
 
 
@@ -5727,3 +5730,104 @@ main .sl-notes { font-size: 0.95rem; white-space: pre-wrap; }
 /* The round buttons step left of the open panel, so they stay in reach while it's open */
 @media (min-width: 700px) { .ideas-open:not(.comments-open) .fab { right: calc(min(26rem, 100vw) + 1.5rem); } }
 @media (prefers-reduced-motion: reduce) { .ideas-drawer { animation-duration: 0.01s; } .ideas-fab, .ideas-fab:is(:hover, :focus-visible, :active) { transform: none !important; } }
+
+
+/* =========================================================
+   39. BACKUPS AND BROWSER SUPPORT (Settings)
+   ========================================================= */
+.backups-callout .help-downloads { align-items: center; }
+.backups-callout .tool-group { display: inline-flex; align-items: center; gap: 0.4rem; }
+.browser-support { display: flex; flex-direction: column; gap: 0.5rem; list-style: none; padding: 0; margin: 0; text-align: left; }
+.browser-support li { display: flex; gap: 0.6rem; align-items: flex-start; line-height: 1.4; }
+.browser-mark { flex: none; width: 1.5rem; height: 1.5rem; display: grid; place-items: center; font-weight: 700; border: 2px solid var(--color-text); border-radius: 50%; }
+.browser-support .is-yes .browser-mark { background: var(--color-accent-4); color: #1E1E24; }
+.browser-support .is-no .browser-mark { background: var(--color-accent-2); color: #1E1E24; }
+
+
+/* =========================================================
+   40. SEARCH ACROSS THE PROJECT (search.js, in the sidebar)
+   ========================================================= */
+.site-search { display: flex; flex-direction: column; gap: 0.4rem; margin: 0.6rem 0 0.2rem; }
+.site-search input[type="search"] {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: var(--color-background);
+  border: 2px solid var(--color-text);
+  border-radius: var(--border-radius);
+}
+.site-search-results {
+  max-height: 24rem;
+  overflow-y: auto;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.9rem;
+  text-align: left;
+  background: var(--color-background);
+  border: 2px solid var(--color-text);
+  border-radius: var(--border-radius);
+}
+.site-search-count, .site-search-empty { margin: 0 0 0.4rem; font-size: 0.85rem; opacity: 0.85; }
+.site-search-group h3 { margin: 0.5rem 0 0.2rem; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.75; text-align: left; }
+.site-search-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.site-search-hit {
+  display: block;
+  padding: 0.3rem 0.4rem;
+  color: inherit;
+  text-decoration: none;
+  border-radius: calc(var(--border-radius) / 2);
+}
+.site-search-hit:is(:hover, :focus-visible) { background: color-mix(in srgb, var(--color-accent) 40%, var(--color-background)); outline: none; box-shadow: inset 0 0 0 2px var(--color-text); }
+.site-search-title { display: block; font-weight: 700; }
+.site-search-snippet { display: block; font-size: 0.85rem; line-height: 1.35; opacity: 0.9; }
+.site-search-snippet mark { background: var(--color-accent); color: #1E1E24; padding: 0 0.1em; }
+[data-selected-theme="rainbow"] .site-search-results { --color-background: var(--color-accent-4); }
+
+
+/* =========================================================
+   41. PHONES AND TABLETS
+   ---------------------------------------------------------
+   The round buttons line up along the bottom instead of stacking
+   up the right edge, and the shot list turns into cards.
+   ========================================================= */
+@media (max-width: 699px) {
+  body { padding-bottom: 5.5rem; }                   /* room to scroll past the buttons */
+  .fab { bottom: 1rem; width: 3.25rem; height: 3.25rem; }
+  #new-project-fab { right: 1rem; }
+  .comments-fab { right: 5rem; }
+  .account-fab { right: 9rem; }
+  .ideas-fab { right: 13rem; }
+  .ideas-open:not(.comments-open) .fab { right: auto; }   /* (the panel is full width here anyway) */
+  .comments-fab .comments-count { top: -0.3rem; }
+
+  /* The shot list as cards: each row a card, each cell labelled */
+  .sl-table { min-width: 0; }
+  .sl-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .sl-table, .sl-table tbody, .sl-table td, .sl-table th { display: block; width: auto; }
+  .sl-table tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 0.6rem;
+    margin: 0 0 0.75rem;
+    padding: 0.5rem 0.6rem 0.6rem;
+    border: 2px solid var(--color-text);
+    border-radius: var(--border-radius);
+    background: var(--color-background);
+  }
+  .sl-table td, .sl-table th { padding: 0.2rem 0; border: none !important; }
+  .sl-table td::before { content: attr(data-label); display: block; font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.7; }
+  .sl-table td.sl-col-done::before, .sl-table td.sl-col-actions::before { display: none; }
+  .sl-table th.sl-col-num { display: flex; align-items: center; gap: 0.4rem; font-size: 1.1rem; }
+  .sl-table td.sl-col-done { justify-self: end; margin-top: 0.1rem; }
+  .sl-table th.sl-col-num { order: -2; }
+  .sl-table td.sl-col-done { order: -1; }
+  .sl-table td.sl-col-description, .sl-table td.sl-col-notes, .sl-table td.sl-col-actions, .sl-table td.sl-col-move, .sl-table td.sl-col-size { grid-column: 1 / -1; }
+  .sl-table td.sl-col-done input { margin: 0; width: 1.4rem; height: 1.4rem; }
+  .sl-table select, .sl-table textarea, .sl-table input { min-width: 0; width: 100%; border-color: color-mix(in srgb, var(--color-text) 30%, transparent); }
+  .sl-col-description textarea { min-width: 0; }
+  .sl-table td.sl-col-actions { display: flex; gap: 0.3rem; justify-content: flex-end; margin-top: 0.3rem; }
+  .sl-row.is-drop > * { border-top: none !important; }
+  .sl-row.is-drop { outline: 3px dashed var(--color-text); }
+  .sl-exports, .sl-tools { gap: 0.4rem; }
+}

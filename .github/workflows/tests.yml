@@ -1,5 +1,6 @@
 # Runs the self-tests and the lint on every push and pull request.
 # The same checks run locally with:  npm install && npx playwright install --with-deps chromium && npm run lint && npm test
+# After changing any app file, run  npm run version:write  so visitors with an offline copy get the new one.
 name: Tests
 
 on:
@@ -18,5 +19,9 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Lint
         run: npm run lint
+      - name: Service worker version matches the files
+        run: npm run version:check
       - name: Self-tests and every page
-        run: npm test
+        run: npm run test:pages
+      - name: End-to-end flows
+        run: npm run test:flows

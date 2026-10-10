@@ -19,7 +19,7 @@
 <script src="../resources/js/header.js"></script>
 <script src="../resources/js/color-themes.js"></script>
 <script src="../resources/js/boot.js"
-        data-scripts="project-ui.js comments.js file-store.js share.js sync.js undo.js account.js ideas-panel.js zip.js settings.js"></script>
+        data-scripts="project-ui.js search.js comments.js file-store.js share.js sync.js backups.js undo.js account.js ideas-panel.js zip.js settings.js"></script>
 
 <main>
   <h1>Settings</h1>
@@ -46,6 +46,19 @@
       <button type="button" class="small-btn" id="storage-backup">Back up all projects</button>
     </div>
     <p class="help-status" id="storage-status" role="status"></p>
+  </section>
+
+  <section class="callout-box accent-2 backups-callout" id="backups">
+    <h2>Backups</h2>
+    <p>Your projects live only in this browser. Clearing the browser's site data, reinstalling it or losing the computer loses them, so keep a copy somewhere else.</p>
+    <div id="backups-panel"></div>
+    <p class="help-status" id="backups-status" role="status"></p>
+  </section>
+
+  <section class="callout-box browser-callout" id="browser">
+    <h2>This browser</h2>
+    <p>The app works best in Chrome or Edge on a computer. Safari and Firefox can do most things, but not everything. What this browser can do:</p>
+    <ul id="browser-panel" class="browser-support"></ul>
   </section>
 
   <section class="callout-box accent-4 help-callout">

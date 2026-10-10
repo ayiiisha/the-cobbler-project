@@ -70,6 +70,20 @@ console.log("\nPages");
 for (const file of fs.readdirSync(path.join(ROOT, "pages")).filter(f => f.endsWith(".html")).sort()) {
   const { context, page, problems } = await open(file);
   await page.waitForTimeout(300);
+  // Accessibility basics: every control named, every field labelled, every image described, ids unique
+  const a11y = await page.evaluate(() => {
+    const out = [];
+    const visible = (e) => { const r = e.getBoundingClientRect(); return !e.closest("[hidden], [aria-hidden=true]") && getComputedStyle(e).display !== "none" && (r.width > 0 || r.height > 0); };
+    const named = (e) => (e.getAttribute("aria-label") || "").trim() || e.getAttribute("aria-labelledby") || e.textContent.trim() || e.title || e.querySelector("img[alt], svg[aria-label], .visually-hidden")
+      || (e.id && document.querySelector(`label[for="${CSS.escape(e.id)}"]`)) || (e.closest("label") && e.closest("label").textContent.trim());
+    for (const e of document.querySelectorAll("button, a[href], [role=tab]")) if (visible(e) && !named(e)) out.push(`unnamed control: ${e.tagName.toLowerCase()}#${e.id || "?"}.${e.className}`);
+    for (const e of document.querySelectorAll("input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=file]), select, textarea")) if (visible(e) && !named(e)) out.push(`unlabelled field: ${e.tagName.toLowerCase()}#${e.id || "?"} [${e.placeholder || ""}]`);
+    for (const e of document.querySelectorAll("img")) if (visible(e) && !e.hasAttribute("alt")) out.push(`image without alt: ${e.src.split("/").pop()}`);
+    const ids = {}; for (const e of document.querySelectorAll("[id]")) ids[e.id] = (ids[e.id] || 0) + 1;
+    for (const [id, n] of Object.entries(ids)) if (n > 1) out.push(`duplicate id: #${id} ×${n}`);
+    return out;
+  });
+  problems.push(...a11y);
   const title = await page.title();
   if (problems.length) { console.log(`  ${file} (${title})`); problems.forEach(p => fail(p)); }
   else console.log(`  ✓ ${file}`);

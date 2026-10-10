@@ -913,7 +913,7 @@
      ========================================================= */
 
   function buildPrintSheet(board) {
-    const sheet = $("sb-print");
+    const sheet = $("sb-print-sheet");
     sheet.classList.toggle("is-tall", ratioOf(board) < 1);
     sheet.replaceChildren(
       el("header", { class: "sb-print-head" },
@@ -939,9 +939,9 @@
   // Printing from the browser menu also gets the sheet
   window.addEventListener("beforeprint", () => {
     const { board } = readHash();
-    if (board && !$("sb-print").childElementCount) buildPrintSheet(board);
+    if (board && !$("sb-print-sheet").childElementCount) buildPrintSheet(board);
   });
-  window.addEventListener("afterprint", () => $("sb-print").replaceChildren());
+  window.addEventListener("afterprint", () => $("sb-print-sheet").replaceChildren());
 
 
   /* =========================================================

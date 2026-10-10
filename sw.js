@@ -20,7 +20,7 @@
    run script and the ZIP download don't need it, but visitors
    with an older copy do, to receive the new one promptly).
    ========================================================= */
-const VERSION = "2026-10-10c";
+const VERSION = "2026-10-10-69762dddf2";
 const CACHE = `cobbler-${VERSION}`;
 
 const PRECACHE = [
@@ -62,6 +62,7 @@ const PRECACHE = [
   "resources/docs/user-guide.pdf",
   "resources/js/account.js",
   "resources/js/av-script.js",
+  "resources/js/backups.js",
   "resources/js/boot.js",
   "resources/js/calendar.js",
   "resources/js/color-themes.js",
@@ -91,6 +92,7 @@ const PRECACHE = [
   "resources/js/resources.js",
   "resources/js/screenplay.js",
   "resources/js/script.js",
+  "resources/js/search.js",
   "resources/js/settings.js",
   "resources/js/share.js",
   "resources/js/shot-list.js",
@@ -165,7 +167,9 @@ self.addEventListener("fetch", (event) => {
   const isPage = request.mode === "navigate";
   const network = (async () => {
     try {
-      const response = await fetch(request);
+      // Past the browser's HTTP cache (GitHub Pages keeps files for 10 minutes), so a
+      // fresh copy in here is never replaced by a stale one the browser still had
+      const response = await fetch(request.url, { cache: "no-cache", credentials: "same-origin" });
       if (response.ok && response.type === "basic") {
         const cache = await caches.open(CACHE);
         await cache.put(request, response.clone());

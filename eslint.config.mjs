@@ -92,6 +92,8 @@ const browser = Object.fromEntries([
   "CobblerSync",
   "CobblerUndo",
   "CobblerIdeas",
+  "CobblerBackups",
+  "CobblerSearch",
   "ShotList",
   "XlsxRead",
   "DecompressionStream",
