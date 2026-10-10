@@ -1,0 +1,14 @@
+# Never publish project data: it stays in each person's browser
+# and in the sync folder they choose.
+*.cobbler.json
+*-backup-*.json
+*-shared-*.json
+all-projects-backup-*.json
+*.ics
+
+# Old copies and local tools
+_backup-*/
+.claude/
+
+# Mac clutter
+.DS_Store

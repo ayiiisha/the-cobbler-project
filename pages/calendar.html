@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/calendar.js" defer></script>
+
+<main class="is-wide">
+  <h1>Calendar</h1>
+
+  <div class="sketch-nav">
+    <button type="button" class="small-btn" id="cal-add">+ Add event</button>
+    <div class="tool-group view-toggle" role="group" aria-label="View">
+      <button type="button" data-view="list" aria-pressed="true">List</button>
+      <button type="button" data-view="month" aria-pressed="false">Month</button>
+    </div>
+    <label class="tool-group">Show
+      <select id="cal-scope" class="team-select" aria-label="Which projects">
+        <option value="this">This project</option>
+        <option value="all">All projects</option>
+      </select>
+    </label>
+    <label class="tool-group"><input type="checkbox" id="cal-past"> Show past dates</label>
+    <div class="tool-group">
+      <button type="button" class="small-btn" id="cal-ics">Download calendar (.ics)</button>
+      <button type="button" class="small-btn" id="cal-share">Shared calendar…</button>
+      <button type="button" class="small-btn" id="cal-pdf" title="Opens the print window: choose “Save as PDF”">Save list as PDF</button>
+    </div>
+  </div>
+  <div class="tool-group cal-sources" id="cal-sources" role="group" aria-label="Show dates from"></div>
+  <p class="media-tip">Every date entered across the project in one place: Project Tracker milestones, interview shoots and release forms, pitches sent, tasks due, and your own events. Change a date where it was entered (click its source), or edit your own events here.</p>
+
+  <div id="cal-body"></div>
+
+  <div id="cal-print" class="print-sheet cal-print" aria-hidden="true"></div>
+
+  <dialog id="cal-share-dialog" class="project-dialog cal-share-dialog" aria-labelledby="cal-share-title">
+    <form id="cal-share-form">
+      <h2 id="cal-share-title">Shared calendar</h2>
+      <p>One calendar file for everyone you work with, so shoot dates and deadlines line up.</p>
+      <div class="zine-form-row">
+        <label>Dates from
+          <select name="scope">
+            <option value="this">This project</option>
+            <option value="all">All projects</option>
+          </select>
+        </label>
+        <label>Tasks
+          <select name="person" id="cal-share-person"></select>
+        </label>
+      </div>
+      <fieldset class="cal-share-fieldset">
+        <legend>Include</legend>
+        <div class="team-chips" id="cal-share-sources"></div>
+      </fieldset>
+      <label>Calendar name (how it appears in calendar apps)
+        <input name="name" maxlength="80" autocomplete="off">
+      </label>
+      <p class="media-muted" id="cal-share-count" role="status"></p>
+      <details class="cal-share-help">
+        <summary>How to share it so it stays up to date</summary>
+        <ol>
+          <li>Download the file and put it in a folder you all share (Dropbox, Google Drive, iCloud Drive). It always has the same name: next time, replace the old one.</li>
+          <li>Get a link that downloads the file straight away. In Dropbox: Copy link, then change the <code>dl=0</code> at the end to <code>dl=1</code>.</li>
+          <li>Everyone subscribes to that link once:
+            <ul>
+              <li><strong>Apple Calendar:</strong> File › New Calendar Subscription…</li>
+              <li><strong>Google Calendar:</strong> Other calendars › + › From URL</li>
+              <li><strong>Outlook:</strong> Add calendar › Subscribe from web</li>
+            </ul>
+          </li>
+          <li>When dates change, download it again and replace the file. Subscribed calendars update by themselves (Google can take up to a day).</li>
+        </ol>
+        <p>No shared folder? Send the file round: opening it again updates the same events rather than doubling them in Apple Calendar and Outlook.</p>
+      </details>
+      <div class="dialog-actions">
+        <button type="submit" class="small-btn">Download shared calendar (.ics)</button>
+        <button type="button" class="small-btn" id="cal-share-cancel">Close</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="cal-dialog" class="project-dialog" aria-labelledby="cal-dialog-title">
+    <form id="cal-form">
+      <h2 id="cal-dialog-title">Add event</h2>
+      <label>What <input name="title" required maxlength="160" autocomplete="off" placeholder="e.g. Edit lock, festival deadline"></label>
+      <div class="zine-form-row">
+        <label>Date <input name="date" type="date" required></label>
+        <label>Time (optional) <input name="time" type="time"></label>
+      </div>
+      <label>Notes <textarea name="notes" rows="3" maxlength="2000"></textarea></label>
+      <div class="dialog-actions">
+        <button type="submit" class="small-btn">Save</button>
+        <button type="button" class="small-btn" id="cal-cancel">Cancel</button>
+        <button type="button" class="small-btn research-delete" id="cal-delete">Delete event</button>
+      </div>
+    </form>
+  </dialog>
+</main>
+
+</body>
+</html>

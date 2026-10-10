@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zine Planner</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/sketch-core.js" defer></script>
+<script src="../resources/js/zine-planner.js" defer></script>
+<script src="../resources/js/zine-sketch.js" defer></script>
+<script src="../resources/js/zine-critique.js" defer></script>
+
+<main>
+  <h1>Zine Planner</h1>
+
+  <!-- ===== Library: every zine in this project ===== -->
+  <section class="callout-box accent-3" id="zine-library">
+    <div class="section-head section-head--title">
+      <h2>Your Zines</h2>
+      <button type="button" class="small-btn" id="zine-new">New zine</button>
+    </div>
+    <p>Each zine has two parts. <strong>Sketch</strong>: draw and write on every page with a mouse or drawing tablet. <strong>Critique</strong>: upload finished pages, mock-ups or PDFs and leave comments on them.</p>
+    <div id="zine-grid" class="zine-grid"></div>
+  </section>
+
+  <!-- ===== One open zine ===== -->
+  <section id="zine-workspace" class="zine-workspace" hidden>
+    <div class="zine-bar">
+      <a href="#" class="small-btn" id="zine-back">← All zines</a>
+      <div class="zine-bar-title">
+        <h2 id="zine-title"></h2>
+        <p class="zine-meta" id="zine-meta"></p>
+      </div>
+      <button type="button" class="small-btn" id="zine-edit">Edit size &amp; name</button>
+    </div>
+
+    <div class="zine-tabs" id="zine-tabs" role="tablist" aria-label="Zine planner">
+      <button type="button" role="tab" id="tab-sketch" data-tab="sketch"
+              aria-controls="panel-sketch" aria-selected="true">Sketch</button>
+      <button type="button" role="tab" id="tab-critique" data-tab="critique"
+              aria-controls="panel-critique" aria-selected="false">Critique</button>
+    </div>
+
+    <div role="tabpanel" id="panel-sketch" class="zine-panel" aria-labelledby="tab-sketch"></div>
+    <div role="tabpanel" id="panel-critique" class="zine-panel" aria-labelledby="tab-critique" hidden></div>
+  </section>
+
+  <!-- ===== New / edit zine dialog ===== -->
+  <dialog id="zine-dialog" class="project-dialog zine-dialog" aria-labelledby="zine-dialog-title">
+    <form id="zine-form">
+      <h2 id="zine-dialog-title">New zine</h2>
+
+      <label>Name
+        <input name="name" required maxlength="80" autocomplete="off" placeholder="Untitled zine">
+      </label>
+
+      <fieldset class="zine-presets" id="zine-presets">
+        <legend>Preset</legend>
+        <div class="zine-preset-options" id="zine-preset-options"></div>
+      </fieldset>
+
+      <div class="zine-form-row">
+        <label>Paper
+          <select name="paper">
+            <option value="letter">US Letter</option>
+            <option value="a4">A4 (metric)</option>
+          </select>
+        </label>
+        <label>Page size
+          <select name="fold"></select>
+        </label>
+      </div>
+
+      <div class="zine-form-row">
+        <label>Orientation
+          <select name="orientation">
+            <option value="portrait">Portrait (tall)</option>
+            <option value="landscape">Landscape (wide)</option>
+          </select>
+        </label>
+        <label id="zine-pages-field">Pages
+          <input type="number" name="pages" min="4" max="96" step="4" value="8">
+        </label>
+      </div>
+
+      <p class="zine-dialog-note" id="zine-dialog-note" role="status"></p>
+
+      <div class="dialog-actions">
+        <button type="submit" class="small-btn" id="zine-submit">Create zine</button>
+        <button type="button" class="small-btn" id="zine-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+</main>
+
+</body>
+</html>

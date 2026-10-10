@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storyboarder</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/sketch-core.js" defer></script>
+<script src="../resources/js/media-core.js" defer></script>
+<script src="../resources/js/storyboarder.js" defer></script>
+
+<main>
+  <h1>Storyboarder</h1>
+
+  <!-- ===== Library: every storyboard in this project ===== -->
+  <section class="callout-box accent-4" id="sb-library">
+    <div class="section-head section-head--title">
+      <h2>Your Storyboards</h2>
+      <button type="button" class="small-btn" id="sb-new">New storyboard</button>
+    </div>
+    <p>Plan a video or animation shot by shot. Draw each frame with a mouse or drawing tablet, add the shot type, camera move, timing, action and dialogue, then play it back as an animatic or print it.</p>
+    <div id="sb-grid" class="sb-grid"></div>
+  </section>
+
+  <!-- ===== One storyboard: every shot as a panel ===== -->
+  <section id="sb-board" class="sb-board" hidden>
+    <div class="zine-bar">
+      <a href="#" class="small-btn" id="sb-back">← All storyboards</a>
+      <div class="zine-bar-title">
+        <h2 id="sb-board-title"></h2>
+        <p class="zine-meta" id="sb-board-meta"></p>
+      </div>
+      <button type="button" class="small-btn" id="sb-edit">Edit settings</button>
+    </div>
+
+    <div class="sketch-nav">
+      <div class="tool-group">
+        <button type="button" class="small-btn" id="sb-play">▶ Play animatic</button>
+        <button type="button" class="small-btn" id="sb-print">Print</button>
+        <button type="button" class="small-btn" id="sb-add">+ Add shot</button>
+      </div>
+      <label class="tool-group"><input type="checkbox" id="sb-show-notes"> Show notes</label>
+      <p class="sb-tip">Click a frame to draw it. Drag ⠿ to reorder.</p>
+    </div>
+
+    <div id="sb-panels" class="sb-panels"></div>
+  </section>
+
+  <!-- ===== One shot, full size ===== -->
+  <section id="sb-frame" class="sb-frame" hidden>
+    <div class="zine-bar">
+      <a href="#" class="small-btn" id="sb-frame-back">← Board</a>
+      <div class="zine-bar-title">
+        <h2 id="sb-frame-title"></h2>
+        <p class="zine-meta" id="sb-frame-board"></p>
+      </div>
+      <div class="tool-group">
+        <button type="button" class="small-btn" id="sb-frame-prev" title="Previous shot ( [ )">‹ Prev</button>
+        <button type="button" class="small-btn" id="sb-frame-next" title="Next shot ( ] )">Next ›</button>
+      </div>
+    </div>
+
+    <div id="sb-toolbar-slot"></div>
+
+    <div class="sb-frame-layout">
+      <div class="sb-frame-main">
+        <div id="sb-frame-stage" class="sb-frame-stage"></div>
+        <div class="sketch-nav sb-frame-options">
+          <label class="tool-group"><input type="checkbox" id="sb-guides"> Safe areas</label>
+          <label class="tool-group"><input type="checkbox" id="sb-thirds"> Rule of thirds</label>
+          <label class="tool-group" title="A figure outline for the chosen shot size"><input type="checkbox" id="sb-framing"> Shot-size framing</label>
+          <div class="tool-group">
+            <input type="file" id="sb-image-input" accept="image/*" hidden>
+            <button type="button" class="small-btn" id="sb-image-add">Background photo…</button>
+            <button type="button" class="small-btn" id="sb-image-remove" hidden>Remove photo</button>
+          </div>
+        </div>
+      </div>
+      <aside class="sb-frame-fields" id="sb-frame-fields" aria-label="Shot notes"></aside>
+    </div>
+  </section>
+
+  <!-- ===== Print layout (filled in when printing) ===== -->
+  <div id="sb-print" class="sb-print" aria-hidden="true"></div>
+
+  <!-- ===== New / edit storyboard dialog ===== -->
+  <dialog id="sb-dialog" class="project-dialog zine-dialog" aria-labelledby="sb-dialog-title">
+    <form id="sb-form">
+      <h2 id="sb-dialog-title">New storyboard</h2>
+
+      <label>Name
+        <input name="name" required maxlength="80" autocomplete="off" placeholder="Untitled storyboard">
+      </label>
+
+      <fieldset class="zine-presets">
+        <legend>Project type</legend>
+        <div class="zine-preset-options" id="sb-kind-options"></div>
+      </fieldset>
+
+      <div class="zine-form-row">
+        <label>Frame shape
+          <select name="aspect"></select>
+        </label>
+        <label id="sb-fps-field">Frame rate
+          <select name="fps"></select>
+        </label>
+        <label id="sb-shots-field">Starting shots
+          <input type="number" name="shots" min="1" max="60" value="6">
+        </label>
+      </div>
+
+      <p class="zine-dialog-note" id="sb-dialog-note" role="status"></p>
+
+      <div class="dialog-actions">
+        <button type="submit" class="small-btn" id="sb-submit">Create storyboard</button>
+        <button type="button" class="small-btn" id="sb-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===== Animatic player ===== -->
+  <dialog id="sb-player" class="sb-player" aria-labelledby="sb-player-title">
+    <div class="sb-player-head">
+      <h2 id="sb-player-title"></h2>
+      <button type="button" class="panel-close" id="sb-player-close" aria-label="Close player">×</button>
+    </div>
+    <div class="sb-player-screen" id="sb-player-screen"></div>
+    <p class="sb-player-shot" id="sb-player-shot"></p>
+    <div class="sb-player-caption" id="sb-player-caption" aria-live="polite"></div>
+    <div class="sb-player-progress" id="sb-player-progress" title="Click to jump"></div>
+    <div class="sb-player-controls">
+      <button type="button" class="small-btn" id="sb-player-prev" aria-label="Previous shot">‹</button>
+      <button type="button" class="small-btn" id="sb-player-toggle">Play</button>
+      <button type="button" class="small-btn" id="sb-player-next" aria-label="Next shot">›</button>
+      <span class="sb-player-time" id="sb-player-time"></span>
+    </div>
+  </dialog>
+</main>
+
+</body>
+</html>

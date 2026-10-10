@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pitches</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/pitches.js" defer></script>
+
+<main class="is-wide">
+  <h1>Pitches</h1>
+
+  <div class="sketch-nav">
+    <button type="button" class="small-btn" id="pitch-new">+ New pitch</button>
+    <label class="tool-group">Search
+      <input type="search" id="pitch-search" class="tracker-search" placeholder="Title, hook, story, outlet">
+    </label>
+    <div class="tool-group view-toggle" id="pitch-status" role="group" aria-label="Show status"></div>
+  </div>
+  <p class="media-tip">Draft a pitch, then track where you've sent it. “Copy email” writes the pitch as an email to that outlet's editor. Ideas from the Ideas page can be turned into pitches with “Pitch it”.</p>
+  <p class="media-status" id="pitch-status-msg" role="status"></p>
+
+  <div id="pitch-grid" class="research-grid pitch-grid"></div>
+
+  <dialog id="pitch-dialog" class="project-dialog team-dialog pitch-dialog" aria-labelledby="pitch-dialog-title">
+    <form id="pitch-form">
+      <h2 id="pitch-dialog-title">New pitch</h2>
+
+      <div class="zine-form-row">
+        <label>Working title <input name="title" required maxlength="160" autocomplete="off"></label>
+        <label>Status <select name="status" id="pitch-status-select"></select></label>
+      </div>
+      <label>The hook (one or two sentences)
+        <textarea name="hook" rows="2" maxlength="600" placeholder="What's the story, in the way you'd say it out loud?"></textarea>
+      </label>
+      <label>The story
+        <textarea name="story" rows="5" maxlength="6000" placeholder="What happened, who's involved, what you'll show or find out"></textarea>
+      </label>
+      <label>Why now
+        <textarea name="whyNow" rows="2" maxlength="1500" placeholder="The news peg, anniversary, decision or deadline"></textarea>
+      </label>
+      <label>Why me / access
+        <textarea name="access" rows="2" maxlength="1500" placeholder="Sources, access, expertise, work done so far"></textarea>
+      </label>
+      <div class="zine-form-row">
+        <label>Format <input name="format" maxlength="80" list="pitch-formats" autocomplete="off" placeholder="e.g. Short documentary"></label>
+        <label>Length <input name="runLength" maxlength="80" autocomplete="off" placeholder="e.g. 8–10 minutes, 1,500 words"></label>
+      </div>
+      <label>Audience / section <input name="audience" maxlength="200" autocomplete="off" placeholder="Who it's for, or where it would run"></label>
+      <datalist id="pitch-formats"></datalist>
+
+      <fieldset class="research-sources">
+        <legend>Links and supporting material</legend>
+        <ol id="pitch-links" class="research-source-list"></ol>
+        <button type="button" class="comment-action" id="pitch-link-add">+ Add a link</button>
+      </fieldset>
+
+      <fieldset class="iv-fieldset">
+        <legend>Outlets</legend>
+        <div id="pitch-outlets" class="pitch-outlets"></div>
+        <button type="button" class="comment-action" id="pitch-outlet-add">+ Add an outlet</button>
+      </fieldset>
+
+      <label>Notes <textarea name="notes" rows="3" maxlength="5000"></textarea></label>
+
+      <div class="dialog-actions">
+        <button type="submit" class="small-btn">Save pitch</button>
+        <button type="button" class="small-btn" id="pitch-cancel">Cancel</button>
+        <button type="button" class="small-btn" id="pitch-download">Download (.md)</button>
+        <button type="button" class="small-btn research-delete" id="pitch-delete">Delete pitch</button>
+      </div>
+    </form>
+  </dialog>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Packaging</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/media-core.js" defer></script>
+<script src="../resources/js/packaging.js" defer></script>
+
+<main class="is-wide">
+  <h1>Packaging</h1>
+
+  <div class="sketch-nav">
+    <div class="tool-group pk-tabs" id="pk-tabs" role="group" aria-label="Packages"></div>
+    <button type="button" class="small-btn" id="pk-new">+ New package</button>
+  </div>
+  <p class="media-tip">One package per place your work will appear: a YouTube video, a reel, an article, a newsletter, a zine listing. Brainstorm titles and thumbnails, write the description, tags and alt text, and check everything against the platform's limits before you publish.</p>
+  <p class="media-status" id="pk-status" role="status"></p>
+
+  <div id="pk-editor" class="pk-editor"></div>
+
+  <dialog id="pk-dialog" class="project-dialog" aria-labelledby="pk-dialog-title">
+    <form id="pk-form">
+      <h2 id="pk-dialog-title">New package</h2>
+      <label>Start from a pitch?
+        <select name="pitchId" id="pk-pitch"></select>
+      </label>
+      <fieldset class="zine-presets">
+        <legend>Where is it going? Pick one or more</legend>
+        <div class="zine-preset-options" id="pk-platforms"></div>
+      </fieldset>
+      <p class="pk-hint">Pick several (say a video, an article and a zine listing) to make one story: the packages share their keywords and audience.</p>
+      <label>Name (optional)
+        <input name="name" maxlength="80" autocomplete="off" placeholder="e.g. Full documentary, Teaser reel, Issue #3 listing">
+      </label>
+      <div class="dialog-actions">
+        <button type="submit" class="small-btn">Create</button>
+        <button type="button" class="small-btn" id="pk-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+</main>
+
+</body>
+</html>

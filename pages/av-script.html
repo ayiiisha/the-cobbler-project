@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A/V Script</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/sketch-core.js" defer></script>
+<script src="../resources/js/media-core.js" defer></script>
+<script src="../resources/js/av-script.js" defer></script>
+
+<main class="is-wide">
+  <h1>A/V Script</h1>
+
+  <div class="sketch-nav">
+    <label class="tool-group">Edit <select id="av-edit" class="team-select" aria-label="Edit"></select></label>
+    <p class="media-muted" id="av-summary"></p>
+    <div class="tool-group">
+      <button type="button" class="small-btn" id="av-md">Save as .md</button>
+      <button type="button" class="small-btn" id="av-txt">Save as .txt</button>
+      <button type="button" class="small-btn" id="av-pdf" title="Opens the print window: choose “Save as PDF”">Save as PDF</button>
+      <a class="small-btn" href="media-and-transcripts.html#edit">Change the edit →</a>
+    </div>
+  </div>
+  <p class="media-tip">Your paper edit as a two-column script. Type what we see in the Video column; link storyboard frames to blocks in the Storyboarder and they appear here too.</p>
+
+  <div id="av-script" class="av-script"></div>
+
+  <!-- Print layout (Courier New), filled in when saving as PDF -->
+  <div id="av-print" class="print-sheet av-print" aria-hidden="true"></div>
+</main>
+
+</body>
+</html>

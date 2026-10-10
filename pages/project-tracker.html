@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Tracker</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/project-tracker.js" defer></script>
+
+<main class="is-wide">
+  <h1>Project Tracker</h1>
+
+  <section class="tracker">
+    <div class="sketch-nav tracker-toolbar">
+      <label class="tool-group">Search
+        <input type="search" id="tracker-search" class="tracker-search" placeholder="Name, medium, team, tags, notes">
+      </label>
+      <div class="tool-group">
+        <button type="button" class="small-btn" id="tracker-add">+ Add project</button>
+        <button type="button" class="small-btn" id="tracker-export">Export CSV</button>
+      </div>
+      <label class="tool-group"><input type="checkbox" id="tracker-show-archived"> <span id="tracker-archived-label">Show archived</span></label>
+      <div class="tool-group view-toggle tracker-filters" id="tracker-filters" role="group" aria-label="Show status"></div>
+    </div>
+
+    <p class="tracker-tip">Every project on the site has a row. Type dates any way you like (12 Oct 2026, Oct 12, 2026-10-12, today) or use the calendar button. Click a column name to sort.</p>
+
+    <div class="tracker-wrap">
+      <table class="tracker-table" id="tracker-table"></table>
+    </div>
+    <p class="tracker-empty" id="tracker-empty" hidden></p>
+
+    <datalist id="tracker-media"></datalist>
+  </section>
+</main>
+
+</body>
+</html>

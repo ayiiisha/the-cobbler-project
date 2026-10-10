@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Analysis</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/data-analysis.js" defer></script>
+
+<main class="is-wide">
+  <h1>Data Analysis</h1>
+
+  <div class="sketch-nav">
+    <input type="file" id="da-input" accept=".csv,.tsv,.txt,text/csv" hidden>
+    <button type="button" class="small-btn" id="da-load">Load a CSV</button>
+    <label class="tool-group" id="da-pick-wrap" hidden>Dataset
+      <select id="da-pick" class="team-select" aria-label="Dataset"></select>
+    </label>
+    <button type="button" class="comment-action" id="da-remove" hidden>Remove dataset</button>
+    <p class="media-muted" id="da-summary"></p>
+  </div>
+  <p class="media-tip">Load a CSV to see a profile of each column, filter it and draw a quick chart. The page writes matching R code (tidyverse and ggplot) to copy into RStudio. It doesn't run R itself.</p>
+  <p class="media-status" id="da-status" role="status"></p>
+
+  <div id="da-work" class="da-work" hidden>
+    <section class="media-section">
+      <div class="media-section-head"><h2>Columns</h2></div>
+      <div id="da-profile" class="da-profile"></div>
+    </section>
+
+    <section class="media-section">
+      <div class="media-section-head">
+        <h2>Filter</h2>
+        <button type="button" class="small-btn" id="da-add-filter">+ Add filter</button>
+        <p class="media-muted" id="da-count"></p>
+      </div>
+      <div id="da-filters" class="da-filters"></div>
+    </section>
+
+    <section class="media-section">
+      <div class="media-section-head"><h2>Chart</h2></div>
+      <div class="sketch-nav da-chart-controls" id="da-chart-controls"></div>
+      <div id="da-chart" class="da-chart viz-root"></div>
+    </section>
+
+    <section class="media-section">
+      <div class="media-section-head"><h2>R code</h2>
+        <button type="button" class="small-btn" id="da-copy">Copy</button>
+        <button type="button" class="small-btn" id="da-save-r">Save .R file</button>
+      </div>
+      <p class="media-muted">Save the R script in the same folder as <span id="da-file-name">your CSV</span>, then open it in RStudio and run it. The code is written here on the page, so this works offline.</p>
+      <p class="media-muted" id="da-tool-note" hidden>Datawrapper: running the script needs an internet connection, the httr2 package and your Datawrapper API token (the comments in the code explain how to set it up). The chart appears in your Datawrapper account; the preview above shows the same numbers.</p>
+      <pre class="da-code" id="da-code"></pre>
+    </section>
+
+    <section class="media-section">
+      <div class="media-section-head"><h2>Rows</h2><p class="media-muted" id="da-rows-note"></p></div>
+      <div class="tracker-wrap"><table class="tracker-table da-rows" id="da-rows"></table></div>
+    </section>
+  </div>
+</main>
+
+</body>
+</html>

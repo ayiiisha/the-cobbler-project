@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interviews</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/zip.js" defer></script>
+<script src="../resources/js/doc-export.js" defer></script>
+<script src="../resources/js/interviews.js" defer></script>
+
+<main class="is-wide">
+  <h1>Interviews</h1>
+
+  <div class="zine-tabs" id="iv-tabs" role="tablist" aria-label="Interviews">
+    <button type="button" role="tab" data-tab="board" aria-controls="iv-panel-board" aria-selected="true">People</button>
+    <button type="button" role="tab" data-tab="schedule" aria-controls="iv-panel-schedule" aria-selected="false">Shoot schedule</button>
+    <button type="button" role="tab" data-tab="questions" aria-controls="iv-panel-questions" aria-selected="false">Question bank</button>
+  </div>
+
+  <div role="tabpanel" id="iv-panel-board" class="zine-panel">
+    <div class="sketch-nav">
+      <button type="button" class="small-btn" id="iv-add">+ Add person</button>
+      <p class="media-muted">Drag cards (by ⠿) or use ← → to move people through the stages. Click a name for their shoot details, checklist, release and questions.</p>
+    </div>
+    <div id="iv-board" class="iv-board"></div>
+  </div>
+
+  <div role="tabpanel" id="iv-panel-schedule" class="zine-panel" hidden>
+    <div id="iv-schedule"></div>
+  </div>
+
+  <div role="tabpanel" id="iv-panel-questions" class="zine-panel" hidden>
+    <form class="sketch-nav iv-question-form" id="iv-question-form">
+      <label class="tool-group iv-question-text">Question
+        <input name="text" required maxlength="500" autocomplete="off" placeholder="Type a question to add to the bank">
+      </label>
+      <label class="tool-group">Topic
+        <input name="category" maxlength="40" list="iv-categories" autocomplete="off" placeholder="e.g. Background">
+      </label>
+      <datalist id="iv-categories"></datalist>
+      <button type="submit" class="small-btn">Add question</button>
+      <button type="button" class="small-btn" id="iv-starters">Add starter questions</button>
+    </form>
+    <div id="iv-questions"></div>
+  </div>
+
+  <!-- ===== One person ===== -->
+  <dialog id="iv-dialog" class="project-dialog team-dialog iv-dialog" aria-labelledby="iv-dialog-title">
+    <form id="iv-form">
+      <h2 id="iv-dialog-title">Add person</h2>
+
+      <div class="zine-form-row">
+        <label>Name <input name="name" required maxlength="80" autocomplete="off"></label>
+        <label>Stage <select name="stage" id="iv-stage"></select></label>
+      </div>
+      <label>Who they are / why we're talking to them
+        <input name="role" maxlength="200" autocomplete="off" placeholder="e.g. Tenant since 2009, organised the rent strike">
+      </label>
+      <label>Contact
+        <input name="contact" maxlength="200" autocomplete="off" placeholder="Email, phone, or how to reach them">
+      </label>
+
+      <fieldset class="iv-fieldset">
+        <legend>Shoot</legend>
+        <div class="zine-form-row">
+          <label>Date <input name="shootDate" type="date"></label>
+          <label>Time <input name="shootTime" type="time"></label>
+        </div>
+        <label>Location <input name="location" maxlength="200" autocomplete="off"></label>
+      </fieldset>
+
+      <fieldset class="iv-fieldset">
+        <legend>Release form</legend>
+        <div class="zine-form-row">
+          <label>Status <select name="releaseStatus" id="iv-release"></select></label>
+          <label>Date <input name="releaseDate" type="date"></label>
+        </div>
+        <label>Release notes <input name="releaseNotes" maxlength="300" autocomplete="off" placeholder="e.g. Signed on paper, scan in shared drive"></label>
+      </fieldset>
+
+      <fieldset class="iv-fieldset">
+        <legend>Logistics checklist</legend>
+        <ul class="goal-list goal-list--task iv-checklist" id="iv-checklist"></ul>
+        <button type="button" class="comment-action" id="iv-check-add">+ Add item</button>
+      </fieldset>
+
+      <fieldset class="iv-fieldset">
+        <legend>Questions for this interview</legend>
+        <div id="iv-person-questions" class="iv-person-questions"></div>
+      </fieldset>
+
+      <label>Notes <textarea name="notes" rows="3" maxlength="5000"></textarea></label>
+
+      <div class="dialog-actions">
+        <button type="submit" class="small-btn" id="iv-submit">Save</button>
+        <button type="button" class="small-btn" id="iv-cancel">Cancel</button>
+        <button type="button" class="small-btn" id="iv-questions-pdf" title="Opens the print window: choose “Save as PDF”">Questions as PDF</button>
+        <button type="button" class="small-btn research-delete" id="iv-delete">Remove person</button>
+      </div>
+    </form>
+  </dialog>
+</main>
+
+</body>
+</html>

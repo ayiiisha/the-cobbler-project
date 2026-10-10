@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/zip.js" defer></script>
+<script src="../resources/js/settings.js" defer></script>
+
+<main>
+  <h1>Settings</h1>
+
+  <h2>Because not everything's perfect.</h2>
+
+  <section class="callout-box theme-callout">
+    <h2>Pick a Theme!</h2>
+    <div class="theme-switcher">
+      <button data-theme="light" aria-pressed="true">Light</button>
+      <button data-theme="dark" aria-pressed="false">Dark</button>
+      <button data-theme="rainbow" aria-pressed="false">Rainbow</button>
+      <button data-theme="system" aria-pressed="false" title="Light or dark, following your computer's setting">System Default</button>
+    </div>
+  </section>
+
+  <section class="callout-box accent-3 storage-callout" id="storage">
+    <h2>Storage</h2>
+    <p>Projects are kept in this browser's storage, which holds about 5 MB for the whole app. Uploaded files (images, audio, PDFs) are kept separately, with much more room.</p>
+    <div id="storage-panel"></div>
+    <div class="help-downloads">
+      <button type="button" class="small-btn" id="storage-trim">Trim old history</button>
+      <button type="button" class="small-btn" id="storage-persist">Keep my files safe</button>
+      <button type="button" class="small-btn" id="storage-backup">Back up all projects</button>
+    </div>
+    <p class="help-status" id="storage-status" role="status"></p>
+  </section>
+
+  <section class="callout-box accent-4 help-callout">
+    <h2>Guides and downloads</h2>
+    <div class="help-downloads">
+      <a class="small-btn" href="../resources/docs/user-guide.pdf" download="Cobbler Project - How to use the app.pdf">How to use the app (PDF)</a>
+      <a class="small-btn" href="../resources/docs/code-guide.pdf" download="Cobbler Project - How to edit the code.pdf">How to edit the code (PDF)</a>
+      <button type="button" class="small-btn" id="app-zip">Download the blank app (.zip)</button>
+    </div>
+    <p>The app download is the code only, ready to set up somewhere else or share. Your projects aren't in it: they live in this browser (back them up from the Projects page).</p>
+    <p class="help-status" id="app-zip-status" role="status"></p>
+    <p><a href="tests.html">Run the app's self-tests</a>: checks merging, syncing, undo, the screenplay layout and more, on made-up data (your projects aren't touched).</p>
+  </section>
+
+</main>
+
+</body>
+</html>

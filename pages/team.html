@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/zip.js" defer></script>
+<script src="../resources/js/team.js" defer></script>
+<script src="../resources/js/team-tasks.js" defer></script>
+
+<main>
+  <h1>Team</h1>
+
+  <section class="callout-box accent-2 team-head">
+    <div class="team-project">
+      <label for="team-project">Team for</label>
+      <select id="team-project"></select>
+    </div>
+    <p class="team-summary" id="team-summary"></p>
+    <div class="section-head team-actions">
+      <button type="button" class="small-btn" id="team-add">+ Add person</button>
+      <button type="button" class="small-btn" id="team-copy">Copy emails</button>
+      <button type="button" class="small-btn" id="team-vcf">Download contacts (.vcf)</button>
+      <button type="button" class="small-btn" id="team-csv">Export CSV</button>
+      <button type="button" class="small-btn" id="team-credits">Credits</button>
+    </div>
+    <p class="team-status" id="team-status" role="status"></p>
+  </section>
+
+  <section class="team-body">
+    <div class="sketch-nav team-toolbar">
+      <label class="tool-group">Search
+        <input type="search" id="team-search" class="tracker-search" placeholder="Name, role, contact, notes">
+      </label>
+      <label class="tool-group">Sort
+        <select id="team-sort" class="team-select">
+          <option value="added">Order added</option>
+          <option value="name">Name (A–Z)</option>
+          <option value="role">Role</option>
+        </select>
+      </label>
+      <div class="tool-group view-toggle" id="team-roles" role="group" aria-label="Show role"></div>
+    </div>
+
+    <div id="team-grid" class="team-grid"></div>
+  </section>
+
+  <!-- ===== Tasks (team-tasks.js) ===== -->
+  <section class="team-body" id="tasks">
+    <h2 class="iv-h2">Tasks</h2>
+    <div class="sketch-nav team-toolbar">
+      <div class="tool-group view-toggle" role="group" aria-label="Whose tasks">
+        <button type="button" data-tasks-view="everyone" aria-pressed="true">Everyone</button>
+        <button type="button" data-tasks-view="mine" aria-pressed="false">My tasks</button>
+      </div>
+      <label class="tool-group">I am
+        <select id="tasks-me" class="team-select"></select>
+      </label>
+      <label class="tool-group" id="tasks-all-wrap"><input type="checkbox" id="tasks-all"> All projects</label>
+      <label class="tool-group"><input type="checkbox" id="tasks-done"> Show done</label>
+      <button type="button" class="small-btn" id="tasks-add">+ Task</button>
+    </div>
+    <p class="media-tip">Give jobs to people on the team, with due dates (they show on the Calendar). Comments assigned to someone (in the Comments panel on any page) are listed here too.</p>
+    <div id="tasks-body"></div>
+  </section>
+
+  <!-- ===== Credits (team-tasks.js) ===== -->
+  <dialog id="credits-dialog" class="project-dialog credits-dialog" aria-labelledby="credits-title">
+    <form id="credits-form" method="dialog">
+      <h2 id="credits-title">Credits</h2>
+      <div class="zine-form-row">
+        <label>Layout
+          <select name="layout" id="credits-layout">
+            <option value="stacked">Role above names</option>
+            <option value="inline">Role: names</option>
+            <option value="columns">Role and names side by side</option>
+          </select>
+        </label>
+        <label>Font
+          <select name="font" id="credits-font">
+            <option value="Faculty Glyphic">Faculty Glyphic (this site)</option>
+            <option value="Helvetica, Arial, sans-serif">Helvetica / Arial</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="'Courier New', monospace">Courier New</option>
+          </select>
+        </label>
+      </div>
+      <div class="zine-form-row">
+        <label>Text colour
+          <select name="ink" id="credits-ink">
+            <option value="#FFFFFF">White</option>
+            <option value="#1E1E24">Black</option>
+          </select>
+        </label>
+        <label>Background
+          <select name="paper" id="credits-paper">
+            <option value="">Transparent (to lay over video)</option>
+            <option value="#000000">Black</option>
+            <option value="#FFFFFF">White</option>
+          </select>
+        </label>
+        <label>Size
+          <select name="size" id="credits-size">
+            <option value="1920x1080">1920 × 1080</option>
+            <option value="3840x2160">3840 × 2160 (4K)</option>
+            <option value="1080x1920">1080 × 1920 (vertical)</option>
+          </select>
+        </label>
+      </div>
+      <label class="credits-check"><input type="checkbox" id="credits-featuring" checked> “Featuring” the people you filmed (from Interviews)</label>
+      <label>Credits (edit freely: a line ending in “:” is a role, the lines under it are names)
+        <textarea id="credits-text" rows="12" spellcheck="false"></textarea>
+      </label>
+      <canvas id="credits-preview" class="credits-preview" width="1920" height="1080" aria-label="Preview of the first credits card"></canvas>
+      <p class="pk-hint" id="credits-note"></p>
+      <div class="dialog-actions">
+        <button type="button" class="small-btn" id="credits-copy">Copy text</button>
+        <button type="button" class="small-btn" id="credits-txt">Text (.txt)</button>
+        <button type="button" class="small-btn" id="credits-cards">Cards (.png)</button>
+        <button type="button" class="small-btn" id="credits-roll">Scrolling roll (.png)</button>
+        <button type="button" class="small-btn" id="credits-reset">Rebuild from the team</button>
+        <button type="submit" class="small-btn">Close</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===== Add / edit a person ===== -->
+  <dialog id="team-dialog" class="project-dialog team-dialog" aria-labelledby="team-dialog-title">
+    <form id="team-form">
+      <h2 id="team-dialog-title">Add person</h2>
+
+      <div class="zine-form-row">
+        <label>Name
+          <input name="name" required maxlength="80" autocomplete="off">
+        </label>
+        <label>Pronouns
+          <input name="pronouns" maxlength="40" list="team-pronouns" autocomplete="off" placeholder="e.g. she/her">
+        </label>
+      </div>
+
+      <fieldset class="team-role-picker">
+        <legend>Roles</legend>
+        <div class="team-chips" id="team-role-options"></div>
+        <div class="team-new-role">
+          <label for="team-new-role" class="visually-hidden">Add a role</label>
+          <input id="team-new-role" maxlength="40" placeholder="Add your own role" autocomplete="off">
+          <button type="button" class="small-btn" id="team-new-role-add">Add role</button>
+        </div>
+      </fieldset>
+
+      <div class="zine-form-row">
+        <label>Email
+          <input name="email" type="email" maxlength="120" autocomplete="off" placeholder="name@example.com">
+        </label>
+        <label>Phone
+          <input name="phone" type="tel" maxlength="40" autocomplete="off">
+        </label>
+      </div>
+
+      <div class="zine-form-row">
+        <label>Preferred contact
+          <select name="preferred">
+            <option value="">No preference</option>
+            <option>Email</option>
+            <option>Phone call</option>
+            <option>Text message</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label>Location or time zone
+          <input name="location" maxlength="80" autocomplete="off" placeholder="e.g. Chicago, CST">
+        </label>
+      </div>
+
+      <label>Other contact
+        <input name="other" maxlength="200" autocomplete="off" placeholder="Website, social handle, Signal, Slack…">
+      </label>
+
+      <label>Notes
+        <textarea name="notes" rows="3" maxlength="2000" placeholder="Availability, rates, skills, how you met…"></textarea>
+      </label>
+
+      <div class="dialog-actions">
+        <button type="submit" class="small-btn" id="team-submit">Add person</button>
+        <button type="button" class="small-btn" id="team-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <datalist id="team-pronouns">
+    <option value="she/her"></option>
+    <option value="he/him"></option>
+    <option value="they/them"></option>
+    <option value="she/they"></option>
+    <option value="he/they"></option>
+    <option value="any pronouns"></option>
+  </datalist>
+</main>
+
+</body>
+</html>

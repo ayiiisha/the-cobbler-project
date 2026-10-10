@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Research</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/research.js" defer></script>
+
+<main class="is-wide">
+  <h1>Research</h1>
+
+  <div class="sketch-nav">
+    <button type="button" class="small-btn" id="research-new">+ New note</button>
+    <label class="tool-group">Search
+      <input type="search" id="research-search" class="tracker-search" placeholder="Title, notes, claim, sources, tag">
+    </label>
+    <div class="tool-group view-toggle" id="research-status" role="group" aria-label="Show status"></div>
+  </div>
+  <div class="research-tags" id="research-tags" role="group" aria-label="Show tag"></div>
+
+  <div id="research-grid" class="research-grid"></div>
+
+  <dialog id="research-dialog" class="project-dialog team-dialog" aria-labelledby="research-dialog-title">
+    <form id="research-form">
+      <h2 id="research-dialog-title">New note</h2>
+      <label>Title
+        <input name="title" required maxlength="160" autocomplete="off" placeholder="What is this about?">
+      </label>
+      <fieldset class="research-status-pick">
+        <legend>Status</legend>
+        <div class="team-chips" id="research-status-options"></div>
+      </fieldset>
+      <label>Exact quote or figure to check
+        <textarea name="claim" rows="2" maxlength="2000" placeholder="e.g. “Rents rose 34% between 2021 and 2024”"></textarea>
+      </label>
+      <fieldset class="research-sources">
+        <legend>Sources and references</legend>
+        <ol id="research-source-list" class="research-source-list"></ol>
+        <button type="button" class="comment-action" id="research-source-add">+ Add another source</button>
+      </fieldset>
+      <label>Notes
+        <textarea name="body" rows="5" maxlength="20000" placeholder="What you found, how you checked it, what's still open…"></textarea>
+      </label>
+      <label>Tags
+        <input name="tags" maxlength="300" autocomplete="off" list="research-tag-list" placeholder="Separate with commas, e.g. housing, council, 2024">
+      </label>
+      <datalist id="research-tag-list"></datalist>
+      <div class="dialog-actions">
+        <button type="submit" class="small-btn" id="research-submit">Save note</button>
+        <button type="button" class="small-btn" id="research-cancel">Cancel</button>
+        <button type="button" class="small-btn research-delete" id="research-delete">Delete note</button>
+      </div>
+    </form>
+  </dialog>
+</main>
+
+</body>
+</html>

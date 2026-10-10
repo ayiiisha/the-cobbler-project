@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 2000 2000" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:affinity="https://www.affinity.studio/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <!-- Outline: a dark copy of every shape, stroked and drawn underneath,
+         so only a 2px line shows around the outside (like the callout borders) -->
+    <g id="outline">
+        <g transform="matrix(1.320946,0,0,1.320946,-284.378378,-59.398649)">
+            <path d="M1384,1043L443,1043C457.15,763.852 1000,745 1000,745L1000,561L1380,561L1384,1043Z" style="fill:#1E1E24;stroke:#1E1E24;stroke-width:4;stroke-linejoin:round;" vector-effect="non-scaling-stroke"/>
+        </g>
+        <g transform="matrix(1.43044,0,0,1.138747,-389.684863,130.635368)">
+            <rect x="443" y="1043" width="941" height="58" style="fill:#1E1E24;stroke:#1E1E24;stroke-width:4;stroke-linejoin:round;" vector-effect="non-scaling-stroke"/>
+        </g>
+        <g transform="matrix(0.904757,0,0,1.320946,177.047945,-106.29223)">
+            <rect x="913.5" y="751" width="36.5" height="173" style="fill:#1E1E24;stroke:#1E1E24;stroke-width:4;stroke-linejoin:round;" vector-effect="non-scaling-stroke"/>
+        </g>
+        <g transform="matrix(0.904757,0,0,1.320946,99.772607,-106.29223)">
+            <rect x="913.5" y="751" width="36.5" height="173" style="fill:#1E1E24;stroke:#1E1E24;stroke-width:4;stroke-linejoin:round;" vector-effect="non-scaling-stroke"/>
+        </g>
+        <g transform="matrix(0.904757,0,0,1.320946,22.49727,-106.29223)">
+            <rect x="913.5" y="751" width="36.5" height="173" style="fill:#1E1E24;stroke:#1E1E24;stroke-width:4;stroke-linejoin:round;" vector-effect="non-scaling-stroke"/>
+        </g>
+        <g transform="matrix(0.904757,0,0,1.320946,-54.778068,-106.29223)">
+            <rect x="913.5" y="751" width="36.5" height="173" style="fill:#1E1E24;stroke:#1E1E24;stroke-width:4;stroke-linejoin:round;" vector-effect="non-scaling-stroke"/>
+        </g>
+        <g transform="matrix(0.904757,0,0,1.320946,-132.053406,-106.29223)">
+            <rect x="913.5" y="751" width="36.5" height="173" style="fill:#1E1E24;stroke:#1E1E24;stroke-width:4;stroke-linejoin:round;" vector-effect="non-scaling-stroke"/>
+        </g>
+        <g transform="matrix(1.479184,0,0,1.467718,-476.961289,-141.737613)">
+            <rect x="1000" y="516" width="384" height="45" style="fill:#1E1E24;stroke:#1E1E24;stroke-width:4;stroke-linejoin:round;" vector-effect="non-scaling-stroke"/>
+        </g>
+        <g transform="matrix(1.320946,0,0,1.320946,-328.630482,-47.055362)">
+            <path d="M1222.5,729.7C1242.816,690 1283.447,690 1303.763,709.85C1324.08,729.7 1324.08,769.4 1303.763,809.1C1289.542,838.875 1252.974,868.65 1222.5,888.5C1192.026,868.65 1155.458,838.875 1141.237,809.1C1120.921,769.4 1120.921,729.7 1141.237,709.85C1161.553,690 1202.184,690 1222.5,729.7Z" style="fill:#1E1E24;stroke:#1E1E24;stroke-width:4;stroke-linejoin:round;" vector-effect="non-scaling-stroke"/>
+        </g>
+    </g>
+    <g transform="matrix(1.320946,0,0,1.320946,-284.378378,-59.398649)">
+        <path d="M1584,1043L443,1043" style="fill:none;"/>
+    </g>
+    <g transform="matrix(1.320946,0,0,1.320946,-284.378378,-59.398649)">
+        <path d="M1384,1043L443,1043C457.15,763.852 1000,745 1000,745L1000,561L1380,561L1384,1043Z" style="fill:rgb(250,168,193);"/>
+    </g>
+    <g transform="matrix(1.43044,0,0,1.138747,-389.684863,130.635368)">
+        <rect x="443" y="1043" width="941" height="58" style="fill:rgb(231,183,250);"/>
+    </g>
+    <g transform="matrix(0.904757,0,0,1.320946,177.047945,-106.29223)">
+        <rect x="913.5" y="751" width="36.5" height="173" style="fill:rgb(188,244,250);"/>
+    </g>
+    <g transform="matrix(0.904757,0,0,1.320946,99.772607,-106.29223)">
+        <rect x="913.5" y="751" width="36.5" height="173" style="fill:rgb(188,244,250);"/>
+    </g>
+    <g transform="matrix(0.904757,0,0,1.320946,22.49727,-106.29223)">
+        <rect x="913.5" y="751" width="36.5" height="173" style="fill:rgb(188,244,250);"/>
+    </g>
+    <g transform="matrix(0.904757,0,0,1.320946,-54.778068,-106.29223)">
+        <rect x="913.5" y="751" width="36.5" height="173" style="fill:rgb(188,244,250);"/>
+    </g>
+    <g transform="matrix(0.904757,0,0,1.320946,-132.053406,-106.29223)">
+        <rect x="913.5" y="751" width="36.5" height="173" style="fill:rgb(188,244,250);"/>
+    </g>
+    <g transform="matrix(1.479184,0,0,1.467718,-476.961289,-141.737613)">
+        <rect x="1000" y="516" width="384" height="45" style="fill:rgb(250,211,157);"/>
+    </g>
+    <g transform="matrix(1.320946,0,0,1.320946,-328.630482,-47.055362)">
+        <path d="M1222.5,729.7C1242.816,690 1283.447,690 1303.763,709.85C1324.08,729.7 1324.08,769.4 1303.763,809.1C1289.542,838.875 1252.974,868.65 1222.5,888.5C1192.026,868.65 1155.458,838.875 1141.237,809.1C1120.921,769.4 1120.921,729.7 1141.237,709.85C1161.553,690 1202.184,690 1222.5,729.7Z" style="fill:white;"/>
+    </g>
+</svg>

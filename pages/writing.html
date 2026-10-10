@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Writing</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/zip.js" defer></script>
+<script src="../resources/js/doc-export.js" defer></script>
+<script src="../resources/js/media-core.js" defer></script>
+<script src="../resources/js/writing-core.js" defer></script>
+<script src="../resources/js/writing-draft.js" defer></script>
+<script src="../resources/js/writing-check.js" defer></script>
+<script src="../resources/js/writing-story.js" defer></script>
+<script src="../resources/js/writing-reporting.js" defer></script>
+<script src="../resources/js/writing-revisions.js" defer></script>
+<script src="../resources/js/writing-business.js" defer></script>
+
+<main class="is-wide">
+  <h1>Writing</h1>
+
+  <div class="sketch-nav">
+    <label class="tool-group">Draft
+      <select id="wr-draft" class="team-select" aria-label="Draft"></select>
+    </label>
+    <button type="button" class="small-btn" id="wr-new">+ New draft</button>
+    <span class="tool-group" id="wr-claim"></span>
+    <span class="tool-group wr-total" id="wr-total" aria-live="polite"></span>
+  </div>
+  <p class="media-status" id="wr-status" role="status"></p>
+
+  <div class="zine-tabs" id="wr-tabs" role="tablist" aria-label="Writing tools">
+    <button type="button" role="tab" data-tab="draft" aria-selected="true">Draft</button>
+    <button type="button" role="tab" data-tab="check" aria-selected="false">Check</button>
+    <button type="button" role="tab" data-tab="story" aria-selected="false">Story</button>
+    <button type="button" role="tab" data-tab="reporting" aria-selected="false">Reporting</button>
+    <button type="button" role="tab" data-tab="revisions" aria-selected="false">Revisions</button>
+    <button type="button" role="tab" data-tab="business" aria-selected="false">Business</button>
+    <button type="button" role="tab" data-tab="goals" aria-selected="false">Goals</button>
+  </div>
+  <div class="zine-panel wr-panel" id="wr-panel" role="tabpanel"></div>
+
+  <!-- ===== New draft ===== -->
+  <dialog id="wr-dialog" class="project-dialog" aria-labelledby="wr-dialog-title">
+    <form id="wr-form">
+      <h2 id="wr-dialog-title">New draft</h2>
+      <label>Title <input name="title" required maxlength="160" autocomplete="off"></label>
+      <fieldset class="zine-presets">
+        <legend>Kind of writing</legend>
+        <div class="zine-preset-options">
+          <label class="zine-preset"><input type="radio" name="kind" value="article" checked><span class="zine-preset-name">Article or nonfiction</span><span class="zine-preset-note">News, features, essays, books</span></label>
+          <label class="zine-preset"><input type="radio" name="kind" value="fiction"><span class="zine-preset-name">Fiction</span><span class="zine-preset-note">Short stories, novels, scripts in prose</span></label>
+        </div>
+      </fieldset>
+      <label>Start with
+        <select name="template" id="wr-template"></select>
+      </label>
+      <div class="zine-form-row">
+        <label>Word target (optional) <input name="target" type="number" min="0" step="100" placeholder="e.g. 1200"></label>
+        <label>Deadline (optional) <input name="deadline" type="date"></label>
+      </div>
+      <div class="dialog-actions">
+        <button type="submit" class="small-btn">Create draft</button>
+        <button type="button" class="small-btn" id="wr-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="wr-print" class="print-sheet wr-print" aria-hidden="true"></div>
+</main>
+
+</body>
+</html>

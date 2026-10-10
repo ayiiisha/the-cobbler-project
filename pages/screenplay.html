@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screenplay</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/screenplay.js" defer></script>
+
+<main class="is-wide">
+  <h1>Screenplay</h1>
+
+  <div class="sketch-nav sp-bar">
+    <label class="tool-group">Script
+      <select id="sp-script" class="team-select" aria-label="Script"></select>
+    </label>
+    <div class="tool-group">
+      <button type="button" class="small-btn" id="sp-new">+ New script</button>
+      <input type="file" id="sp-import-input" accept=".fountain,.spmd,.txt,text/plain" hidden>
+      <button type="button" class="small-btn" id="sp-import">Import Fountain</button>
+    </div>
+    <span class="tool-group" id="sp-claim"></span>
+    <span class="tool-group sp-pages" id="sp-pages" aria-live="polite"></span>
+  </div>
+  <p class="media-status" id="sp-status" role="status"></p>
+
+  <div id="sp-body"></div>
+
+  <div id="sp-print" class="print-sheet sp-print" aria-hidden="true"></div>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<!-- abcjs draws sheet music from ABC notation (MIT licence, resources/vendor/abcjs/LICENSE.txt) -->
+<script src="../resources/vendor/abcjs/abcjs-basic-6.4.4.min.js" defer></script>
+<script src="../resources/js/music-core.js" defer></script>
+<script src="../resources/js/music-songs.js" defer></script>
+<script src="../resources/js/music-business.js" defer></script>
+
+<main class="is-wide">
+  <h1>Music</h1>
+
+  <div class="zine-tabs" id="mu-tabs" role="tablist" aria-label="Music">
+    <button type="button" role="tab" data-tab="songs" aria-selected="true">Songs</button>
+    <button type="button" role="tab" data-tab="gigs" aria-selected="false">Gigs and bookings</button>
+    <button type="button" role="tab" data-tab="releases" aria-selected="false">Releases</button>
+    <button type="button" role="tab" data-tab="samples" aria-selected="false">Sample clearances</button>
+  </div>
+  <p class="media-status" id="mu-status" role="status"></p>
+  <div class="zine-panel mu-panel" id="mu-panel" role="tabpanel"></div>
+
+  <div id="mu-print" class="print-sheet mu-print" aria-hidden="true"></div>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/zip.js" defer></script>
+<script src="../resources/js/doc-export.js" defer></script>
+<script src="../resources/js/report.js" defer></script>
+<script src="../resources/js/projects.js" defer></script>
+<script src="../resources/js/projects-sync.js" defer></script>
+
+<main>
+  <h1>Projects</h1>
+
+  <section class="callout-box accent-3">
+    <h2>Your Projects</h2>
+    <div class="project-toolbar">
+      <label>Search <input type="search" id="project-search" placeholder="Name or description"></label>
+      <label>Sort
+        <select id="project-sort">
+          <option value="updated">Recently edited</option>
+          <option value="created">Newest</option>
+          <option value="name">Name (A–Z)</option>
+        </select>
+      </label>
+      <label class="project-toolbar-check"><input type="checkbox" id="project-show-archived"> <span id="project-archived-label">Show archived</span></label>
+      <button type="button" class="small-btn" id="browser-new">New project</button>
+      <button type="button" class="small-btn" id="browser-backup-all">Backup all</button>
+    </div>
+    <p id="browser-status" role="status"></p>
+    <div id="project-grid" class="card-grid"></div>
+  </section>
+
+  <section class="callout-box sync-box" id="sync">
+    <h2>Sync folder</h2>
+    <p>Work on projects together without uploading them anywhere: everyone picks the same shared folder (for example a shared Google Drive folder) and the projects you choose stay up to date through it. Your projects stay in your browser and in that folder only; the website never sees them.</p>
+    <div id="sync-panel"></div>
+    <details class="cal-share-help">
+      <summary>Setting it up with Google Drive</summary>
+      <ol>
+        <li>Install <strong>Google Drive for desktop</strong> (drive.google.com/drive/download) and sign in. Your Drive appears as a drive on your computer.</li>
+        <li>One person makes a folder in Google Drive (e.g. “Cobbler sync”) and shares it with everyone (Share › Editor).</li>
+        <li>Everyone else: in Google Drive on the web, open “Shared with me”, right-click the folder › Organize › Add shortcut › My Drive, so it appears on their computer.</li>
+        <li>Here, click <strong>Choose sync folder</strong> and pick that folder (Google Drive › My Drive › Cobbler sync). Allow the app to edit files there.</li>
+        <li>Tick <strong>Sync</strong> on the projects to share. Others see them under “Projects in the folder” and click <strong>Join</strong>.</li>
+      </ol>
+      <p>Needs Chrome or Edge on a computer. Your browser asks again for permission now and then: click the sync note in the sidebar. Without it, use Share, Email and Import below; they work everywhere.</p>
+    </details>
+  </section>
+
+  <section class="callout-box" id="differences" hidden>
+    <h2>Differences settled automatically</h2>
+    <p>Where you and a collaborator both changed the same thing, syncing kept the newer change. Check them here, and switch to the other version if it was the right one.</p>
+    <ol class="conflict-list" id="conflict-list"></ol>
+  </section>
+
+  <section class="callout-box accent-2" id="activity">
+    <h2>Activity</h2>
+    <div class="section-head">
+      <label>Show <select id="activity-who"></select></label>
+    </div>
+    <ol class="activity-list" id="activity-list"></ol>
+  </section>
+
+  <section class="callout-box accent-4">
+    <h2>Import Projects</h2>
+    <p>Choose backup or shared files (.json) from this site, then pick what to do with each: add it as a new project, or merge a collaborator's copy into yours. Merging combines both (comments, research, edits…) and asks about anything you both changed. Nothing is overwritten without asking.</p>
+    <p><strong>Working with friends:</strong> “Share” on a project card makes a file with everything in it, uploaded images included. Send it over; they import it as a new project. When they send theirs back, import it here and it's matched to your copy for merging.</p>
+    <div class="section-head">
+      <input type="file" id="import-input" accept=".json,application/json" multiple hidden>
+      <button type="button" class="small-btn" id="import-choose">Choose file(s)</button>
+    </div>
+    <div id="import-drop" class="drop-zone" tabindex="0" role="button">…or drop backup or shared files here</div>
+    <div id="import-preview"></div>
+    <p id="import-status" role="status"></p>
+  </section>
+</main>
+
+</body>
+</html>

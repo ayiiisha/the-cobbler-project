@@ -1,0 +1,22 @@
+/* Shared look for the guides (printed to PDF by make-docs.sh) */
+@page { size: A4; margin: 20mm 18mm 22mm; }
+body { font-family: Georgia, "Times New Roman", serif; font-size: 11pt; line-height: 1.5; color: #1E1E24; margin: 0 auto; max-width: 46rem; padding: 2rem 1rem; }
+@media print { body { padding: 0; max-width: none; } }
+h1 { font-size: 26pt; line-height: 1.15; margin: 0 0 4pt; }
+.subtitle { font-size: 12pt; color: #555; margin: 0 0 18pt; }
+h2 { font-size: 16pt; margin: 22pt 0 6pt; padding-bottom: 3pt; border-bottom: 1.5pt solid #1E1E24; break-after: avoid; }
+h3 { font-size: 12.5pt; margin: 14pt 0 4pt; break-after: avoid; }
+p { margin: 0 0 7pt; }
+ul, ol { margin: 0 0 8pt 18pt; padding: 0; }
+li { margin-bottom: 3pt; }
+code, pre { font-family: "Courier New", Courier, monospace; font-size: 9.5pt; }
+code { background: #F2F2F2; padding: 0 2pt; border-radius: 2pt; }
+pre { background: #F2F2F2; padding: 6pt 8pt; border-left: 3pt solid #BCF4FA; white-space: pre-wrap; break-inside: avoid; }
+table { width: 100%; border-collapse: collapse; margin: 0 0 10pt; font-size: 9.5pt; }
+th, td { text-align: left; vertical-align: top; border: 0.5pt solid #999; padding: 3pt 5pt; }
+th { background: #E7B7FA; }
+tr { break-inside: avoid; }
+.tip { background: #FFF4D6; border-left: 3pt solid #FAD39D; padding: 5pt 8pt; margin: 0 0 8pt; break-inside: avoid; }
+.toc { columns: 2; font-size: 10.5pt; }
+.toc li { break-inside: avoid; }
+.cover { border: 2pt solid #1E1E24; background: #FAA8C1; padding: 14pt 16pt; margin-bottom: 16pt; }

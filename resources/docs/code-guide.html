@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Cobbler Project – How to edit the code</title>
+<link rel="stylesheet" href="docs.css">
+</head>
+<body>
+
+<div class="cover">
+  <h1>The Cobbler Project</h1>
+  <p class="subtitle">How to edit the code: where everything lives and how to change it</p>
+</div>
+
+<p>The app is plain HTML, CSS and JavaScript: no frameworks, no build step and no server code. Edit a file in any text editor, save it, and reload the page in your browser to see the change. Every file starts with a comment explaining what it does, and the code is commented throughout.</p>
+
+<ol class="toc">
+  <li>Running the app</li>
+  <li>Folders and files</li>
+  <li>How a page is put together</li>
+  <li>Where data is saved</li>
+  <li>Styles and themes</li>
+  <li>Adding a new page</li>
+  <li>Shared building blocks</li>
+  <li>Common changes</li>
+  <li>Exports and file formats</li>
+  <li>The guides and the app ZIP</li>
+  <li>Tips</li>
+</ol>
+
+<h2>1. Running the app</h2>
+<p>Double-click <code>pages/index.html</code>, or (recommended) run a small local web server so that file storage, the default resources table and the app ZIP all work. In Terminal:</p>
+<pre>cd path/to/the-cobbler-project
+python3 -m http.server 8123</pre>
+<p>Then open <code>http://localhost:8123/pages/index.html</code>. Stop the server with Ctrl+C. (<code>.claude/launch.json</code> holds the same command for Claude Code's preview.)</p>
+<div class="tip">After editing, if the browser shows an old version, do a hard reload: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows).</div>
+
+<h3>Putting it online with GitHub Pages</h3>
+<p>The app is plain files, so GitHub Pages can host it for free. Only the code goes online: projects stay in each person's browser and sync folder. <code>.gitignore</code> keeps backups, shared files and calendar files out of the repository; <code>index.html</code> at the top sends visitors to <code>pages/index.html</code>; <code>.nojekyll</code> tells GitHub to serve the files as they are.</p>
+<ol>
+  <li>Make a free account at github.com, then a new repository (e.g. <code>the-cobbler-project</code>), Public (free Pages needs a public repository, or a paid plan for a private one). Don't add a README.</li>
+  <li>In Terminal, in the project folder:
+<pre>git init -b main
+git add .
+git commit -m "First version"
+git remote add origin https://github.com/YOUR-NAME/the-cobbler-project.git
+git push -u origin main</pre>
+  Git asks you to sign in: use GitHub Desktop or the GitHub CLI, or a personal access token as the password.</li>
+  <li>On GitHub: the repository › Settings › Pages › Build and deployment › Source: <em>Deploy from a branch</em>, Branch: <code>main</code>, folder <code>/ (root)</code> › Save.</li>
+  <li>A minute later it's at <code>https://YOUR-NAME.github.io/the-cobbler-project/</code>.</li>
+  <li>To publish changes: <code>git add .</code>, <code>git commit -m "What changed"</code>, <code>git push</code>.</li>
+</ol>
+<div class="tip">Everything in the repository is public, including the code and the change log. Projects are never in it. Every page under one github.io address shares browser storage, so keep other apps you make on different repositories in mind (this app saves under <code>cobblerProjects2</code>).</div>
+
+<h2>2. Folders and files</h2>
+<table>
+  <tr><th>Where</th><th>What</th></tr>
+  <tr><td><code>pages/</code></td><td>One HTML file per page (the sidebar links to these).</td></tr>
+  <tr><td><code>resources/css/style.css</code></td><td>All the styles, in numbered sections (listed at the top of the file).</td></tr>
+  <tr><td><code>resources/js/</code></td><td>The scripts: one per page, plus shared ones (below).</td></tr>
+  <tr><td><code>default-resources-cobbler-project.csv</code></td><td>The Resources page's default table (Name, Description, Link). At the top so it's easy to replace on GitHub.</td></tr>
+  <tr><td><code>resources/data/</code></td><td>The generated copy of the default resources, for opening pages by double-clicking.</td></tr>
+  <tr><td><code>resources/assets/</code></td><td>The logo.</td></tr>
+  <tr><td><code>resources/docs/</code></td><td>These guides (HTML) and their PDFs.</td></tr>
+  <tr><td><code>resources/vendor/abcjs/</code></td><td>abcjs (MIT licence), which draws sheet music on the Music page.</td></tr>
+  <tr><td><code>index.html</code>, <code>.gitignore</code>, <code>.nojekyll</code></td><td>For hosting on GitHub Pages (section 1).</td></tr>
+  <tr><td><code>update-resources.sh</code></td><td>Regenerates the default resources copy (for double-clicked pages) after editing the CSV locally.</td></tr>
+  <tr><td><code>make-docs.sh</code></td><td>Regenerates the guide PDFs after editing the guides.</td></tr>
+  <tr><td><code>change-log.md</code></td><td>What changed, and when.</td></tr>
+</table>
+<h3>Scripts on every page</h3>
+<table>
+  <tr><th>File</th><th>What it does</th></tr>
+  <tr><td><code>lz-string</code></td><td>Compression (<code>resources/vendor/lz-string/</code>, MIT licence). Loads before projects-core.js, which also fetches it itself if a page lacks the tag.</td></tr>
+  <tr><td><code>projects-core.js</code></td><td>Stores every project and offers the Projects API (section 4). Loads first.</td></tr>
+  <tr><td><code>header.js</code></td><td>Builds the sidebar, the ☰ button and "Return to top". The sidebar's links are listed here.</td></tr>
+  <tr><td><code>project-ui.js</code></td><td>The Projects button and panel, the + button and the New Project dialog.</td></tr>
+  <tr><td><code>color-themes.js</code></td><td>Applies the theme (light, dark, rainbow, system) and wires the Settings buttons.</td></tr>
+  <tr><td><code>comments.js</code></td><td>The comments drawer, and the comment threads other pages reuse.</td></tr>
+  <tr><td><code>file-store.js</code></td><td>Uploaded files in IndexedDB.</td></tr>
+  <tr><td><code>share.js</code></td><td>Sharing: the share file, email, changes since last share, undoing a merge, the Claim button.</td></tr>
+  <tr><td><code>sync.js</code></td><td>The sync folder, the sync note in the sidebar, share reminders, the differences sync settled, the name prompt, the read-only notice and the storage warning.</td></tr>
+  <tr><td><code>account.js</code></td><td>The person button: sign in with your name, change it, sign out (<code>cobblerMe</code> and <code>commentAuthor</code> in localStorage); asks once on a first visit.</td></tr>
+  <tr><td><code>undo.js</code></td><td>Cmd/Ctrl+Z and Cmd/Ctrl+Shift+Z on every page (the steps themselves are kept by projects-core.js).</td></tr>
+</table>
+<h3>Page scripts</h3>
+<table>
+  <tr><th>Page</th><th>Scripts</th></tr>
+  <tr><td>Project Tracker</td><td><code>project-tracker.js</code></td></tr>
+  <tr><td>Projects</td><td><code>projects.js</code>, <code>report.js</code> (project details document), <code>projects-sync.js</code> (Sync folder and Activity sections)</td></tr>
+  <tr><td>Home</td><td><code>dashboard.js</code> (uses <code>calendar.js</code>'s <code>CobblerCalendar.datesFor</code>)</td></tr>
+  <tr><td>Self-tests</td><td><code>tests.html</code>, <code>tests.js</code></td></tr>
+  <tr><td>Writing</td><td><code>writing-core.js</code> (state, tabs, templates), <code>writing-draft.js</code>, <code>writing-check.js</code>, <code>writing-story.js</code>, <code>writing-reporting.js</code>, <code>writing-revisions.js</code>, <code>writing-business.js</code> (Business and Goals)</td></tr>
+  <tr><td>Screenplay</td><td><code>screenplay.js</code> (editor, page layout, PDF, Final Draft and Fountain)</td></tr>
+  <tr><td>Music</td><td><code>music-core.js</code>, <code>music-songs.js</code> (the song sketchbook), <code>music-business.js</code> (gigs, releases, samples); abcjs for notation</td></tr>
+  <tr><td>Team · Ideas · Pitches · Packaging · Research · Calendar</td><td><code>team.js</code> and <code>team-tasks.js</code> (tasks, credits) · <code>ideas.js</code> · <code>pitches.js</code> · <code>packaging.js</code> · <code>research.js</code> · <code>calendar.js</code></td></tr>
+  <tr><td>Interviews</td><td><code>interviews.js</code></td></tr>
+  <tr><td>Media &amp; Transcripts</td><td><code>media-core.js</code> (shared engine), <code>media.js</code>, <code>text-edit.js</code>, <code>timeline-export.js</code></td></tr>
+  <tr><td>A/V Script</td><td><code>av-script.js</code></td></tr>
+  <tr><td>Storyboarder</td><td><code>storyboarder.js</code></td></tr>
+  <tr><td>Zine Planner</td><td><code>zine-planner.js</code>, <code>zine-sketch.js</code>, <code>zine-critique.js</code></td></tr>
+  <tr><td>Data Analysis</td><td><code>data-analysis.js</code></td></tr>
+  <tr><td>Resources · Settings</td><td><code>resources.js</code> · <code>settings.js</code></td></tr>
+</table>
+
+<h2>3. How a page is put together</h2>
+<p>Every page has the same shape. Copy an existing page to start a new one:</p>
+<pre>&lt;head&gt;
+  &lt;link rel="stylesheet" href="../resources/css/style.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;script src="../resources/js/projects-core.js"&gt;&lt;/script&gt;
+&lt;script src="../resources/js/header.js"&gt;&lt;/script&gt;
+&lt;script src="../resources/js/project-ui.js"&gt;&lt;/script&gt;
+&lt;script src="../resources/js/color-themes.js"&gt;&lt;/script&gt;
+&lt;script src="../resources/js/comments.js"&gt;&lt;/script&gt;
+&lt;script src="../resources/js/my-page.js" defer&gt;&lt;/script&gt;
+
+&lt;main&gt;
+  &lt;h1&gt;My Page&lt;/h1&gt;
+  …
+&lt;/main&gt;
+&lt;/body&gt;</pre>
+<ul>
+  <li>The order matters: <code>projects-core.js</code> first, then the sidebar, the project controls, the theme (no <code>defer</code>, so the right colours apply before the page appears) and comments.</li>
+  <li>Page scripts use <code>defer</code> and draw the page on <code>DOMContentLoaded</code>.</li>
+  <li><code>&lt;main class="is-wide"&gt;</code> lets a page use the full width beside the sidebar (the tracker, the editing pages).</li>
+  <li>Scripts build elements with a small <code>el(tag, props, ...children)</code> helper; text is always added as plain text, so nothing typed by a user can inject code.</li>
+</ul>
+
+<h2>4. Where data is saved</h2>
+<p>All projects are saved together in the browser's <code>localStorage</code> under the key <code>cobblerProjects2</code>. Saves of 50,000 characters or more are compressed with lz-string and start with <code>LZ1:</code>; smaller ones are plain JSON. If saved data can't be read, nothing is saved over it. (Before compression the key was <code>cobblerProjects</code>; it's moved on first load. The new name means an out-of-date cached copy of the app can't mistake a compressed save for no projects.) Each page keeps its data inside the project, under its own key:</p>
+<pre>project.data.tracker        Project Tracker details and goals
+project.data.team           Team
+project.data.tasks          Team: tasks (comments can also have an assignee)
+project.data.research       Research notes
+project.data.interviewees   Interviews: people
+project.data.questions      Interviews: question bank
+project.data.pitches        Pitches
+project.data.packaging      Packaging (titles, thumbnails, SEO)
+project.data.ideas          Ideas (and ideaColumns)
+project.data.calendarEvents Calendar: your events
+project.data.media          Transcripts and clips, Resolve markers (markerSets),
+                            where everyone keeps the media (locations)
+project.data.edits          Paper edits
+project.data.storyboards    Storyboards
+project.data.zines          Zines
+project.data.datasets       Data Analysis datasets (details only)
+project.data.resources      Your resources table
+project.data.comments       Page comments
+project.data.drafts         Writing: drafts (parts, scenes, claims, versions, feedback)
+project.data.storyBible     Writing: story bible
+project.data.sourceLog      Writing: sources and contact logs
+project.data.recordsRequests  Writing: records requests
+project.data.eventTimeline  Writing: event timeline
+project.data.submissions    Writing: submissions and invoices
+project.data.corrections    Writing: corrections log
+project.data.writingLog     Writing: words written per person per day
+project.data.screenplays    Screenplay: scripts (title page details, elements: [{ id, type, text }])
+project.data.songs          Music: songs (lyrics, ABC sheet music, splits, sessions, versions)
+project.data.gigs           Music: gigs
+project.data.releases       Music: release plans
+project.data.samples        Music: sample clearances
+project.data.claims         Who's working on what
+project.data._deleted       Bookkeeping: deleted items, so deletions sync
+project.data._activity      Bookkeeping: the activity feed</pre>
+<h3>The Projects API (projects-core.js)</h3>
+<table>
+  <tr><th>Call</th><th>What it does</th></tr>
+  <tr><td><code>Projects.getData(key, fallback)</code></td><td>Read this page's data from the active project.</td></tr>
+  <tr><td><code>Projects.setData(key, value)</code></td><td>Save it (and mark the project as edited).</td></tr>
+  <tr><td><code>Projects.getDataFor(id, key, fallback)</code> / <code>setDataFor</code></td><td>The same, for any project.</td></tr>
+  <tr><td><code>Projects.list()</code> · <code>Projects.info()</code></td><td>Every project (names, ids, archived), or with details for cards.</td></tr>
+  <tr><td><code>Projects.activeId()</code> · <code>activeName()</code></td><td>The project in use.</td></tr>
+  <tr><td><code>Projects.create(name, { activate })</code>, <code>renameById</code>, <code>duplicate</code>, <code>removeById</code>, <code>setArchived</code>, <code>switchTo</code></td><td>Managing projects.</td></tr>
+  <tr><td><code>Projects.collect(key)</code></td><td>Every project's value for a key (used to check shared files).</td></tr>
+</table>
+<h3>Undo and redo</h3>
+<p>Every <code>setData</code> also records what it replaced (in <code>sessionStorage</code> under <code>cobblerUndo</code>, per tab, up to 60 steps; saves to the same key within 1.5 seconds are one step). <code>Projects.undo()</code>/<code>redo()</code> put a key's value back through the same tracking as any save, so an undo syncs to collaborators. Steps for anything changed by a merge or another tab are dropped. <code>undo.js</code> first dispatches <code>pagehide</code> (pages save pending changes on it), undoes, calls <code>Projects.freeze()</code> (so the page can't save its old copy) and reloads. Pages need nothing special to support it.</p>
+<h3>Self-tests</h3>
+<p><code>tests.js</code> loads the app's scripts into a sandbox (<code>new Function</code> with a fake <code>localStorage</code>, <code>sessionStorage</code>, <code>document</code> and a controllable <code>Date</code>), so tests never touch real projects. Add a test with <code>test("name", async () =&gt; { ok(...); eq(...); })</code>; <code>withCore()</code> gives a fresh projects-core and <code>load(file, env, extras)</code> loads another script. Run them after any change to merging, sync or undo.</p>
+<h3>Collaboration: change tracking, merging and sync</h3>
+<ul>
+  <li><strong>Saving</strong> (<code>setData</code>) compares what the page saves with what it last read: changed items in lists get <code>_mt</code> (time) and <code>_mb</code> (your name, <code>Projects.me()</code>); removed items are recorded in <code>_deleted</code>; a line goes into <code>_activity</code>. If the data changed underneath the page since it read it (a collaborator's changes arrived, or another tab saved), the page's own changes are merged into what's there instead of overwriting it.</li>
+  <li><strong>Merging</strong> is <code>Projects.mergeData(mine, theirs, base)</code>: lists of things with an <code>id</code> are matched item by item, plain lists are combined, one-sided changes (compared with <code>base</code>, the last version both had) are taken, and anything changed on both sides becomes a difference (the newer <code>_mt</code> wins by default). Afterwards anything in <code>_deleted</code> is removed unless it was changed after it was deleted. New pages work with this automatically as long as list items have an <code>id</code>.</li>
+  <li><strong>Sync</strong> (<code>sync.js</code>): the chosen folder's handle is kept in IndexedDB. Each project has a folder <code>Name [share id]</code> with <code>people/&lt;name&gt;-&lt;device&gt;.cobbler.json</code> (each person writes only their own) and <code>files/</code> (uploads). Every 30 seconds, and soon after a save, it merges everyone else's newer files (using the last version merged from each person as the base) and writes yours if it changed. It needs the File System Access API (Chrome, Edge).</li>
+  <li><strong>Read-only copies</strong> (<code>project.readOnly</code>): <code>setData</code> refuses everything but <code>comments</code>. Their feedback file (<code>kind: "feedback"</code>) carries only comments, and the Projects page merges just those.</li>
+  <li><strong>Differences</strong> from <code>mergeData</code> carry a <code>path</code> (e.g. <code>["research", { id }, "status"]</code>); sync keeps the ones it settled in <code>localStorage cobblerConflicts:&lt;project&gt;</code>, and <code>Projects.setAtPath</code> switches one later.</li>
+  <li><strong>Locked versions</strong> are in IndexedDB under <code>lock:&lt;project&gt;:&lt;id&gt;</code> (share.js).</li>
+  <li>The last version shared or received, the last version merged from each person, and a copy from before each merge (for <em>Undo last merge</em>) are kept in IndexedDB under <code>share-base:</code>, <code>sync-base:</code> and <code>undo-merge:</code>.</li>
+</ul>
+<p><strong>Files</strong> (critique uploads, storyboard photos, datasets) are too big for localStorage, so <code>file-store.js</code> keeps them in IndexedDB (database <code>cobbler-files</code>): <code>FileStore.put(id, blob)</code>, <code>get(id)</code>, <code>remove(id)</code>. Project data stores only the file's id. Settings › Storage › <em>Find unused files</em> deletes ids no project mentions, except the bookkeeping ones (<code>sync-</code>, <code>share-base:</code>, <code>undo-merge:</code>, <code>lock:</code>, <code>transcripts-folder-handle</code>).</p>
+<p><strong>Transcripts kept outside the project</strong> (<code>media-core.js</code>): a transcript can have <code>storage: { where: "browser" | "folder", key, folder, path, at, by }</code> and <code>storageLog: [{ at, by, where, folder, path }]</code>. Its words are then in FileStore under <code>key</code> (<code>tx-&lt;id&gt;-&lt;version&gt;</code>; the key changes whenever the words do, so share and sync carry the new copy like any uploaded file) and, for a folder, also in <code>&lt;folder&gt;/Cobbler transcripts/&lt;project&gt; [id]/&lt;title&gt; [id].json</code> (the folder handle is in FileStore as <code>transcripts-folder-handle</code>). The project keeps <code>segments: []</code> plus <code>paragraphs</code> and <code>length</code>. <code>MediaCore.hydrate()</code> reads the words into memory (every page with media-core.js does this on load and fires <code>transcripts-loaded</code>), <code>loadMedia()</code> returns a copy with them filled in, <code>packMedia()</code> takes them out before saving, and <code>moveTranscript(t, where, { root })</code> moves and logs.</p>
+<p><strong>Per-browser settings</strong> (not part of projects) also live in localStorage: <code>selected-theme</code>, <code>navOpen</code>, <code>commentAuthor</code>, <code>sketchTools</code>, <code>trackerView</code>, <code>calendarView</code>, <code>storyboardView</code>, <code>zineSketchView</code>, <code>zinePaper</code>, <code>defaultTableHidden</code>, <code>textEditCurrent:&lt;project&gt;</code>, <code>dataAnalysisCurrent:&lt;project&gt;</code>, <code>writingCurrent:&lt;project&gt;</code>, <code>writingGoal</code>, <code>writingCurrency</code>, <code>cobblerMe</code> (your name), <code>cobblerDevice</code>, <code>shareReminderDays</code>, and the sync bookkeeping <code>cobblerSyncSeen</code> / <code>cobblerSyncWrote</code>.</p>
+<div class="tip">To look at saved data, open the browser's developer tools (Cmd+Option+I / F12) → Application → Local Storage. Back up projects before experimenting.</div>
+
+<h2>5. Styles and themes</h2>
+<p><code>style.css</code> is split into numbered sections, listed at the top of the file (sections 1–4 are fonts, colours, base text and layout; 5 is shared components; later sections belong to pages). Find a page's section by searching for its name in capitals, e.g. <code>PROJECT TRACKER</code>.</p>
+<h3>Colours are variables</h3>
+<pre>--color-background   page and card surfaces
+--color-text         text and borders
+--color-on-text      text sitting on a --color-text fill
+--color-accent … --color-accent-5   peach, pink, purple, blue, grey</pre>
+<p>Change a value in section 2 and it changes everywhere. Each theme redefines these variables: <code>[data-selected-theme="light"]</code>, <code>"dark"</code> and <code>"rainbow"</code>. Rainbow's extra rules (which accent each surface uses) are in the Rainbow section. <em>System Default</em> is handled in <code>color-themes.js</code>: it picks light or dark from the computer's setting.</p>
+<h3>Adding a theme</h3>
+<ol>
+  <li>Add a <code>[data-selected-theme="mytheme"] { … }</code> block in section 2 with the colour variables.</li>
+  <li>Add <code>"mytheme"</code> to <code>THEMES</code> in <code>color-themes.js</code>.</li>
+  <li>Add a button to <code>pages/settings.html</code>: <code>&lt;button data-theme="mytheme" aria-pressed="false"&gt;My Theme&lt;/button&gt;</code>.</li>
+</ol>
+
+<h2>6. Adding a new page</h2>
+<ol>
+  <li>Copy a simple page (e.g. <code>pages/research.html</code>) to <code>pages/my-page.html</code>; change the <code>&lt;title&gt;</code>, the <code>&lt;h1&gt;</code> and the page script.</li>
+  <li>Add a link in <code>header.js</code>: <code>&lt;li&gt;&lt;a href="my-page.html"&gt;My Page&lt;/a&gt;&lt;/li&gt;</code> (the list is alphabetical).</li>
+  <li>Write <code>resources/js/my-page.js</code>: read with <code>Projects.getData("myPage", [])</code>, save with <code>Projects.setData("myPage", value)</code>.</li>
+  <li>Add a numbered section at the end of <code>style.css</code> and list it in the contents at the top.</li>
+  <li>To include the page's data in project details exports, add a section in <code>report.js</code>; to show its dates on the Calendar, add them in <code>datesFor()</code> in <code>calendar.js</code>.</li>
+  <li>Note the change in <code>change-log.md</code>.</li>
+</ol>
+
+<h2>7. Shared building blocks</h2>
+<table>
+  <tr><th>File</th><th>Use it for</th></tr>
+  <tr><td><code>sketch-core.js</code></td><td>Drawing and text on a page: <code>Sketch.createEditor({ save, onRestore })</code>, <code>editor.page(page, ratio)</code>, <code>Sketch.preview(page, ratio)</code>. Used by zines and storyboards.</td></tr>
+  <tr><td><code>media-core.js</code></td><td>Timecode, transcript and timeline readers, paper-edit blocks and starter structures.</td></tr>
+  <tr><td><code>comments.js</code></td><td><code>CobblerComments.mount(container, { getThreads, save })</code> shows comment threads anywhere.</td></tr>
+  <tr><td><code>doc-export.js</code> + <code>zip.js</code></td><td>Documents as PDF (print) or Word (.docx) from a simple list of blocks; ZIP files.</td></tr>
+  <tr><td><code>file-store.js</code></td><td>Saving uploaded files.</td></tr>
+  <tr><td><code>Projects.shareIdOf(id)</code> · <code>replaceData(id, data)</code></td><td>Sharing: every copy of a shared project keeps the same share id; merging replaces a project's data.</td></tr>
+</table>
+<h3>Sharing and merging (share.js)</h3>
+<p><code>ProjectShare.download(id)</code> writes a project with its uploaded files (as data URLs) to a .json file. <code>ProjectShare.merge(mine, theirs, base)</code> combines two copies: lists of things with an <code>id</code> are matched item by item, plain lists are combined, and anything changed differently on both sides becomes a difference to choose. <code>base</code> is the last version sent or received, kept in file storage under <code>share-base:&lt;share id&gt;</code>: with it, one-sided changes and deletions are applied without asking. New page data works with merging automatically as long as list items have an <code>id</code>.</p>
+<p>Print layouts: anything inside an element with class <code>print-sheet</code> prints on its own while it has content (style.css section 27).</p>
+
+<h2>8. Common changes</h2>
+<table>
+  <tr><th>To change…</th><th>Edit</th></tr>
+  <tr><td>Sidebar links</td><td><code>header.js</code> (headerTemplate)</td></tr>
+  <tr><td>Tracker statuses and stages</td><td><code>STATUSES</code> and <code>STAGES</code> at the top of <code>project-tracker.js</code></td></tr>
+  <tr><td>Interview stages, starter checklist, starter questions</td><td><code>STAGES</code>, <code>CHECKLIST</code>, <code>STARTER_QUESTIONS</code> in <code>interviews.js</code></td></tr>
+  <tr><td>Pitch statuses and formats</td><td><code>STATUSES</code>, <code>FORMATS</code> in <code>pitches.js</code></td></tr>
+  <tr><td>Writing templates (beat sheets, article structures)</td><td><code>TEMPLATES</code> in <code>writing-core.js</code></td></tr>
+  <tr><td>Style rules, clichés, filler words</td><td><code>rulesFor()</code>, <code>CLICHES</code>, <code>FILLERS</code> in <code>writing-check.js</code></td></tr>
+  <tr><td>Records-request laws and response days</td><td><code>LAWS</code> in <code>writing-reporting.js</code></td></tr>
+  <tr><td>Revision passes, legal checklist</td><td><code>PASSES</code>, <code>LEGAL</code> in <code>writing-revisions.js</code></td></tr>
+  <tr><td>Release plan steps and their timing</td><td><code>RELEASE_STEPS</code> in <code>music-business.js</code></td></tr>
+  <tr><td>Song statuses, PROs, keys</td><td><code>STATUSES</code>, <code>PROS</code>, <code>KEYS</code> in <code>music-songs.js</code></td></tr>
+  <tr><td>Screenplay margins, element order, lines per page</td><td><code>TYPES</code>, <code>TAB_ORDER</code>, <code>LINES_PER_PAGE</code> in <code>screenplay.js</code></td></tr>
+  <tr><td>Revision colours, dual-dialogue columns, breakdown categories</td><td><code>REV_COLORS</code>, <code>DUAL</code>, <code>BREAKDOWN</code> in <code>screenplay.js</code></td></tr>
+  <tr><td>How often the sync folder is checked</td><td><code>EVERY</code> in <code>sync.js</code></td></tr>
+  <tr><td>Packaging platforms, character limits and title formulas</td><td><code>PLATFORMS</code>, <code>TITLE_FORMULAS</code> in <code>packaging.js</code></td></tr>
+  <tr><td>Deliverables per platform (and their Resolve settings)</td><td><code>DELIVERABLES</code> in <code>packaging.js</code></td></tr>
+  <tr><td>Marker colours for each kind of block</td><td><code>MARKER_KINDS</code> in <code>timeline-export.js</code> (colour names from <code>MARKER_COLORS</code> in <code>media-core.js</code>)</td></tr>
+  <tr><td>Research statuses</td><td><code>STATUSES</code> in <code>research.js</code></td></tr>
+  <tr><td>Team starter roles</td><td><code>STARTER_ROLES</code> in <code>team.js</code></td></tr>
+  <tr><td>Paper edit structures</td><td><code>STRUCTURES</code> in <code>media-core.js</code></td></tr>
+  <tr><td>Storyboard frame shapes, shot types, camera moves</td><td><code>ASPECTS</code>, <code>SHOT_TYPES</code>, <code>MOVES</code> in <code>storyboarder.js</code></td></tr>
+  <tr><td>Zine sizes and presets</td><td><code>SIZES</code>, <code>PRESETS</code> in <code>zine-planner.js</code></td></tr>
+  <tr><td>Drawing colours and fonts</td><td><code>COLORS</code>, <code>FONTS</code> in <code>sketch-core.js</code></td></tr>
+  <tr><td>Default resources</td><td>Replace <code>default-resources-cobbler-project.csv</code> at the top of the repository (on GitHub: Add file › Upload files, drop it in, Commit changes). The online app reads it straight away, give or take GitHub's few-minute cache; the app ZIP rebuilds the double-click copy itself. Editing locally? Run <code>./update-resources.sh</code> too.</td></tr>
+  <tr><td>Fonts</td><td>Section 1 of <code>style.css</code> (Faculty Glyphic from Google Fonts)</td></tr>
+</table>
+
+<h2>9. Exports and file formats</h2>
+<ul>
+  <li><strong>Timelines</strong> (<code>timeline-export.js</code>): FCPXML 1.9, Premiere XML (xmeml 4) and CMX3600 EDL, built from the paper edit, plus a markers-only EDL in DaVinci Resolve's format (<code>|C:ResolveColorBlue |M:name |D:frames</code>).</li>
+  <li><strong>Reading from Resolve</strong> (<code>media-core.js</code>): <code>parseMarkers()</code> reads Resolve's marker EDL or an Edit Index CSV; <code>parseTranscript()</code> reads its subtitle .srt (moving times that start at 01:00:00 back to 00:00) and frame-based timecodes.</li>
+  <li><strong>Manuscripts</strong> (<code>writing-draft.js</code>, <code>manuscriptDocx()</code>): a .docx in standard manuscript format, built directly (with a page-number header from page two).</li>
+  <li><strong>Sheet music</strong>: ABC notation drawn by abcjs; PDFs print the drawn notation with the lyrics (<code>music-songs.js</code>, <code>songPDF()</code>).</li>
+  <li><strong>Credits</strong> (<code>team-tasks.js</code>): drawn on a canvas and saved as PNG (cards zipped with <code>zip.js</code>).</li>
+  <li><strong>R code</strong> (<code>data-analysis.js</code>, <code>rCode()</code> and <code>datawrapperCode()</code>): written from fixed templates on the page, without the internet. The Datawrapper version uses the httr2 package and Datawrapper's API (create chart, upload CSV, publish), reading the token from <code>DATAWRAPPER_API_KEY</code>.</li>
+  <li><strong>Calendars</strong> (.ics; the shared calendar adds a calendar name and a refresh interval, and every event has a fixed UID so updates replace it), <strong>contacts</strong> (.vcf), <strong>CSV</strong> tables, <strong>Markdown</strong> pitches and scripts.</li>
+  <li><strong>PDFs</strong> come from print layouts through the print window ("Save as PDF"); <strong>.docx</strong> files are built by <code>doc-export.js</code>.</li>
+</ul>
+
+<h2>10. The guides and the app ZIP</h2>
+<p>These guides are HTML files in <code>resources/docs/</code> (<code>user-guide.html</code>, <code>code-guide.html</code>, styled by <code>docs.css</code>). After editing them, rebuild the PDFs (needs Google Chrome installed):</p>
+<pre>./make-docs.sh</pre>
+<p><strong>Download the blank app (.zip)</strong> in Settings collects every file the pages use (found by following the sidebar's links and each page's scripts and styles) plus the README, change log, scripts and guides. It only works when the app is opened from a local server, because browsers don't let pages read files from the disk directly. It contains no projects: those live in your browser.</p>
+
+<h2>11. Tips</h2>
+<ul>
+  <li>Back up all projects (Projects button → Backup → All projects) before changing how data is saved.</li>
+  <li>If a page stops working, open the developer tools' Console: the error names the file and line.</li>
+  <li>Keep the style of the surrounding code: comments explaining what each part does, and plain, readable names.</li>
+  <li>When a page's data shape changes, make older data still load (most scripts "fill in anything missing" right after reading their data; copy that pattern).</li>
+  <li>Record what you changed in <code>change-log.md</code>.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resources</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/data/default-resources-cobbler-project.js"></script>
+<script src="../resources/js/resources.js" defer></script>
+<main>
+  <h1>Resources</h1>
+
+    <section class="callout-box accent-4">
+    <h2>Your Resources</h2>
+    <p>Add resources one at a time, or upload a CSV with the columns: name, description, link.</p>
+
+    <form id="add-form" class="add-form">
+      <label>Name <input name="name" required></label>
+      <label>Description <input name="description"></label>
+      <label>Link URL <input name="url" placeholder="https://..."></label>
+      <label>Link text (optional) <input name="text" placeholder="Here"></label>
+      <button type="submit" class="small-btn">Add resource</button>
+    </form>
+
+    <div class="section-head">
+      <input type="file" id="csv-input" accept=".csv,text/csv" hidden>
+      <button type="button" class="small-btn" id="choose-file">Upload CSV</button>
+      <button type="button" class="small-btn" id="export-csv">Export CSV</button>
+      <button type="button" class="small-btn" id="clear-table">Clear table</button>
+    </div>
+    <p id="upload-status" role="status"></p>
+    <div id="uploaded-table"></div>
+  </section>
+
+  <section class="callout-box accent-3">
+    <div class="section-head section-head--title">
+      <h2>Default Resources</h2>
+      <button type="button" class="small-btn" id="toggle-default"
+              aria-expanded="true" aria-controls="default-table">Hide</button>
+    </div>
+    <div id="default-table"></div>
+  </section>
+
+</main>
+
+</body>
+</html>

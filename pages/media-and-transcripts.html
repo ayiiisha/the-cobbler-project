@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Media &amp; Transcripts</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/project-ui.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/comments.js"></script>
+<script src="../resources/js/file-store.js"></script>
+<script src="../resources/js/share.js"></script>
+<script src="../resources/js/sync.js"></script>
+<script src="../resources/js/undo.js"></script>
+<script src="../resources/js/account.js"></script>
+<script src="../resources/js/media-core.js" defer></script>
+<script src="../resources/js/media.js" defer></script>
+<script src="../resources/js/text-edit.js" defer></script>
+<script src="../resources/js/timeline-export.js" defer></script>
+
+<main class="is-wide">
+  <h1>Media &amp; Transcripts</h1>
+
+  <div class="zine-tabs" id="media-tabs" role="tablist" aria-label="Editing">
+    <button type="button" role="tab" id="tab-media" data-tab="media" aria-controls="panel-media" aria-selected="true">Media &amp; Transcripts</button>
+    <button type="button" role="tab" id="tab-edit" data-tab="edit" aria-controls="panel-edit" aria-selected="false">Text Edit</button>
+    <button type="button" role="tab" id="tab-export" data-tab="export" aria-controls="panel-export" aria-selected="false">Export Timeline</button>
+  </div>
+
+  <!-- ===== Media: transcripts, clips, search ===== -->
+  <div role="tabpanel" id="panel-media" class="zine-panel media-panel" aria-labelledby="tab-media">
+    <div class="sketch-nav">
+      <div class="tool-group">
+        <input type="file" id="transcript-input" accept=".srt,.vtt,.txt,text/plain,text/vtt" multiple hidden>
+        <button type="button" class="small-btn" id="transcript-import">Import transcripts</button>
+        <button type="button" class="small-btn" id="transcript-paste">Paste a transcript</button>
+      </div>
+      <div class="tool-group">
+        <input type="file" id="timeline-input" accept=".fcpxml,.xml,application/xml,text/xml" hidden>
+        <button type="button" class="small-btn" id="timeline-import">Import clips from a timeline</button>
+      </div>
+      <div class="tool-group">
+        <input type="file" id="markers-input" accept=".edl,.csv,text/csv,text/plain" multiple hidden>
+        <button type="button" class="small-btn" id="markers-import">Import Resolve markers</button>
+      </div>
+      <label class="tool-group">Timecode
+        <select id="media-fps" class="team-select" aria-label="Project frame rate"></select>
+      </label>
+    </div>
+    <p class="media-tip">Transcripts: .srt, .vtt or .txt (from DaVinci Resolve, Descript, Otter, Rev, Premiere, YouTube…). From Resolve: transcribe the clip, then on a timeline use Create Subtitles from Audio and File › Export › Subtitle… (.srt); times that start at 01:00:00 are moved back to 00:00 automatically. Timelines: FCPXML from Final Cut Pro or DaVinci Resolve, or XML from Premiere Pro. Transcripts link to clips with the same name so their timecodes line up.</p>
+    <p class="media-status" id="media-status" role="status"></p>
+
+    <section class="media-section">
+      <div class="media-section-head">
+        <h2>Search every transcript</h2>
+      </div>
+      <input type="search" id="media-search" class="tracker-search media-search" placeholder="A word, phrase or name">
+      <div id="media-results"></div>
+    </section>
+
+    <section class="media-section">
+      <div class="media-section-head">
+        <h2>Transcripts</h2>
+        <label class="tool-group">Move all
+          <select id="transcripts-move-all" class="team-select" aria-label="Move every transcript"></select>
+        </label>
+      </div>
+      <p class="media-tip">Transcripts are the biggest thing in a project. Keep them in this browser's file storage, or as files in a folder such as a shared Google Drive folder, to leave room in the browser's 5 MB. Each transcript shows where it's kept and where it's been.</p>
+      <div id="transcript-list" class="transcript-list"></div>
+    </section>
+
+    <section class="media-section" id="markers-section">
+      <div class="media-section-head">
+        <h2>Resolve markers</h2>
+      </div>
+      <div id="marker-sets"></div>
+    </section>
+
+    <section class="media-section">
+      <div class="media-section-head">
+        <h2>Clips</h2>
+        <button type="button" class="small-btn" id="clip-add">+ Add clip</button>
+      </div>
+      <div class="tracker-wrap">
+        <table class="tracker-table clip-table" id="clip-table"></table>
+      </div>
+    </section>
+
+    <section class="media-section">
+      <div class="media-section-head">
+        <h2>Where everyone keeps the media</h2>
+        <button type="button" class="small-btn" id="location-add">+ Add a person</button>
+      </div>
+      <p class="media-tip" id="location-root"></p>
+      <div class="tracker-wrap">
+        <table class="tracker-table location-table" id="location-table"></table>
+      </div>
+      <p class="media-tip">When you pass a project around, everyone's footage lives somewhere different. Note each person's folders here, then pick their name under “Clip paths for” on the Export Timeline tab: the exported timeline points at their copies, so Resolve finds the clips without relinking. In Resolve itself, right-click clips in the Media Pool › Change Source Folder… does the same for one project.</p>
+    </section>
+  </div>
+
+  <!-- ===== Text Edit: transcript beside the paper edit ===== -->
+  <div role="tabpanel" id="panel-edit" class="zine-panel" aria-labelledby="tab-edit" hidden></div>
+
+  <!-- ===== Export: files for Final Cut, Resolve, Premiere ===== -->
+  <div role="tabpanel" id="panel-export" class="zine-panel" aria-labelledby="tab-export" hidden></div>
+
+  <!-- ===== Paste a transcript ===== -->
+  <dialog id="paste-dialog" class="project-dialog" aria-labelledby="paste-title">
+    <form id="paste-form">
+      <h2 id="paste-title">Paste a transcript</h2>
+      <label>Name (match the clip's name to link them)
+        <input name="title" required maxlength="120" autocomplete="off" placeholder="e.g. Interview_Sam_01">
+      </label>
+      <label>Transcript
+        <textarea name="text" rows="10" required placeholder="[00:00:03] Sam: Hello there…"></textarea>
+      </label>
+      <div class="dialog-actions">
+        <button type="submit" class="small-btn">Add transcript</button>
+        <button type="button" class="small-btn" id="paste-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+</main>
+
+</body>
+</html>
