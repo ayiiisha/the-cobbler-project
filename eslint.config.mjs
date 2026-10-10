@@ -91,6 +91,8 @@ const browser = Object.fromEntries([
   "ProjectShare",
   "CobblerSync",
   "CobblerUndo",
+  "CobblerIdeas",
+  "ShotList",
   "CobblerAccount",
   "CobblerCalendar",
   "ProjectReport",

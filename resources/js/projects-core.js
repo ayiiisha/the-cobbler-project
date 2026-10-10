@@ -394,7 +394,7 @@
     sourceLog: "Sources", recordsRequests: "Records requests", eventTimeline: "Event timeline",
     submissions: "Submissions", corrections: "Corrections", writingLog: "Writing goals",
     screenplays: "Screenplay", songs: "Songs", gigs: "Gigs", releases: "Releases", samples: "Sample clearances",
-    claims: "Who's working on what",
+    claims: "Who's working on what", shotLists: "Shot List",
   };
 
   const isObject = (v) => v && typeof v === "object" && !Array.isArray(v);

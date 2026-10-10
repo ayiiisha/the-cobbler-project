@@ -86,6 +86,7 @@ git push -u origin main</pre>
   <tr><td><code>sync.js</code></td><td>The sync folder, the sync note in the sidebar, share reminders, the differences sync settled, the name prompt, the read-only notice and the storage warning.</td></tr>
   <tr><td><code>account.js</code></td><td>The person button: sign in with your name, change it, sign out (<code>cobblerMe</code> and <code>commentAuthor</code> in localStorage); asks once on a first visit.</td></tr>
   <tr><td><code>undo.js</code></td><td>Cmd/Ctrl+Z and Cmd/Ctrl+Shift+Z on every page (the steps themselves are kept by projects-core.js).</td></tr>
+  <tr><td><code>ideas-panel.js</code></td><td>The lightbulb button and the ideas panel on the right (the Ideas page's cards, on any page; <code>ideasPanelOpen</code> in localStorage remembers whether it's open).</td></tr>
 </table>
 <h3>Page scripts</h3>
 <table>
@@ -102,6 +103,7 @@ git push -u origin main</pre>
   <tr><td>Media &amp; Transcripts</td><td><code>media-core.js</code> (shared engine), <code>media.js</code>, <code>text-edit.js</code>, <code>timeline-export.js</code></td></tr>
   <tr><td>A/V Script</td><td><code>av-script.js</code></td></tr>
   <tr><td>Storyboarder</td><td><code>storyboarder.js</code></td></tr>
+  <tr><td>Shot List</td><td><code>shot-list.js</code> (shot numbers from scene and order; shots from storyboard frames and screenplay scene headings; CSV and PDF)</td></tr>
   <tr><td>Zine Planner</td><td><code>zine-planner.js</code>, <code>zine-sketch.js</code>, <code>zine-critique.js</code></td></tr>
   <tr><td>Data Analysis</td><td><code>data-analysis.js</code></td></tr>
   <tr><td>Resources · Settings</td><td><code>resources.js</code> · <code>settings.js</code></td></tr>
@@ -121,7 +123,7 @@ git push -u origin main</pre>
 &lt;script src="../resources/js/header.js"&gt;&lt;/script&gt;
 &lt;script src="../resources/js/color-themes.js"&gt;&lt;/script&gt;
 &lt;script src="../resources/js/boot.js"
-        data-scripts="project-ui.js comments.js file-store.js share.js sync.js undo.js account.js my-page.js"&gt;&lt;/script&gt;
+        data-scripts="project-ui.js comments.js file-store.js share.js sync.js undo.js account.js ideas-panel.js my-page.js"&gt;&lt;/script&gt;
 
 &lt;main&gt;
   &lt;h1&gt;My Page&lt;/h1&gt;
@@ -153,6 +155,7 @@ project.data.media          Transcripts and clips, Resolve markers (markerSets),
                             where everyone keeps the media (locations)
 project.data.edits          Paper edits
 project.data.storyboards    Storyboards
+project.data.shotLists      Shot lists (name, date, call time, location, shots: [{ scene, size, angle, move, … done }])
 project.data.zines          Zines
 project.data.datasets       Data Analysis datasets (details only)
 project.data.resources      Your resources table

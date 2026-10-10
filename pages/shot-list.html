@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shot List</title>
+  <link rel="stylesheet" href="../resources/css/style.css">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <meta name="theme-color" content="#FAD39D">
+  <script src="../resources/js/script.js"></script>
+</head>
+<body>
+
+<!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
+<script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/util.js"></script>
+<script src="../resources/js/projects-core.js"></script>
+<script src="../resources/js/header.js"></script>
+<script src="../resources/js/color-themes.js"></script>
+<script src="../resources/js/boot.js"
+        data-scripts="project-ui.js comments.js file-store.js share.js sync.js undo.js account.js ideas-panel.js zip.js doc-export.js shot-list.js"></script>
+
+<main class="is-wide">
+  <h1>Shot List</h1>
+
+  <!-- ===== The library: every shot list in the project ===== -->
+  <section id="sl-library">
+    <div class="sketch-nav">
+      <button type="button" class="small-btn" id="sl-new">+ New shot list</button>
+      <p class="media-muted">One list per shoot day, scene or location. Each lists the shots to get: size, angle, movement, lens, what's in frame, and a box to tick on set.</p>
+    </div>
+    <div id="sl-cards" class="sl-cards"></div>
+  </section>
+
+  <!-- ===== One shot list ===== -->
+  <section id="sl-list" hidden>
+    <div class="sketch-nav sl-head">
+      <button type="button" class="small-btn" id="sl-back">← All shot lists</button>
+      <div class="sl-head-text">
+        <h2 id="sl-title" class="sl-title">Shot list</h2>
+        <p class="media-muted" id="sl-when"></p>
+        <p class="sl-notes" id="sl-notes" hidden></p>
+      </div>
+      <button type="button" class="small-btn" id="sl-details">Details</button>
+    </div>
+
+    <div class="sl-summary" id="sl-summary" aria-live="polite"></div>
+
+    <div class="sketch-nav sl-tools">
+      <button type="button" class="small-btn" id="sl-add">+ Add shot</button>
+      <button type="button" class="small-btn" id="sl-from-board">Add from a storyboard</button>
+      <button type="button" class="small-btn" id="sl-from-script">Add scenes from the screenplay</button>
+      <span class="sl-tools-gap"></span>
+      <button type="button" class="small-btn" id="sl-sort" title="Order the shots by scene number">Sort by scene</button>
+      <button type="button" class="team-chip team-chip--toggle" id="sl-hide-done" aria-pressed="false">Hide done</button>
+      <button type="button" class="small-btn" id="sl-csv">CSV</button>
+      <button type="button" class="small-btn" id="sl-pdf" title="Opens the print window: choose “Save as PDF”">PDF for the set</button>
+      <button type="button" class="small-btn research-delete" id="sl-delete">Delete list</button>
+    </div>
+
+    <p class="media-empty" id="sl-empty" hidden></p>
+    <div class="tracker-wrap sl-table-wrap" id="sl-table-wrap">
+      <table class="tracker-table sl-table">
+        <thead>
+          <tr>
+            <th scope="col" class="sl-col-done"><span class="visually-hidden">Done</span>✓</th>
+            <th scope="col" class="sl-col-num">#</th>
+            <th scope="col">Scene</th>
+            <th scope="col">Size</th>
+            <th scope="col">Angle</th>
+            <th scope="col">Movement</th>
+            <th scope="col">Lens</th>
+            <th scope="col" class="sl-col-description">Subject &amp; action</th>
+            <th scope="col">Int/Ext</th>
+            <th scope="col">Day/Night</th>
+            <th scope="col" title="Screen time, in seconds">Secs</th>
+            <th scope="col" title="Time to shoot, in minutes">Mins</th>
+            <th scope="col">Gear</th>
+            <th scope="col">Sound</th>
+            <th scope="col" class="sl-col-notes">Notes</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody id="sl-body"></tbody>
+      </table>
+    </div>
+    <p class="media-muted">Drag a row by ⠿ (or use ↑ ↓) to reorder. Shots are numbered from the order and their scene: 12A, 12B… Changes save as you type.</p>
+  </section>
+
+  <!-- ===== Shot list details ===== -->
+  <dialog id="sl-dialog" class="project-dialog team-dialog" aria-labelledby="sl-dialog-title">
+    <form id="sl-form">
+      <h2 id="sl-dialog-title">New shot list</h2>
+      <label>Name <input name="name" required maxlength="100" autocomplete="off" placeholder="e.g. Day 1: the kitchen, or Scene 12"></label>
+      <div class="zine-form-row">
+        <label>Shoot date <input name="date" type="date"></label>
+        <label>Call time <input name="callTime" type="time"></label>
+      </div>
+      <label>Location <input name="location" maxlength="200" autocomplete="off"></label>
+      <label>Notes for the day <textarea name="notes" rows="3" maxlength="3000" placeholder="Parking, contacts, weather plan, what must be in the can by lunch…"></textarea></label>
+      <div class="dialog-actions">
+        <button type="submit" class="small-btn">Save</button>
+        <button type="button" class="small-btn" id="sl-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===== Which storyboard / screenplay? ===== -->
+  <dialog id="sl-pick" class="project-dialog" aria-labelledby="sl-pick-title">
+    <form method="dialog">
+      <h2 id="sl-pick-title">Which storyboard?</h2>
+      <ul class="sl-pick-list" id="sl-pick-list"></ul>
+      <div class="dialog-actions">
+        <button type="button" class="small-btn" id="sl-pick-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+</main>
+
+</body>
+</html>

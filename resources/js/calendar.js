@@ -40,6 +40,7 @@
   const SOURCES = {
     tracker:    { name: "Project Tracker", page: "project-tracker.html" },
     interviews: { name: "Interviews",      page: "interviews.html" },
+    shots:      { name: "Shot lists",      page: "shot-list.html" },
     pitches:    { name: "Pitches",         page: "pitches.html" },
     tasks:      { name: "Tasks",           page: "team.html#tasks" },
     writing:    { name: "Writing",         page: "writing.html" },
@@ -105,6 +106,15 @@
         add({ uid: `release-${p.id}`, date: p.release.date, title: `Release form ${(p.release.status || "").toLowerCase()}: ${p.name || "Unnamed"}`,
               detail: p.release.notes || "", source: "interviews" });
       }
+    });
+
+    // Shot lists: shoot days
+    const shotLists = Array.isArray(get("shotLists", [])) ? get("shotLists", []) : [];
+    shotLists.forEach(sl => {
+      const shots = Array.isArray(sl.shots) ? sl.shots : [];
+      add({ uid: `shoot-day-${sl.id}`, date: sl.date, time: sl.callTime || "", title: `Shoot: ${sl.name || "Shot list"}`,
+            detail: [sl.location, `${shots.filter(s => s.done).length}/${shots.length} shots done`].filter(Boolean).join(" · "),
+            source: "shots" });
     });
 
     // Pitches sent

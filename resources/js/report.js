@@ -240,6 +240,22 @@
           f.action || "", [f.dialogue, f.sound].filter(Boolean).join("\n")]) },
     ]));
 
+    /* ---------- Shot lists ---------- */
+    section("Shot lists", list(get("shotLists", [])).flatMap(sl => {
+      const shots = list(sl.shots);
+      const numbered = shots.length > 0 && shots.every(s => /^\d+[A-Za-z]?$/.test(String(s.scene ?? "").trim()));
+      const seen = {};
+      const number = (s, i) => { if (!numbered) return String(i + 1); const sc = String(s.scene).trim(); seen[sc] = (seen[sc] || 0) + 1; return sc + String.fromCharCode(64 + Math.min(seen[sc], 26)); };
+      return [
+        { t: "h2", text: sl.name || "Shot list" },
+        { t: "meta", text: [sl.date, sl.callTime && `call ${sl.callTime}`, sl.location, `${shots.filter(s => s.done).length}/${plural(shots.length, "shot")} done`].filter(Boolean).join(" · ") },
+        ...(sl.notes ? [{ t: "p", text: sl.notes }] : []),
+        { t: "table", head: ["#", "Scene", "Size / angle / move", "Lens", "Subject & action", "Int/Ext · Day/Night", "Secs", "Gear / sound", "Notes", "Done"],
+          rows: shots.map((s, i) => [number(s, i), s.scene || "", [s.size, s.angle, s.move].filter(Boolean).join(", "), s.lens || "", s.description || "",
+            [s.intExt, s.dayNight].filter(Boolean).join(" · "), String(s.seconds ?? ""), [s.gear, s.sound].filter(Boolean).join("\n"), s.notes || "", s.done ? "✓" : ""]) },
+      ];
+    }));
+
     /* ---------- Zines ---------- */
     const zines = list(get("zines", []));
     section("Zines", zines.length ? [{ t: "table", head: ["Zine", "Size", "Pages", "Critique files", "Open comments"], rows: zines.map(z => [

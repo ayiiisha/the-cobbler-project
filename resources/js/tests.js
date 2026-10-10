@@ -347,6 +347,43 @@
 
 
   /* =========================================================
+     TESTS: shot lists (shot-list.js)
+     ========================================================= */
+
+  test("Shot numbers follow the scenes; sums and CSV add up", async () => {
+    const { env } = await withCore();
+    await load("shot-list.js", env);
+    const S = env.window.ShotList;
+    eq(S.numbers([{ scene: "12" }, { scene: "12" }, { scene: "13" }]), ["12A", "12B", "13A"], "numbered scenes give 12A, 12B, 13A");
+    eq(S.numbers([{ scene: "Kitchen" }, { scene: "" }]), ["1", "2"], "unnumbered scenes count 1, 2, 3");
+    eq(S.numbers(Array.from({ length: 27 }, () => ({ scene: "4" })))[26], "4AA", "the 27th shot of a scene is AA");
+    const shots = [{ scene: "2", seconds: "4", minutes: "15", done: true }, { scene: "10", seconds: "6", minutes: "30", done: false }, { scene: "2", seconds: "", minutes: "", done: false }];
+    const t = S.totals(shots);
+    eq([t.shots, t.done, t.seconds, t.minutes, t.scenes], [3, 1, 10, 45, 2], "totals: shots, done, seconds, minutes, scenes");
+    eq([..."2,10,10A,3,,1".split(",")].sort(S.sceneOrder), ["1", "2", "3", "10", "10A", ""], "scenes sort by number, then letter, unnumbered last");
+    const csv = S.csv({ shots: [{ scene: "1", size: "Close-up", description: 'Hands, "the" kettle', done: true }] });
+    ok(csv.split("\r\n").length === 2 && csv.includes('CU') && csv.includes('"Hands, ""the"" kettle"') && csv.endsWith(",Done"), "CSV: header, short size, quoted field, Done");
+  });
+
+  test("Shots come in from storyboard frames and screenplay scenes", async () => {
+    const { env } = await withCore();
+    await load("shot-list.js", env);
+    const S = env.window.ShotList;
+    const fromBoard = S.shotsFromStoryboard({ id: "b1", frames: [
+      { id: "f1", scene: "3", shot: "Wide", move: "Static", duration: 5, action: "The street", dialogue: "", sound: "Rain" },
+      { id: "f2", scene: "3", shot: "extreme close up", move: "Dolly", duration: 2, action: "Her eyes", dialogue: "Go.", sound: "" }] });
+    eq(fromBoard.map(s => [s.scene, s.size, s.move, s.seconds, s.storyboardRef.frameId]), [["3", "Wide", "Static", 5, "f1"], ["3", "Extreme close-up", "Dolly", 2, "f2"]], "scene, size, move, seconds and the frame link");
+    eq(fromBoard[1].description, "Her eyes\n“Go.”", "action and dialogue make the description");
+    eq(fromBoard[0].sound, "Rain", "sound comes across");
+    const fromScript = S.shotsFromScreenplay({ elements: [
+      { type: "scene", text: "INT. KITCHEN - NIGHT" }, { type: "action", text: "She waits." }, { type: "scene", text: "EXT. STREET – DAWN" }, { type: "scene", text: "   " }] });
+    eq(fromScript.map(s => [s.scene, s.intExt, s.dayNight, s.size]), [["1", "INT", "Night", "Wide"], ["2", "EXT", "Dawn", "Wide"]], "one master shot per heading, with INT/EXT and time of day");
+    eq(S.sizeFrom("Medium close-up"), "Medium close-up", "a known size stays");
+    eq(S.sizeFrom("ots dirty single"), "Over the shoulder", "a hand-typed one is matched by keyword");
+  });
+
+
+  /* =========================================================
      TESTS: the browser's database (IndexedDB)
      ========================================================= */
 

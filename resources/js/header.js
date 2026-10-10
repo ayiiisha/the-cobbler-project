@@ -57,6 +57,7 @@
         <li><a href="research.html">Research</a></li>
         <li><a href="resources.html">Resources</a></li>
         <li><a href="screenplay.html">Screenplay</a></li>
+        <li><a href="shot-list.html">Shot List</a></li>
         <li><a href="storyboarder.html">Storyboarder</a></li>
         <li><a href="team.html">Team</a></li>
         <li><a href="writing.html">Writing</a></li>

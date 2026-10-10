@@ -1,3 +1,9 @@
+**10 October 2026 (shot lists, ideas on every page)**
+
+* New page, Shot List: shot lists for a shoot (one per day, scene or location) with the shoot date, call time, location and notes. Each shot has scene, size, angle, movement, lens, subject and action, INT/EXT, day/night, seconds on screen, minutes to shoot, gear, sound, notes and a box to tick on set. Shots are numbered from scene and order (12A, 12B…); drag or ↑ ↓ to reorder, Sort by scene, Hide done. Shots can be added from a storyboard's frames (with a link back to each frame) or one per scene heading of the screenplay. CSV and a PDF for the set; the project details document includes the lists; shoot days show on the Calendar (shot-list.js, shot-list.html)
+* Ideas on every page: a lightbulb button above the person button opens the project's ideas in a panel on the right. Jot, edit, move (← →) or delete cards there; the panel stays open from page to page until it's closed (ideas-panel.js)
+* 2 new self-tests for the shot list helpers (36 in all)
+
 **10 October 2026 (database, offline, in-place undo, checks)**
 
 * Projects now live in the browser's database (IndexedDB) instead of localStorage, so the old 5 MB limit is gone. Existing projects are moved across on first load. Only the projects that changed are written; tabs tell each other about saves and swap the new data in
