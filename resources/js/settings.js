@@ -188,7 +188,7 @@
      ========================================================= */
 
   // Ids FileStore uses for its own bookkeeping (never "unused")
-  const INTERNAL = /^(sync-|share-base:|undo-merge:|lock:|transcripts-folder-handle)/;
+  const INTERNAL = /^(sync-|share-base:|undo-merge:|lock:|transcripts-folder-handle|backup-folder-handle)/;
 
   function transcriptsInProjects() {
     return Projects.list().map(p => {
@@ -264,7 +264,26 @@
     renderStorage();
   }
 
+  /* ---------- What this browser can do ---------- */
+  function renderBrowser() {
+    const box = $("browser-panel");
+    if (!box) return;
+    const make = Cobbler.el;
+    const checks = [
+      ["Keeping projects in the browser's database", !!window.indexedDB, "Needed for everything. Private windows in some browsers switch this off; the app then falls back to a 5 MB store."],
+      ["Working offline and installing as an app", "serviceWorker" in navigator, "Chrome, Edge, Safari and Firefox all do this on https:// addresses."],
+      ["Syncing through a shared folder, and automatic backups to a folder", typeof window.showDirectoryPicker === "function", "Chrome and Edge on a computer only. Elsewhere, use Share, Import and the backup download."],
+      ["Reading Excel files on the Data Analysis page", typeof DecompressionStream === "function", "Chrome 103, Safari 16.4, Firefox 113 or newer."],
+      ["Keeping other tabs of the app in step", typeof BroadcastChannel === "function", "Everything recent does this."],
+      ["Keeping the data when the disk runs low", !!navigator.storage?.persist, "Chrome and Edge decide on their own; Firefox asks you; Safari keeps data for sites you use."],
+    ];
+    box.replaceChildren(...checks.map(([what, ok, note]) => make("li", { class: ok ? "is-yes" : "is-no" },
+      make("span", { class: "browser-mark", "aria-hidden": "true" }, ok ? "✓" : "✕"),
+      make("span", {}, make("strong", {}, `${what}: `), ok ? "yes" : "not in this browser", make("span", { class: "media-muted" }, ` ${note}`)))));
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
+    renderBrowser();
     $("app-zip").addEventListener("click", downloadApp);
     renderStorage();
     document.addEventListener("projects-refresh", (event) => { renderStorage(); event.detail.handled = true; });

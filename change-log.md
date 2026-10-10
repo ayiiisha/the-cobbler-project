@@ -1,3 +1,12 @@
+**10 October 2026 (backups, search, phones, accessibility, checks)**
+
+* Backups: Settings › Backups can back up every project automatically to a folder you choose (Chrome, Edge), every day or week, keeping the newest few; the first backup is written at once. Without it, a note once a day reminds you when there's work not backed up for a week. The app also asks the browser, once there's real work, to keep this site's data when the disk runs low (backups.js)
+* Search across the project: a box in the sidebar (Ctrl/⌘+K) searches everything in the active project, grouped by page, with links straight to lists, storyboards and zines (search.js)
+* Settings › This browser lists what the browser can and can't do; the guide says which browsers work best
+* Phones and tablets: the round buttons line up along the bottom instead of covering the right edge; the shot list becomes a stack of cards
+* Accessibility: the transcript search box has a label; the Research, Pitches and Team pages have a heading before their cards; the Storyboarder's print sheet shared an id with the Print button, so printing a storyboard built the sheet inside the button (fixed)
+* Checks: the test tooling's versions are pinned; `npm run version:write` keeps the offline copy's version and file list in step with the files and CI fails when it's stale; end-to-end flows (tests/flows.mjs) cover saving and reloading, undo in place, project switching, the shot list, the ideas panel, search, an Excel import and a transcript import; every page is checked for named buttons, labelled fields, alt text and unique ids
+
 **10 October 2026 (bug fixes)**
 
 * Offline copy: the service worker refreshed its files through the browser's ordinary cache, so a fresh copy could be replaced by one the browser still had from before a deploy (GitHub Pages keeps files for 10 minutes). It now always checks with the server

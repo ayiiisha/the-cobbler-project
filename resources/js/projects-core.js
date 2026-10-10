@@ -353,6 +353,9 @@
   /* ---------- Backup file download ---------- */
 
   // Makes the browser download `obj` as a .json file
+  const BACKUP_AT_KEY = "cobblerBackupAt";   // when all projects were last backed up (ms)
+  function noteBackup() { try { localStorage.setItem(BACKUP_AT_KEY, String(Date.now())); } catch {} }
+
   function downloadJSON(obj, filename) {
     const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -1124,15 +1127,29 @@
         { app: "cobbler-project", version: 1, projects: [forBackup(p)] },
         `${slug(p.name)}-backup-${today()}.json`
       );
+      noteBackup();
     },
 
     backupActive() { this.backupById(state.activeId); },
 
     backupAll() {
-      downloadJSON(
-        { app: "cobbler-project", version: 1, projects: Object.values(state.projects).map(forBackup) },
-        `all-projects-backup-${today()}.json`
-      );
+      downloadJSON(this.backupData(), `all-projects-backup-${today()}.json`);
+      noteBackup();
+    },
+
+    /** Every project as a backup file would hold it (backups.js writes this to a folder). */
+    backupData() {
+      return { app: "cobbler-project", version: 1, projects: Object.values(state.projects).map(forBackup) };
+    },
+
+    /** When all projects were last backed up (ms), by download or to a folder; null if never. */
+    lastBackup() { try { return Number(localStorage.getItem(BACKUP_AT_KEY)) || null; } catch { return null; } },
+    noteBackup,
+
+    /** True when any project holds real work (so backup reminders don't nag an empty app). */
+    hasContent() {
+      return Object.values(state.projects).some(p => Object.entries(p.data || {}).some(([k, v]) =>
+        !k.startsWith("_") && (Array.isArray(v) ? v.length > 0 : v && typeof v === "object" ? Object.keys(v).length > 0 : !!v)));
     },
 
 

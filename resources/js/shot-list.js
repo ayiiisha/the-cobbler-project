@@ -393,7 +393,7 @@
         field.addEventListener("input", () => { shot[col.key] = field.value; change(); });
         if (col.key === "scene") field.addEventListener("input", renumber);   // the numbers depend on the scene
       }
-      return el("td", { class: `sl-col-${col.key}` }, field);
+      return el("td", { class: `sl-col-${col.key}`, dataset: { label: col.label } }, field);
     });
 
     const move = (delta) => {
@@ -403,13 +403,13 @@
       touch(list); save(); renderTable();
     };
     const row = el("tr", { class: `sl-row${shot.done ? " is-done" : ""}`, dataset: { id: shot.id } },
-      el("td", { class: "sl-col-done" }, done),
+      el("td", { class: "sl-col-done", dataset: { label: "Done" } }, done),
       el("th", { scope: "row", class: "sl-col-num" },
         el("span", { class: "ideas-drag", title: "Drag to reorder", "aria-hidden": "true" }, "⠿"),
         el("span", { class: "sl-num" }, label),
         shot.storyboardRef && el("a", { class: "sl-board-link", href: `storyboarder.html#board=${encodeURIComponent(shot.storyboardRef.boardId)}&frame=${encodeURIComponent(shot.storyboardRef.frameId)}`, title: "Open this shot's storyboard frame", "aria-label": `Storyboard frame for shot ${label}` }, "▦")),
       ...cells,
-      el("td", { class: "sl-col-actions" },
+      el("td", { class: "sl-col-actions", dataset: { label: "Shot" } },
         el("button", { type: "button", class: "comment-action", "aria-label": `Move shot ${label} up`, disabled: i === 0, onclick: () => move(-1) }, "↑"),
         el("button", { type: "button", class: "comment-action", "aria-label": `Move shot ${label} down`, disabled: i === list.shots.length - 1, onclick: () => move(1) }, "↓"),
         el("button", { type: "button", class: "comment-action", "aria-label": `Duplicate shot ${label}`, onclick: () => {

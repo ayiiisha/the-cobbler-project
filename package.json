@@ -1,13 +1,17 @@
 {
   "name": "the-cobbler-project",
   "private": true,
-  "description": "Tooling for the self-tests and lint only: the app itself needs no build.",
+  "description": "Tooling for the checks only: the app itself needs no build. Versions are pinned so CI stays reproducible.",
   "scripts": {
-    "test": "node tests/run.mjs",
-    "lint": "eslint ."
+    "test": "node tests/version.mjs --check && node tests/run.mjs && node tests/flows.mjs",
+    "test:pages": "node tests/run.mjs",
+    "test:flows": "node tests/flows.mjs",
+    "lint": "eslint .",
+    "version:check": "node tests/version.mjs --check",
+    "version:write": "node tests/version.mjs --write"
   },
   "devDependencies": {
-    "eslint": "^10.1.0",
-    "playwright": "^1.56.1"
+    "eslint": "10.1.0",
+    "playwright": "1.56.1"
   }
 }
