@@ -52,7 +52,7 @@
   window.addEventListener("pagehide", () => { clearTimeout(saveTimer); Projects.setData("ideas", ideas.filter(i => i.text.trim())); });
 
   let editing = null;   // a new card that hasn't been typed in yet
-  let dragged = null;
+  const drag = { item: null };   // the card being dragged (Cobbler.dragReorder)
 
 
   /* =========================================================
@@ -76,7 +76,7 @@
 
     // Drop a dragged card into this column (above the card the pointer is over)
     list.addEventListener("dragover", (event) => {
-      if (!dragged) return;
+      if (!drag.item) return;
       event.preventDefault();
       list.classList.add("is-drop");
     });
@@ -84,6 +84,7 @@
     list.addEventListener("drop", (event) => {
       event.preventDefault();
       list.classList.remove("is-drop");
+      const dragged = drag.item;
       if (!dragged) return;
       const over = [...list.querySelectorAll(".ideas-card")].find(n => {
         const r = n.getBoundingClientRect();
@@ -93,7 +94,7 @@
       ideas.splice(ideas.indexOf(dragged), 1);
       dragged.column = c;
       ideas.splice(target ? ideas.indexOf(target) : ideas.length, 0, dragged);
-      dragged = null;
+      drag.item = null;
       save();
       render();
     });
@@ -156,16 +157,8 @@
         } }, "×")),
       text);
 
-    // Only the ⠿ handle starts a drag, so selecting text still works
-    const handle = node.querySelector(".ideas-drag");
-    handle.addEventListener("pointerdown", () => { node.draggable = true; });
-    node.addEventListener("dragstart", (event) => {
-      dragged = idea;
-      event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData("text/plain", idea.text);
-      node.classList.add("is-dragging");
-    });
-    node.addEventListener("dragend", () => { node.draggable = false; node.classList.remove("is-dragging"); dragged = null; });
+    // Only the ⠿ handle starts a drag, so selecting text still works (the columns take the drops)
+    Cobbler.dragReorder(node, { handle: node.querySelector(".ideas-drag"), state: drag, item: idea, text: idea.text });
     return node;
   }
 
@@ -174,7 +167,7 @@
   // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
   document.addEventListener("projects-refresh", (event) => {
     clearTimeout(saveTimer);
-    editing = null; dragged = null;
+    editing = null; drag.item = null;
     loadData();
     render();
     event.detail.handled = true;

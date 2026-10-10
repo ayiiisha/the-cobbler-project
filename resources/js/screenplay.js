@@ -95,8 +95,9 @@
     s.breakdown = Array.isArray(s.breakdown) ? s.breakdown : [];
     return s;
   }
-  const CURRENT_KEY = `screenplayCurrent:${Projects.activeId()}`;
-  let currentId = (() => { try { return localStorage.getItem(CURRENT_KEY); } catch { return null; } })();
+  const currentKey = () => `screenplayCurrent:${Projects.activeId()}`;   // (a function: the project can change without a reload)
+  const remembered = () => { try { return localStorage.getItem(currentKey()); } catch { return null; } };
+  let currentId = remembered();
   const current = () => scripts.find(s => s.id === currentId) || scripts[0] || null;
 
   let saveTimer = 0;
@@ -1027,7 +1028,7 @@ ${titlePage}
 
   function select(id) {
     currentId = id;
-    try { localStorage.setItem(CURRENT_KEY, id); } catch {}
+    try { localStorage.setItem(currentKey(), id); } catch {}
     render();
   }
 
@@ -1063,6 +1064,7 @@ ${titlePage}
   // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
   document.addEventListener("projects-refresh", (event) => {
     clearTimeout(saveTimer); saveTimer = 0;
+    if (event.detail.reason === "switch") currentId = remembered();   // another project: its own open script
     loadData();
     render();
     event.detail.handled = true;

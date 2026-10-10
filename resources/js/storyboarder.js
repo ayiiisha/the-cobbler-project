@@ -98,7 +98,7 @@
 
   const newId = Cobbler.newId;
   const plural = Cobbler.plural;
-  const formatDate = (ms) => new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const formatDate = Cobbler.formatDate;   // a time in ms → "20 Oct 2026"
 
   // 83.5 → "1:23.5", 24 → "0:24"
   function formatTime(seconds) {
@@ -384,7 +384,7 @@
      2. THE BOARD (every shot as a panel)
      ========================================================= */
 
-  let dragged = null;      // the frame being dragged to a new position
+  const drag = { item: null };   // the frame being dragged (Cobbler.dragReorder)
   let scrollToId = null;   // shot to scroll to when the board next opens
 
   function showBoard(board) {
@@ -442,31 +442,8 @@
 
     // Drag and drop to reorder. Only the ⠿ handle starts a drag,
     // so selecting text in the notes still works.
-    const handle = card.querySelector(".sb-drag");
-    handle.addEventListener("pointerdown", () => { card.draggable = true; });
-    handle.addEventListener("pointerup", () => { card.draggable = false; });
-    card.addEventListener("dragstart", (event) => {
-      dragged = frame;
-      event.dataTransfer.effectAllowed = "move";
-      card.classList.add("is-dragging");
-    });
-    card.addEventListener("dragend", () => {
-      dragged = null;
-      card.draggable = false;
-      card.classList.remove("is-dragging");
-    });
-    card.addEventListener("dragover", (event) => {
-      if (!dragged || dragged === frame) return;
-      event.preventDefault();
-      card.classList.add("is-drop-target");
-    });
-    card.addEventListener("dragleave", () => card.classList.remove("is-drop-target"));
-    card.addEventListener("drop", (event) => {
-      event.preventDefault();
-      card.classList.remove("is-drop-target");
-      if (!dragged || dragged === frame) return;
-      moveFrame(board, board.frames.indexOf(dragged), board.frames.indexOf(frame));
-    });
+    Cobbler.dragReorder(card, { handle: card.querySelector(".sb-drag"), state: drag, item: frame, dropClass: "is-drop-target",
+      onDrop: (moved, onto) => moveFrame(board, board.frames.indexOf(moved), board.frames.indexOf(onto)) });
     return card;
   }
 
@@ -984,7 +961,7 @@
   // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
   document.addEventListener("projects-refresh", (event) => {
     clearTimeout(saveTimer); saveTimer = 0;
-    dragged = null;
+    drag.item = null;
     loadData();
     route();
     event.detail.handled = true;

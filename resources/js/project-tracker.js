@@ -321,8 +321,8 @@
           row.active && el("span", { class: "badge" }, "Active"),
           row.archived && el("span", { class: "badge" }, "Archived"),
           !row.active && el("button", { type: "button", class: "comment-action", onclick: () => {
-            Projects.switchTo(row.id);   // (also takes it out of the archive)
-            location.reload();
+            if (window.ProjectUI?.switchTo) ProjectUI.switchTo(row.id);   // (also takes it out of the archive; the page redraws)
+            else { Projects.switchTo(row.id); location.reload(); }
           } }, "Make active"),
           !row.active && el("button", { type: "button", class: "comment-action", onclick: () => {
             Projects.setArchived(row.id, !row.archived);

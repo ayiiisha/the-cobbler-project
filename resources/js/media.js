@@ -688,6 +688,7 @@
   // After an undo, or when changes arrive from elsewhere: read everything again and redraw the open tab
   document.addEventListener("projects-refresh", (event) => {
     event.detail.handled = true;
+    if (event.detail.reason === "switch" && window.TextEdit?.reset) TextEdit.reset();   // another project: its own open edit
     Page.media = loadMedia();
     Page.edits = M.loadEdits();
     const tab = document.querySelector("#media-tabs [aria-selected=true]")?.dataset.tab || "media";

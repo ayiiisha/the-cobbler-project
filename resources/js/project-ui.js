@@ -215,11 +215,8 @@
       if (panel.matches(":popover-open")) positionPanel();
     });
 
-    // Switch project: reload so the page shows the other project's data
-    $("panel-project-select").addEventListener("change", (event) => {
-      Projects.switchTo(event.target.value);
-      location.reload();
-    });
+    // Switch project: the page redraws itself with the other project's data
+    $("panel-project-select").addEventListener("change", (event) => switchTo(event.target.value));
 
     // Rename
     $("panel-rename").addEventListener("click", () => showRenameForm(true));
@@ -268,7 +265,7 @@
       if (!file) return;
       try {
         Projects.restore(JSON.parse(await file.text()));
-        location.reload();
+        showActive();
       } catch (err) {
         setPanelStatus(`Couldn't restore: ${err.message}`);
       } finally {
@@ -308,24 +305,52 @@
       if (event.target === dialog) dialog.close();
     });
 
-    // Create the project, then reload so the page shows the new (empty) project.
-    // The confirmation message is saved first and shown after the reload.
+    // Create the project, then show it: the page redraws itself with the new
+    // (empty) project. (Pages that can't redraw reload; the message is saved
+    // first and shown after the reload.)
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const data = new FormData(form);
       Projects.create(String(data.get("name")), {
         description: String(data.get("description")).trim(),
       });
+      dialog.close();
       try {
         sessionStorage.setItem("projectToast", JSON.stringify({ name: Projects.activeName() }));
       } catch {}
-      location.reload();
+      showActive();
     });
   }
 
 
   /* =========================================================
-     5. CONFIRMATION TOAST (shown after a reload)
+     4b. SHOWING ANOTHER PROJECT WITHOUT A RELOAD
+     ---------------------------------------------------------
+     After a switch (or a new project, or a restore) every page is
+     asked to redraw itself from the active project (the same
+     "projects-refresh" event undo uses). A page without a listener
+     is reloaded instead. "projects-changed" updates the names in
+     the panel, the dashboard and the ideas panel.
+     ========================================================= */
+  function showActive() {
+    announceChange();
+    const panel = $("project-panel");
+    if (panel?.matches(":popover-open")) panel.hidePopover();
+    if (!Projects.refresh({ reason: "switch", projectId: Projects.activeId() })) { location.reload(); return; }
+    window.scrollTo(0, 0);
+    showSavedToast();
+  }
+
+  function switchTo(id) {
+    if (!id || id === Projects.activeId()) return;
+    window.dispatchEvent(new Event("pagehide"));   // pages save anything waiting first
+    Projects.switchTo(id);
+    showActive();
+  }
+
+
+  /* =========================================================
+     5. CONFIRMATION TOAST (after a new project: now, or after a reload)
      ========================================================= */
 
   function showToast(message) {
@@ -363,6 +388,6 @@
   });
 
 
-  /* ---------- Let other scripts open the New Project dialog ---------- */
-  window.ProjectUI = { openNewProjectDialog };
+  /* ---------- Let other scripts open the New Project dialog, or switch project in place ---------- */
+  window.ProjectUI = { openNewProjectDialog, switchTo, showActive };
 })();

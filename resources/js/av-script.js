@@ -27,7 +27,7 @@
 
   const M = window.MediaCore;
   const $ = (id) => document.getElementById(id);
-  const EDIT_KEY = `textEditCurrent:${Projects.activeId()}`;   // same "open edit" as Text Edit
+  const editKey = () => `textEditCurrent:${Projects.activeId()}`;   // same "open edit" as Text Edit (a function: the project can change without a reload)
 
 
   /* =========================================================
@@ -47,7 +47,8 @@
 
   let media = M.loadMedia();
   let edits = M.loadEdits();
-  let editId = (() => { try { return localStorage.getItem(EDIT_KEY); } catch { return null; } })();
+  const rememberedEdit = () => { try { return localStorage.getItem(editKey()); } catch { return null; } };
+  let editId = rememberedEdit();
 
   const currentEdit = () => edits.find(e => e.id === editId) || edits[0] || null;
   const saveEdits = () => Projects.setData("edits", edits);
@@ -259,7 +260,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     $("av-edit").addEventListener("change", (event) => {
       editId = event.target.value;
-      try { localStorage.setItem(EDIT_KEY, editId); } catch {}
+      try { localStorage.setItem(editKey(), editId); } catch {}
       render();
     });
     $("av-md").addEventListener("click", () => {
@@ -276,6 +277,7 @@
 
   // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
   document.addEventListener("projects-refresh", (event) => {
+    if (event.detail.reason === "switch") editId = rememberedEdit();   // another project: its own open edit
     media = M.loadMedia();
     edits = M.loadEdits();
     M.hydrate(media).then(render);

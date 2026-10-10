@@ -7,7 +7,8 @@
 
    Saved inside the active project:
      project.data.shotLists = [{
-       id, name, date: "2026-10-20", callTime: "07:00", location, notes,
+       id, name, date: "2026-10-20", callTime: "07:00", wrapTime, location, notes,
+       access, hospital, weather,          ← for the call sheet
        created, updated,
        shots: [{
          id, scene, size, angle, move, lens, description,
@@ -26,10 +27,17 @@
      shot-list.html#list=s123      one list
 
    Shots can be added by hand, from a storyboard's frames, or one
-   master shot per scene of a screenplay. Exports: CSV, a PDF to
-   print for the set, and the project details document (report.js).
+   master shot per scene of a screenplay.
 
-   Needs projects-core.js and doc-export.js (for the PDF).
+   Exports: CSV; a CSV laid out for scheduling apps (scene number
+   and shot letter in their own columns, the headings StudioBinder
+   and Shot Lister expect); a PDF of the list to print for the set;
+   a calendar file (.ics) with the day's running order; a call sheet
+   (PDF or Word) with the schedule, crew (Team page), cast and
+   contributors (Interviews page), location, access, weather and
+   the nearest hospital; and the project details document (report.js).
+
+   Needs projects-core.js and doc-export.js.
    ========================================================= */
 (() => {
 
@@ -38,7 +46,7 @@
     return;
   }
 
-  const { el, $, newId, plural, download, csvField } = Cobbler;
+  const { el, $, newId, plural, download, csvField, formatDate, formatTime, dragReorder } = Cobbler;
 
 
   /* =========================================================
@@ -83,12 +91,14 @@
      SAVED DATA
      ========================================================= */
 
+  const LIST_FIELDS = ["name", "date", "callTime", "wrapTime", "location", "notes", "access", "hospital", "weather"];
+
   let lists = [];
   function loadData() {
     lists = Projects.getData("shotLists", []);
     if (!Array.isArray(lists)) lists = [];
     lists.forEach(list => {
-      for (const key of ["name", "date", "callTime", "location", "notes"]) list[key] ??= "";
+      for (const key of LIST_FIELDS) list[key] ??= "";
       list.shots = Array.isArray(list.shots) ? list.shots : [];
       list.shots.forEach(fixShot);
     });
@@ -147,13 +157,6 @@
   });
   const clock = (seconds) => `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, "0")}`;
   const hours = (minutes) => minutes >= 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60 ? `${minutes % 60} min` : ""}`.trim() : `${minutes} min`;
-
-  // "2026-10-20" → "Tue 20 Oct 2026"
-  function formatDate(iso) {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-").map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
-  }
 
   // Scenes in order: 2 before 10, 10 before 10A; unnumbered scenes keep their place at the end
   function sceneOrder(a, b) {
@@ -218,6 +221,7 @@
   function route() {
     const id = new URLSearchParams(location.hash.slice(1)).get("list");
     current = lists.find(l => l.id === id) || null;
+    if (id && !current) history.replaceState(null, "", location.pathname);
     $("sl-library").hidden = !!current;
     $("sl-list").hidden = !current;
     if (current) renderList(); else renderLibrary();
@@ -245,7 +249,7 @@
       const t = totals(list.shots);
       return el("article", { class: `sl-card${t.shots && t.done === t.shots ? " is-complete" : ""}` },
         el("button", { type: "button", class: "sl-card-name", onclick: () => openList(list) }, list.name || "Untitled shot list"),
-        el("p", { class: "sl-card-when" }, [list.date && formatDate(list.date), list.callTime && `call ${list.callTime}`, list.location].filter(Boolean).join(" · ") || "No date or location yet"),
+        el("p", { class: "sl-card-when" }, [list.date && formatDate(list.date, { weekday: true }), list.callTime && `call ${formatTime(list.callTime)}`, list.location].filter(Boolean).join(" · ") || "No date or location yet"),
         el("p", { class: "sl-card-sum" }, `${t.done}/${plural(t.shots, "shot")} done`,
           t.scenes ? ` · ${plural(t.scenes, "scene")}` : "", t.minutes ? ` · about ${hours(t.minutes)} to shoot` : ""),
         el("div", { class: "sl-card-actions" },
@@ -284,7 +288,7 @@
     editing = list;
     const form = $("sl-form");
     form.reset();
-    if (list) for (const key of ["name", "date", "callTime", "location", "notes"]) form.elements[key].value = list[key];
+    if (list) for (const key of LIST_FIELDS) form.elements[key].value = list[key];
     $("sl-dialog-title").textContent = list ? "Shot list details" : "New shot list";
     $("sl-dialog").showModal();
     form.elements.name.focus();
@@ -297,7 +301,7 @@
     $("sl-form").addEventListener("submit", (event) => {
       event.preventDefault();
       const data = new FormData(event.target);
-      const details = Object.fromEntries(["name", "date", "callTime", "location", "notes"].map(k => [k, String(data.get(k) || "").trim()]));
+      const details = Object.fromEntries(LIST_FIELDS.map(k => [k, String(data.get(k) || "").trim()]));
       if (editing) {
         Object.assign(editing, details);
         touch(editing);
@@ -320,13 +324,13 @@
      ========================================================= */
 
   let hideDone = false;
-  let dragged = null;
+  const drag = { item: null };   // the shot being dragged (Cobbler.dragReorder)
 
   function renderList() {
     const list = current;
     const t = totals(list.shots);
     $("sl-title").textContent = list.name || "Untitled shot list";
-    $("sl-when").textContent = [list.date && formatDate(list.date), list.callTime && `Call ${list.callTime}`, list.location].filter(Boolean).join(" · ");
+    $("sl-when").textContent = [list.date && formatDate(list.date, { weekday: true }), list.callTime && `Call ${formatTime(list.callTime)}`, list.wrapTime && `wrap ${formatTime(list.wrapTime)}`, list.location].filter(Boolean).join(" · ");
     $("sl-notes").textContent = list.notes;
     $("sl-notes").hidden = !list.notes;
     $("sl-summary").replaceChildren(
@@ -419,29 +423,12 @@
           touch(list); save(); renderList();
         } }, "×")));
 
-    // Drag by ⠿ to reorder
-    const handle = row.querySelector(".ideas-drag");
-    handle.addEventListener("pointerdown", () => { row.draggable = true; });
-    row.addEventListener("dragstart", (event) => {
-      dragged = shot;
-      event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData("text/plain", label);
-      row.classList.add("is-dragging");
-    });
-    row.addEventListener("dragend", () => { row.draggable = false; row.classList.remove("is-dragging"); dragged = null; });
-    row.addEventListener("dragover", (event) => { if (dragged && dragged !== shot) { event.preventDefault(); row.classList.add("is-drop"); } });
-    row.addEventListener("dragleave", () => row.classList.remove("is-drop"));
-    row.addEventListener("drop", (event) => {
-      event.preventDefault();
-      row.classList.remove("is-drop");
-      if (!dragged || dragged === shot) return;
-      const from = list.shots.indexOf(dragged);
-      const to = list.shots.indexOf(shot);
-      list.shots.splice(from, 1);
-      list.shots.splice(to, 0, dragged);
-      dragged = null;
+    // Drag by ⠿ to reorder (dropped on a row: the dragged shot takes its place)
+    dragReorder(row, { handle: row.querySelector(".ideas-drag"), state: drag, item: shot, text: label, onDrop: (moved, onto) => {
+      list.shots.splice(list.shots.indexOf(moved), 1);
+      list.shots.splice(list.shots.indexOf(onto), 0, moved);
       touch(list); save(); renderTable();
-    });
+    } });
     return row;
   }
 
@@ -501,11 +488,116 @@
     return [EXPORT_HEAD, ...exportRows(list)].map(row => row.map(csvField).join(",")).join("\r\n");
   }
 
+  /* ---------- For scheduling apps (StudioBinder, Shot Lister and the like) ----------
+     Scene number and shot letter in their own columns, one row per shot, sizes
+     written out in full, with the column headings those apps' importers look for.
+     (Their import screens still let you match columns if a heading differs.) */
+  function schedulingCSV(list) {
+    const labels = numbers(list.shots);
+    const head = ["Scene", "Shot", "Shot Size", "Shot Type", "Movement", "Lens", "Description", "Subject", "INT/EXT", "Day/Night", "Est. Time (min)", "Screen Time (sec)", "Equipment", "Sound", "Notes", "Status"];
+    const rows = list.shots.map((s, i) => {
+      const label = labels[i];
+      const scene = String(s.scene || "").trim();
+      const letter = scene && label.startsWith(scene) ? label.slice(scene.length) : label;   // "12A" → "A"; unnumbered: "7"
+      const firstLine = String(s.description || "").split("\n")[0];
+      return [scene, letter, s.size, s.angle, s.move, s.lens, s.description, firstLine, s.intExt, s.dayNight, String(s.minutes ?? ""), String(s.seconds ?? ""), s.gear, s.sound, s.notes, s.done ? "Completed" : "Not shot"];
+    });
+    return [head, ...rows].map(row => row.map(csvField).join(",")).join("\r\n");
+  }
+
+  /* ---------- The day's running order: call time plus each shot's minutes ---------- */
+  function runningOrder(list) {
+    if (!list.callTime) return list.shots.map(() => "");
+    let [h, m] = list.callTime.split(":").map(Number);
+    let minutes = h * 60 + m;
+    return list.shots.map(s => {
+      const at = `${String(Math.floor(minutes / 60) % 24).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+      minutes += num(s.minutes);
+      return at;
+    });
+  }
+
+  /* ---------- Calendar file (.ics): the shoot day, and a block per timed shot ---------- */
+  function calendarFile(list) {
+    const esc = (t) => String(t).replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/([,;])/g, "\\$1");
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+    const day = list.date.replace(/-/g, "");
+    const labels = numbers(list.shots);
+    const starts = runningOrder(list);
+    const events = [];
+    const [y, mo, d] = list.date.split("-").map(Number);
+    const next = new Date(y, mo - 1, d + 1);
+    const nextDay = `${next.getFullYear()}${String(next.getMonth() + 1).padStart(2, "0")}${String(next.getDate()).padStart(2, "0")}`;
+    events.push(["BEGIN:VEVENT", `UID:shoot-${list.id}@cobbler-project`, `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${day}`, `DTEND;VALUE=DATE:${nextDay}`,
+      `SUMMARY:${esc(`Shoot: ${list.name || "Shot list"}`)}`, list.location && `LOCATION:${esc(list.location)}`,
+      `DESCRIPTION:${esc([list.callTime && `Call ${list.callTime}`, list.wrapTime && `Wrap ${list.wrapTime}`, plural(list.shots.length, "shot"), list.notes].filter(Boolean).join("\n"))}`,
+      "END:VEVENT"].filter(Boolean).join("\r\n"));
+    list.shots.forEach((s, i) => {
+      if (!starts[i] || !num(s.minutes)) return;   // only shots with a time and a length get a block
+      const [sh, sm] = starts[i].split(":").map(Number);
+      const endMin = Math.min(sh * 60 + sm + num(s.minutes), 23 * 60 + 59);
+      const end = `${String(Math.floor(endMin / 60)).padStart(2, "0")}${String(endMin % 60).padStart(2, "0")}00`;
+      events.push(["BEGIN:VEVENT", `UID:shot-${s.id}@cobbler-project`, `DTSTAMP:${stamp}`,
+        `DTSTART:${day}T${String(sh).padStart(2, "0")}${String(sm).padStart(2, "0")}00`, `DTEND:${day}T${end}`,
+        `SUMMARY:${esc(`${labels[i]} ${short(s.size)}${s.description ? `: ${String(s.description).split("\n")[0]}` : ""}`)}`,
+        list.location && `LOCATION:${esc(list.location)}`,
+        `DESCRIPTION:${esc([[s.size, s.angle, s.move, s.lens].filter(Boolean).join(", "), s.description, s.gear && `Gear: ${s.gear}`, s.sound && `Sound: ${s.sound}`, s.notes].filter(Boolean).join("\n"))}`,
+        "END:VEVENT"].filter(Boolean).join("\r\n"));
+    });
+    return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//The Cobbler Project//Shot List//EN", ...events, "END:VCALENDAR"].join("\r\n");
+  }
+
+  /* ---------- Call sheet: everything the crew needs for the day, on one page ---------- */
+  function callSheetBlocks(list) {
+    const labels = numbers(list.shots);
+    const starts = runningOrder(list);
+    const t = totals(list.shots);
+    const team = (Projects.getData("team", []) || []).filter(p => p && p.name);
+    const people = (Projects.getData("interviewees", []) || []).filter(p => p && p.name);
+    // Contributors booked for this day; if the list has no date, everyone with a shoot date
+    const cast = list.date ? people.filter(p => p.shootDate === list.date) : people.filter(p => p.shootDate);
+    const contact = (p) => [p.phone, p.email, p.contact].filter(Boolean).join(" · ");
+    const blocks = [
+      { t: "title", text: `Call sheet: ${list.name || "Shoot"}` },
+      { t: "meta", text: [Projects.activeName(), list.date && formatDate(list.date, { weekday: true })].filter(Boolean).join(" · ") },
+      { t: "fields", items: [
+        ["Call time", list.callTime ? formatTime(list.callTime) : "–"],
+        ["Wrap (estimated)", list.wrapTime ? formatTime(list.wrapTime) : t.minutes && list.callTime ? `about ${formatTime(runningOrder({ ...list, shots: [...list.shots, { minutes: 0 }] }).at(-1))}` : "–"],
+        ["Location", list.location || "–"],
+        ["Access and parking", list.access || "–"],
+        ["Weather", list.weather || "–"],
+        ["Nearest hospital", list.hospital || "–"],
+      ] },
+      list.notes && { t: "h2", text: "Notes for the day" },
+      list.notes && { t: "p", text: list.notes },
+      { t: "h2", text: "Crew" },
+      team.length
+        ? { t: "table", head: ["Name", "Role", "Call", "Contact"], rows: team.map(p => [p.name, (Array.isArray(p.roles) ? p.roles : []).join(", "), list.callTime ? formatTime(list.callTime) : "", contact(p)]) }
+        : { t: "p", text: "No one on the Team page yet. Add the crew there and they'll be listed here with their roles and contacts." },
+      { t: "h2", text: "Cast and contributors" },
+      cast.length
+        ? { t: "table", head: ["Name", "Who", "Time", "Where", "Release", "Contact"], rows: cast.map(p => [p.name, p.role || "", p.shootTime ? formatTime(p.shootTime) : "", p.location || "", p.release?.status || "", p.contact || ""]) }
+        : { t: "p", text: list.date ? `No one on the Interviews page has a shoot on ${formatDate(list.date)}.` : "Give the list a date to pull in the people booked for that day from the Interviews page." },
+      { t: "h2", text: `Schedule (${plural(t.shots, "shot")}${t.minutes ? `, about ${hours(t.minutes)}` : ""})` },
+      { t: "table", head: ["Time", "☐", "#", "Sc", "Size", "Subject & action", "I/E", "D/N", "Mins", "Gear / sound"],
+        rows: list.shots.map((s, i) => [starts[i] ? formatTime(starts[i]) : "", s.done ? "☑" : "☐", labels[i], s.scene || "", short(s.size),
+          [s.description, s.notes && `(${s.notes})`].filter(Boolean).join("\n"), s.intExt || "", s.dayNight || "", String(s.minutes || ""), [s.gear, s.sound].filter(Boolean).join(" / ")]) },
+    ].filter(Boolean);
+    return blocks;
+  }
+
+  function callSheet(list, format) {
+    const name = `call-sheet-${Cobbler.slug(list.name, "shoot")}${list.date ? `-${list.date}` : ""}`;
+    if (format === "docx") DocExport.downloadDocx(callSheetBlocks(list), { title: `Call sheet: ${list.name || "Shoot"}`, filename: `${name}.docx` });
+    else DocExport.print(callSheetBlocks(list), { title: `Call sheet: ${list.name || "Shoot"}` });
+  }
+
   function printList(list) {
     const t = totals(list.shots);
     const blocks = [
       { t: "title", text: `${list.name || "Shot list"}` },
-      { t: "meta", text: [Projects.activeName(), list.date && formatDate(list.date), list.callTime && `Call ${list.callTime}`, list.location].filter(Boolean).join(" · ") },
+      { t: "meta", text: [Projects.activeName(), list.date && formatDate(list.date, { weekday: true }), list.callTime && `Call ${formatTime(list.callTime)}`, list.location].filter(Boolean).join(" · ") },
       list.notes && { t: "p", text: list.notes },
       { t: "meta", text: [plural(t.shots, "shot"), t.scenes && plural(t.scenes, "scene"), t.seconds && `${clock(t.seconds)} on screen`, t.minutes && `about ${hours(t.minutes)} to shoot`].filter(Boolean).join(" · ") },
       { t: "table", head: ["☐", "#", "Sc", "Size", "Angle", "Move", "Lens", "Subject & action", "I/E", "D/N", "Secs", "Gear / sound", "Notes"],
@@ -533,7 +625,14 @@
     });
     $("sl-hide-done").addEventListener("click", () => { hideDone = !hideDone; renderList(); });
     $("sl-csv").addEventListener("click", () => download(csv(current), `${Cobbler.slug(current.name, "shot-list")}.csv`, "text/csv"));
+    $("sl-csv-apps").addEventListener("click", () => download(schedulingCSV(current), `${Cobbler.slug(current.name, "shot-list")}-for-scheduling.csv`, "text/csv"));
     $("sl-pdf").addEventListener("click", () => printList(current));
+    $("sl-ics").addEventListener("click", () => {
+      if (!current.date) { alert("Give the list a shoot date first (Details)."); return; }
+      download(calendarFile(current), `${Cobbler.slug(current.name, "shoot")}-${current.date}.ics`, "text/calendar");
+    });
+    $("sl-call-pdf").addEventListener("click", () => callSheet(current, "pdf"));
+    $("sl-call-docx").addEventListener("click", () => callSheet(current, "docx"));
     $("sl-pick-cancel").addEventListener("click", () => $("sl-pick").close());
     $("sl-pick").addEventListener("click", (event) => { if (event.target === $("sl-pick")) $("sl-pick").close(); });
     $("sl-delete").addEventListener("click", () => removeList(current));
@@ -541,8 +640,8 @@
   });
 
   // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
-  document.addEventListener("projects-refresh", (event) => { dragged = null; loadData(); route(); event.detail.handled = true; });
+  document.addEventListener("projects-refresh", (event) => { drag.item = null; loadData(); route(); event.detail.handled = true; });
 
   // For the self-tests
-  window.ShotList = { numbers, totals, csv, shotsFromStoryboard, shotsFromScreenplay, sceneOrder, sizeFrom };
+  window.ShotList = { numbers, totals, csv, schedulingCSV, runningOrder, calendarFile, callSheetBlocks, shotsFromStoryboard, shotsFromScreenplay, sceneOrder, sizeFrom };
 })();

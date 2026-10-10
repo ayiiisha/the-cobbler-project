@@ -251,8 +251,9 @@
   }
   window.addEventListener("pagehide", () => { if (saveTimer) { clearTimeout(saveTimer); Projects.setData("packaging", packages); } });
 
-  const CURRENT_KEY = `packagingCurrent:${Projects.activeId()}`;
-  let currentId = (() => { try { return localStorage.getItem(CURRENT_KEY); } catch { return null; } })();
+  const currentKey = () => `packagingCurrent:${Projects.activeId()}`;   // (a function: the project can change without a reload)
+  const remembered = () => { try { return localStorage.getItem(currentKey()); } catch { return null; } };
+  let currentId = remembered();
   const current = () => packages.find(p => p.id === currentId) || null;
   const config = (p) => PLATFORMS[p.platform];
   const chosenTitle = (p) => (p.titles.find(t => t.chosen) || p.titles[0])?.text || "";
@@ -361,7 +362,7 @@
 
   function select(id) {
     currentId = id;
-    try { localStorage.setItem(CURRENT_KEY, id); } catch {}
+    try { localStorage.setItem(currentKey(), id); } catch {}
     render();
   }
 
@@ -1060,6 +1061,7 @@
   // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
   document.addEventListener("projects-refresh", (event) => {
     clearTimeout(saveTimer);
+    if (event.detail.reason === "switch") currentId = remembered();   // another project: its own open package
     loadData();
     render();
     event.detail.handled = true;

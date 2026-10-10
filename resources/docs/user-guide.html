@@ -60,6 +60,7 @@
 <h2>2. Projects</h2>
 <p>A <strong>project</strong> holds everything you make: its tracker details, team, research, interviews, pitches, ideas, edits, storyboards, zines, datasets, resources and comments. Each page shows the <strong>active project</strong>, named on the Projects button in the sidebar.</p>
 <h3>The Projects button (sidebar)</h3>
+<p>Switching projects, making a new one or restoring a backup redraws the page you're on with that project's work; nothing reloads.</p>
 <ul>
   <li>Switch between projects, rename or delete the current one.</li>
   <li><strong>+ New project</strong>.</li>
@@ -220,7 +221,8 @@
   <li>Each shot is a row: scene, size (wide, medium, close-up…), angle, movement, lens, what's in frame and what happens, interior or exterior, time of day, seconds on screen, minutes to shoot, gear, sound and notes. Everything saves as you type. Tick the box on set when you've got it; <strong>Hide done</strong> shows what's left.</li>
   <li>Shots are numbered from their order and scene: 12A, 12B, 13A… (plain 1, 2, 3 when scenes aren't numbered). Drag a row by ⠿ or use ↑ ↓ to reorder; <strong>Sort by scene</strong> puts them in scene order.</li>
   <li><strong>Add from a storyboard</strong> turns a storyboard's frames into shots (each keeps a link ▦ back to its frame); <strong>Add scenes from the screenplay</strong> adds one master shot per scene heading, with INT/EXT and day/night filled in.</li>
-  <li>The chips above the table add things up: shots done, scenes, screen time and about how long the day will take to shoot. <strong>CSV</strong> opens in a spreadsheet; <strong>PDF for the set</strong> prints the list with a tick box per shot. The project details document (Projects page) includes every list.</li>
+  <li>The chips above the table add things up: shots done, scenes, screen time and about how long the day will take to shoot. The project details document (Projects page) includes every list.</li>
+  <li><strong>Exports</strong>: <strong>Call sheet</strong> (PDF or Word) puts the day on one page: call and wrap time, location, access and parking, weather and nearest hospital (fill these in under Details), your notes, the crew from the Team page with their contacts, the people from the Interviews page booked for that date, and the schedule, with each shot's start time worked out from the call time and its minutes. <strong>Shot list (PDF)</strong> prints the list with a tick box per shot. <strong>CSV</strong> is every column for a spreadsheet; <strong>CSV for scheduling apps</strong> puts the scene number and shot letter in their own columns with the headings StudioBinder, Shot Lister and similar apps import (their import screens let you match any column that differs). <strong>Calendar (.ics)</strong> adds the shoot day to your calendar, plus a block for each shot that has a time and minutes.</li>
 </ul>
 
 <h2>15. Zine Planner</h2>
@@ -305,6 +307,7 @@
 <p>Every sample: the original, what you used, whether it needs the recording owner, the song owner or both, who you're talking to, status (not started → cleared, denied or replaced), fee, terms and where the agreement is filed.</p>
 
 <h2>19. Data Analysis</h2>
+<p>Load a <strong>CSV</strong> or an <strong>Excel file</strong> (.xlsx). For a workbook with several sheets you pick the sheet; numbers, dates and TRUE/FALSE come through as they would from "Save as CSV", and formulas by their last calculated value. The R code then loads the file with <code>readxl::read_excel()</code> and the same sheet.</p>
 <ul>
   <li><strong>Load a CSV</strong> to see a profile of each column (type, missing values, statistics).</li>
   <li><strong>Filter</strong> rows and draw a quick chart: histogram, bar, scatter or line. Hover for values, or show the numbers as a table.</li>

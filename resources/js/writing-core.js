@@ -123,8 +123,9 @@
   let drafts = [];
   function loadData() { const v = Projects.getData("drafts", []); drafts = (Array.isArray(v) ? v : []).map(normalize); }
   loadData();
-  const CURRENT_KEY = `writingCurrent:${Projects.activeId()}`;
-  let currentId = (() => { try { return localStorage.getItem(CURRENT_KEY); } catch { return null; } })();
+  const currentKey = () => `writingCurrent:${Projects.activeId()}`;   // (a function: the project can change without a reload)
+  const remembered = () => { try { return localStorage.getItem(currentKey()); } catch { return null; } };
+  let currentId = remembered();
   const current = () => drafts.find(d => d.id === currentId) || drafts[0] || null;
 
   let saveTimer = 0;
@@ -172,13 +173,13 @@
      Only increases count, so cutting text doesn't lose your day.
      ========================================================= */
 
-  const LAST_TOTAL_KEY = `writingLastTotal:${Projects.activeId()}`;
+  const lastTotalKey = () => `writingLastTotal:${Projects.activeId()}`;
   function totalWords() { return drafts.reduce((n, d) => n + draftWords(d), 0); }
   function logWords() {
     const total = totalWords();
     let last = null;
-    try { last = JSON.parse(localStorage.getItem(LAST_TOTAL_KEY)); } catch {}
-    try { localStorage.setItem(LAST_TOTAL_KEY, JSON.stringify(total)); } catch {}
+    try { last = JSON.parse(localStorage.getItem(lastTotalKey())); } catch {}
+    try { localStorage.setItem(lastTotalKey(), JSON.stringify(total)); } catch {}
     if (last == null || total <= last) return;
     const person = Projects.me() || "Me";
     const log = list("writingLog");
@@ -189,7 +190,7 @@
     saveList("writingLog", log);
   }
   // Start counting from what's here now, so words that arrived from collaborators aren't counted as yours
-  (() => { try { localStorage.setItem(LAST_TOTAL_KEY, JSON.stringify(totalWords())); } catch {} })();
+  (() => { try { localStorage.setItem(lastTotalKey(), JSON.stringify(totalWords())); } catch {} })();
 
 
   /* =========================================================
@@ -235,7 +236,7 @@
 
   function select(id) {
     currentId = id;
-    try { localStorage.setItem(CURRENT_KEY, id); } catch {}
+    try { localStorage.setItem(currentKey(), id); } catch {}
     renderTop();
     show(tab);
   }
@@ -302,8 +303,9 @@
     // After an undo, or when changes arrive from elsewhere: draw the open tab again from what's stored
     document.addEventListener("projects-refresh", (event) => {
       clearTimeout(saveTimer); saveTimer = 0;
+      if (event.detail.reason === "switch") currentId = remembered();   // another project: its own open draft
       loadData();
-      try { localStorage.setItem(LAST_TOTAL_KEY, JSON.stringify(totalWords())); } catch {}   // words put back by an undo weren't written today
+      try { localStorage.setItem(lastTotalKey(), JSON.stringify(totalWords())); } catch {}   // words put back by an undo weren't written today
       renderTop();
       show(tab);
       event.detail.handled = true;

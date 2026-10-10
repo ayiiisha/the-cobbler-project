@@ -53,9 +53,17 @@
       <span class="sl-tools-gap"></span>
       <button type="button" class="small-btn" id="sl-sort" title="Order the shots by scene number">Sort by scene</button>
       <button type="button" class="team-chip team-chip--toggle" id="sl-hide-done" aria-pressed="false">Hide done</button>
-      <button type="button" class="small-btn" id="sl-csv">CSV</button>
-      <button type="button" class="small-btn" id="sl-pdf" title="Opens the print window: choose “Save as PDF”">PDF for the set</button>
       <button type="button" class="small-btn research-delete" id="sl-delete">Delete list</button>
+    </div>
+
+    <div class="sketch-nav sl-exports">
+      <span class="tool-group">Export</span>
+      <button type="button" class="small-btn" id="sl-call-pdf" title="Call time, location, access, weather, nearest hospital, crew, cast and the schedule. Opens the print window: choose “Save as PDF”">Call sheet (PDF)</button>
+      <button type="button" class="small-btn" id="sl-call-docx" title="The same call sheet as a Word document, to edit or email">Call sheet (Word)</button>
+      <button type="button" class="small-btn" id="sl-pdf" title="The shot list with a tick box per shot. Opens the print window: choose “Save as PDF”">Shot list (PDF)</button>
+      <button type="button" class="small-btn" id="sl-csv" title="Every column, for a spreadsheet">CSV</button>
+      <button type="button" class="small-btn" id="sl-csv-apps" title="Scene number and shot letter in their own columns, with the headings StudioBinder, Shot Lister and similar apps import">CSV for scheduling apps</button>
+      <button type="button" class="small-btn" id="sl-ics" title="The shoot day, plus a block per shot worked out from the call time and each shot's minutes. Opens in Apple Calendar, Google Calendar or Outlook">Calendar (.ics)</button>
     </div>
 
     <p class="media-empty" id="sl-empty" hidden></p>
@@ -95,9 +103,18 @@
       <div class="zine-form-row">
         <label>Shoot date <input name="date" type="date"></label>
         <label>Call time <input name="callTime" type="time"></label>
+        <label>Wrap (estimated) <input name="wrapTime" type="time"></label>
       </div>
-      <label>Location <input name="location" maxlength="200" autocomplete="off"></label>
-      <label>Notes for the day <textarea name="notes" rows="3" maxlength="3000" placeholder="Parking, contacts, weather plan, what must be in the can by lunch…"></textarea></label>
+      <label>Location <input name="location" maxlength="200" autocomplete="off" placeholder="Address, or the name everyone knows it by"></label>
+      <label>Notes for the day <textarea name="notes" rows="3" maxlength="3000" placeholder="Contacts, what must be in the can by lunch, who brings what…"></textarea></label>
+      <fieldset class="iv-fieldset">
+        <legend>For the call sheet</legend>
+        <label>Access and parking <input name="access" maxlength="300" autocomplete="off" placeholder="e.g. Side gate, code 4471; park on Morley Road"></label>
+        <div class="zine-form-row">
+          <label>Weather <input name="weather" maxlength="200" autocomplete="off" placeholder="Forecast, and the plan if it turns"></label>
+          <label>Nearest hospital <input name="hospital" maxlength="200" autocomplete="off" placeholder="Name and address of the nearest A&E"></label>
+        </div>
+      </fieldset>
       <div class="dialog-actions">
         <button type="submit" class="small-btn">Save</button>
         <button type="button" class="small-btn" id="sl-cancel">Cancel</button>

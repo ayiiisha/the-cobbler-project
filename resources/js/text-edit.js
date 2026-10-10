@@ -28,11 +28,11 @@
      STATE
      ========================================================= */
 
-  const EDIT_KEY = `textEditCurrent:${Projects.activeId()}`;   // remembers the open edit (this browser)
+  const editKey = () => `textEditCurrent:${Projects.activeId()}`;   // remembers the open edit (this browser; a function because the project can change without a reload)
 
   const TE = {
     panel: null,
-    editId: (() => { try { return localStorage.getItem(EDIT_KEY); } catch { return null; } })(),
+    editId: (() => { try { return localStorage.getItem(editKey()); } catch { return null; } })(),
     transcriptId: null,
     selectedBlockId: null,
     drag: null,          // { type: "segment", transcriptId, index } or { type: "block", id }
@@ -58,7 +58,7 @@
   function setEdit(id) {
     TE.editId = id;
     TE.selectedBlockId = null;
-    try { localStorage.setItem(EDIT_KEY, id); } catch {}
+    try { localStorage.setItem(editKey(), id); } catch {}
   }
 
   function saveEdit() {
@@ -697,4 +697,12 @@
 
   /* ---------- Hook into the page ---------- */
   Page.register("edit", { render });
+
+  // After a switch to another project (media.js): that project's own open edit
+  window.TextEdit = { reset() {
+    try { TE.editId = localStorage.getItem(editKey()); } catch { TE.editId = null; }
+    TE.transcriptId = null;
+    TE.selectedBlockId = null;
+    TE.drag = null;
+  } };
 })();

@@ -1,3 +1,12 @@
+**10 October 2026 (call sheets, scheduling exports, Excel import, switching in place)**
+
+* Shot List: a call sheet (PDF or Word) for each list: call and wrap time, location, access and parking, weather and nearest hospital (new fields under Details), notes, the crew from the Team page with contacts, the people from the Interviews page booked for that date, and a schedule with each shot's start time from the call time and its minutes
+* Shot List: a CSV laid out for scheduling apps (scene number and shot letter in their own columns, StudioBinder/Shot Lister-style headings) and a calendar file (.ics) with the shoot day and a block per timed shot
+* Data Analysis: loads Excel files (.xlsx) as well as CSV, with a sheet picker for workbooks that have several; dates, numbers and TRUE/FALSE come through as from "Save as CSV". The R code uses readxl::read_excel() for them (xlsx-read.js, no library: the browser unzips the file itself)
+* Switching projects (the Projects panel, the Project Tracker, the Projects page), making a new project and restoring a backup redraw the page in place instead of reloading it; pages that remember an open item per project pick up the other project's
+* Code: date and time formatting and drag-to-reorder are shared helpers in util.js (Cobbler.formatDate, formatTime, dragReorder); the Interviews, Ideas, Storyboarder, Research, Zine Planner and Shot List pages use them
+* 3 new self-tests (shot list exports, the shared helpers, Excel files), 39 in all
+
 **10 October 2026 (shot lists, ideas on every page)**
 
 * New page, Shot List: shot lists for a shoot (one per day, scene or location) with the shoot date, call time, location and notes. Each shot has scene, size, angle, movement, lens, subject and action, INT/EXT, day/night, seconds on screen, minutes to shoot, gear, sound, notes and a box to tick on set. Shots are numbered from scene and order (12A, 12B…); drag or ↑ ↓ to reorder, Sort by scene, Hide done. Shots can be added from a storyboard's frames (with a link back to each frame) or one per scene heading of the screenplay. CSV and a PDF for the set; the project details document includes the lists; shoot days show on the Calendar (shot-list.js, shot-list.html)

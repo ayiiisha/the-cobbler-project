@@ -90,7 +90,7 @@
 
   const el = Cobbler.el;
 
-  const formatDate = (ms) => new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const formatDate = Cobbler.formatDate;   // a time in ms → "20 Oct 2026"
 
   const blankPage = () => ({ strokes: [], texts: [] });
 

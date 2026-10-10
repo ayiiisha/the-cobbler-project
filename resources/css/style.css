@@ -5724,4 +5724,6 @@ main .sl-notes { font-size: 0.95rem; white-space: pre-wrap; }
 [data-selected-theme="rainbow"] .ideas-drawer { --color-background: var(--color-accent-4); }
 .comments-open .ideas-drawer { display: none; }   /* comments take the same side; the lightbulb brings the ideas back */
 @media (min-width: 1400px) { .ideas-open body { padding-right: calc(26rem + 2rem); } }
+/* The round buttons step left of the open panel, so they stay in reach while it's open */
+@media (min-width: 700px) { .ideas-open:not(.comments-open) .fab { right: calc(min(26rem, 100vw) + 1.5rem); } }
 @media (prefers-reduced-motion: reduce) { .ideas-drawer { animation-duration: 0.01s; } .ideas-fab, .ideas-fab:is(:hover, :focus-visible, :active) { transform: none !important; } }

@@ -74,11 +74,11 @@ git push -u origin main</pre>
 <table>
   <tr><th>File</th><th>What it does</th></tr>
   <tr><td><code>lz-string</code></td><td>Compression (<code>resources/vendor/lz-string/</code>, MIT licence). Loads before projects-core.js, which also fetches it itself if a page lacks the tag.</td></tr>
-  <tr><td><code>util.js</code></td><td>Small helpers every script shares as <code>window.Cobbler</code>: <code>el</code>, <code>$</code>, <code>newId</code>, <code>slug</code>, <code>plural</code>, <code>pad</code>, <code>todayISO</code>, <code>download</code>, <code>csvField</code>, <code>statusLine</code>. Loads first.</td></tr>
+  <tr><td><code>util.js</code></td><td>Small helpers every script shares as <code>window.Cobbler</code>: <code>el</code>, <code>$</code>, <code>newId</code>, <code>slug</code>, <code>plural</code>, <code>pad</code>, <code>todayISO</code>, <code>download</code>, <code>csvField</code>, <code>statusLine</code>, <code>formatDate</code>, <code>formatTime</code> and <code>dragReorder</code> (drag a row or card by its ⠿ handle: one call per row, with a shared <code>{ item }</code> state and an <code>onDrop</code>). Loads first.</td></tr>
   <tr><td><code>projects-core.js</code></td><td>Stores every project and offers the Projects API (section 4).</td></tr>
   <tr><td><code>boot.js</code></td><td>Loads the page's remaining scripts (listed on its tag) once the projects have been read from the database, then fires <code>DOMContentLoaded</code> again for them and <code>cobbler-ready</code>.</td></tr>
   <tr><td><code>header.js</code></td><td>Builds the sidebar, the ☰ button and "Return to top"; registers the service worker. The sidebar's links are listed here.</td></tr>
-  <tr><td><code>project-ui.js</code></td><td>The Projects button and panel, the + button and the New Project dialog.</td></tr>
+  <tr><td><code>project-ui.js</code></td><td>The Projects button and panel, the + button and the New Project dialog. <code>ProjectUI.switchTo(id)</code> makes another project active and has the page redraw itself (no reload).</td></tr>
   <tr><td><code>color-themes.js</code></td><td>Applies the theme (light, dark, rainbow, system) and wires the Settings buttons.</td></tr>
   <tr><td><code>comments.js</code></td><td>The comments drawer, and the comment threads other pages reuse.</td></tr>
   <tr><td><code>file-store.js</code></td><td>Uploaded files in IndexedDB.</td></tr>
@@ -103,9 +103,9 @@ git push -u origin main</pre>
   <tr><td>Media &amp; Transcripts</td><td><code>media-core.js</code> (shared engine), <code>media.js</code>, <code>text-edit.js</code>, <code>timeline-export.js</code></td></tr>
   <tr><td>A/V Script</td><td><code>av-script.js</code></td></tr>
   <tr><td>Storyboarder</td><td><code>storyboarder.js</code></td></tr>
-  <tr><td>Shot List</td><td><code>shot-list.js</code> (shot numbers from scene and order; shots from storyboard frames and screenplay scene headings; CSV and PDF)</td></tr>
+  <tr><td>Shot List</td><td><code>shot-list.js</code> (shot numbers from scene and order; shots from storyboard frames and screenplay scene headings; CSV, a CSV for scheduling apps, a calendar file with the running order, the shot list PDF and the call sheet as PDF or Word, which pulls the crew from <code>team</code> and the day's contributors from <code>interviewees</code>)</td></tr>
   <tr><td>Zine Planner</td><td><code>zine-planner.js</code>, <code>zine-sketch.js</code>, <code>zine-critique.js</code></td></tr>
-  <tr><td>Data Analysis</td><td><code>data-analysis.js</code></td></tr>
+  <tr><td>Data Analysis</td><td><code>data-analysis.js</code>, <code>xlsx-read.js</code> (reads .xlsx workbooks in the browser: unzips with DecompressionStream, reads shared strings, dates from the cell styles; gives each sheet's rows, turned into CSV for the page)</td></tr>
   <tr><td>Resources · Settings</td><td><code>resources.js</code> · <code>settings.js</code></td></tr>
 </table>
 
@@ -133,7 +133,7 @@ git push -u origin main</pre>
 <ul>
   <li>The first tags run as the page loads: the helpers, <code>projects-core.js</code> (which starts reading the projects), the sidebar and the theme (no <code>defer</code>, so the right colours apply before the page appears).</li>
   <li>Everything that needs the projects is listed on <code>boot.js</code>'s tag, in order, and is loaded once they've been read. Those scripts still draw the page on <code>DOMContentLoaded</code> (boot.js fires it again for them), so a page script looks the same as it always did.</li>
-  <li>To redraw without a reload (after an undo, or when changes arrive), a page listens for <code>projects-refresh</code> on <code>document</code>, reads its data again, re-renders and sets <code>event.detail.handled = true</code>. Pages that don't are reloaded instead.</li>
+  <li>To redraw without a reload (after an undo, when changes arrive, or when the active project changes), a page listens for <code>projects-refresh</code> on <code>document</code>, reads its data again, re-renders and sets <code>event.detail.handled = true</code>. Pages that don't are reloaded instead. <code>event.detail.reason</code> is <code>"undo"</code>, <code>"redo"</code>, <code>"sync"</code>, <code>"tab"</code> or <code>"switch"</code>; a page that remembers an open item per project (<code>…Current:&lt;project&gt;</code> in localStorage) re-reads it on <code>"switch"</code>, and keeps that key as a function of <code>Projects.activeId()</code> rather than a constant.</li>
   <li><code>&lt;main class="is-wide"&gt;</code> lets a page use the full width beside the sidebar (the tracker, the editing pages).</li>
   <li>Scripts build elements with a small <code>el(tag, props, ...children)</code> helper; text is always added as plain text, so nothing typed by a user can inject code.</li>
 </ul>
@@ -155,7 +155,8 @@ project.data.media          Transcripts and clips, Resolve markers (markerSets),
                             where everyone keeps the media (locations)
 project.data.edits          Paper edits
 project.data.storyboards    Storyboards
-project.data.shotLists      Shot lists (name, date, call time, location, shots: [{ scene, size, angle, move, … done }])
+project.data.shotLists      Shot lists (name, date, call and wrap time, location, notes, access, hospital, weather,
+                            shots: [{ scene, size, angle, move, … done }])
 project.data.zines          Zines
 project.data.datasets       Data Analysis datasets (details only)
 project.data.resources      Your resources table

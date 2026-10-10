@@ -20,7 +20,7 @@
    run script and the ZIP download don't need it, but visitors
    with an older copy do, to receive the new one promptly).
    ========================================================= */
-const VERSION = "2026-10-10b";
+const VERSION = "2026-10-10c";
 const CACHE = `cobbler-${VERSION}`;
 
 const PRECACHE = [
@@ -111,6 +111,7 @@ const PRECACHE = [
   "resources/js/writing-reporting.js",
   "resources/js/writing-revisions.js",
   "resources/js/writing-story.js",
+  "resources/js/xlsx-read.js",
   "resources/js/zine-critique.js",
   "resources/js/zine-planner.js",
   "resources/js/zine-sketch.js",

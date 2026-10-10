@@ -34,7 +34,7 @@
   const el = Cobbler.el;
 
   const newId = () => Cobbler.newId("r");
-  const formatDate = (ms) => new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const formatDate = Cobbler.formatDate;   // a time in ms → "20 Oct 2026"
 
   /* Only http, https and mailto links become clickable */
   function safeUrl(value) {

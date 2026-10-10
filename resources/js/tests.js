@@ -383,6 +383,105 @@
   });
 
 
+  test("Shot list exports: scheduling CSV, running order, calendar file and call sheet", async () => {
+    const { env, core } = await withCore();
+    await load("shot-list.js", env, { Projects: core });   // (the call sheet reads the team and interviewees)
+    const S = env.window.ShotList;
+    core.getData("team", []); core.setData("team", [{ id: "t1", name: "Sam", roles: ["Director", "Camera"], phone: "0700", email: "sam@x.org" }]);
+    core.getData("interviewees", []); core.setData("interviewees", [
+      { id: "p1", name: "Ana", role: "Tenant", shootDate: "2026-11-02", shootTime: "09:00", location: "Flat 3", release: { status: "Signed" } },
+      { id: "p2", name: "Bo", role: "Other day", shootDate: "2026-11-03", release: { status: "Not sent" } }]);
+    const list = { id: "sl1", name: "Day 1", date: "2026-11-02", callTime: "08:00", wrapTime: "", location: "Flat 3", notes: "Lunch at 13:00", access: "Side gate", hospital: "St Mary's", weather: "Dry",
+      shots: [{ id: "a", scene: "12", size: "Wide", angle: "", move: "", lens: "", description: "Master", intExt: "INT", dayNight: "Day", seconds: "20", minutes: "30", gear: "", sound: "", notes: "", done: true },
+              { id: "b", scene: "12", size: "Close-up", angle: "", move: "", lens: "", description: "Kettle\nsteam", intExt: "INT", dayNight: "Day", seconds: "4", minutes: "15", gear: "Slider", sound: "", notes: "", done: false },
+              { id: "c", scene: "13", size: "", angle: "", move: "", lens: "", description: "", intExt: "", dayNight: "", seconds: "", minutes: "", gear: "", sound: "", notes: "", done: false }] };
+    const csv = S.schedulingCSV(list).split("\r\n");
+    eq(csv[0].split(",").slice(0, 3), ["Scene", "Shot", "Shot Size"], "headings scheduling apps look for");
+    eq(csv[1].split(",").slice(0, 3), ["12", "A", "Wide"], "scene number and shot letter in their own columns");
+    ok(csv[2].includes('"Kettle\nsteam"') && csv[2].includes(",Kettle,"), "the description is kept whole, and its first line is the subject");
+    ok(csv[1].endsWith(",Completed") && csv[2].endsWith(",Not shot"), "status words");
+    eq(S.runningOrder(list), ["08:00", "08:30", "08:45"], "the running order adds each shot's minutes to the call time");
+    const ics = S.calendarFile(list);
+    eq((ics.match(/BEGIN:VEVENT/g) || []).length, 3, "the day plus a block for each timed shot");
+    ok(ics.includes("DTSTART;VALUE=DATE:20261102") && ics.includes("DTSTART:20261102T083000") && ics.includes("DTEND:20261102T084500"), "dates and times in the calendar file");
+    const blocks = S.callSheetBlocks(list);
+    const table = (heading) => blocks[blocks.findIndex(b => b.t === "h2" && b.text.startsWith(heading)) + 1];
+    eq(blocks[0].text, "Call sheet: Day 1", "titled");
+    ok(blocks[2].items.some(([k, v]) => k === "Nearest hospital" && v === "St Mary's"), "the hospital is on it");
+    eq(table("Crew").rows[0].slice(0, 2), ["Sam", "Director, Camera"], "the Team page's people are the crew");
+    eq(table("Cast").rows.map(r => r[0]), ["Ana"], "only the people booked for that day");
+    eq(table("Schedule").rows.length, 3, "every shot is on the schedule");
+    ok(/8:00|08:00/.test(table("Schedule").rows[0][0]) && table("Schedule").rows[0][1] === "☑", "first shot at call time, ticked");
+  });
+
+  test("Shared helpers: dates, times and drag-to-reorder", async () => {
+    const env = makeEnv();
+    await load("util.js", env);
+    const C = env.window.Cobbler;
+    ok(/Oct/.test(C.formatDate("2026-10-20")) && /20/.test(C.formatDate("2026-10-20")) && /2026/.test(C.formatDate("2026-10-20")) && /Tue/.test(C.formatDate("2026-10-20", { weekday: true })), "an ISO date (in this computer's order), with or without the weekday");
+    ok(/2026/.test(C.formatDate(Date.UTC(2026, 9, 20, 12))), "a time in ms works too");
+    eq(C.formatDate(""), "", "nothing in, nothing out");
+    ok(/2:00|14:00/.test(C.formatTime("14:00")), "a time of day");
+    // Drag: the shared state records what's being dragged, and a drop calls back with both items
+    const state = { item: null };
+    const rows = [1, 2, 3].map(n => document.createElement("div"));
+    const dropped = [];
+    rows.forEach((row, i) => C.dragReorder(row, { state, item: i, onDrop: (moved, onto) => dropped.push([moved, onto]) }));
+    const dt = { effectAllowed: "", setData() {} };
+    rows[0].dispatchEvent(Object.assign(new Event("dragstart"), { dataTransfer: dt }));
+    eq(state.item, 0, "dragging the first row");
+    ok(rows[0].classList.contains("is-dragging"), "it's marked");
+    const over = Object.assign(new Event("dragover", { cancelable: true }), { dataTransfer: dt });
+    rows[2].dispatchEvent(over);
+    ok(over.defaultPrevented && rows[2].classList.contains("is-drop"), "another row accepts the drop");
+    rows[2].dispatchEvent(Object.assign(new Event("drop", { cancelable: true }), { dataTransfer: dt }));
+    eq(dropped, [[0, 2]], "the drop says what moved and where");
+    rows[0].dispatchEvent(new Event("dragend"));
+    ok(state.item === null && !rows[0].classList.contains("is-dragging"), "cleared afterwards");
+  });
+
+
+  /* =========================================================
+     TESTS: Excel files (xlsx-read.js)
+     ========================================================= */
+
+  // A small workbook built right here (an .xlsx is a ZIP of XML; zip.js writes stored ZIPs)
+  async function makeWorkbook(env) {
+    await load("zip.js", env);
+    const xml = (body) => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>${body}`;
+    const files = [
+      { name: "[Content_Types].xml", data: xml('<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>') },
+      { name: "xl/workbook.xml", data: xml('<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="People" sheetId="1" r:id="rId1"/><sheet name="Notes" sheetId="2" r:id="rId2"/></sheets></workbook>') },
+      { name: "xl/_rels/workbook.xml.rels", data: xml('<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="x" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="x" Target="worksheets/sheet2.xml"/></Relationships>') },
+      { name: "xl/sharedStrings.xml", data: xml('<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><si><t>Name</t></si><si><t>Age</t></si><si><t>Joined</t></si><si><r><t>A</t></r><r><t>na, "the" one</t></r></si><si><t>Bo</t></si></sst>') },
+      { name: "xl/styles.xml", data: xml('<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy\\-mm\\-dd\\ hh:mm"/></numFmts><cellXfs count="3"><xf numFmtId="0"/><xf numFmtId="14"/><xf numFmtId="164"/></cellXfs></styleSheet>') },
+      { name: "xl/worksheets/sheet1.xml", data: xml('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' +
+        '<row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="C1" t="s"><v>2</v></c><c r="D1" t="inlineStr"><is><t>Paid</t></is></c><c r="E1" t="str"><f>x</f><v>Seen</v></c></row>' +
+        '<row r="2"><c r="A2" t="s"><v>3</v></c><c r="B2"><v>34</v></c><c r="C2" s="1"><v>45292</v></c><c r="D2" t="b"><v>1</v></c><c r="E2" s="2"><v>45292.4375</v></c></row>' +
+        '<row r="4"><c r="A4" t="s"><v>4</v></c><c r="C4" s="1"><v>45658</v></c><c r="D4" t="b"><v>0</v></c><c r="E4" t="e"><v>#DIV/0!</v></c></row>' +
+        '</sheetData></worksheet>') },
+      { name: "xl/worksheets/sheet2.xml", data: xml('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Just a note</t></is></c></row></sheetData></worksheet>') },
+    ];
+    const blob = env.window.Zip.create(files);
+    return new File([blob], "people.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  }
+
+  test("Excel files: sheets, shared strings, numbers, dates, TRUE/FALSE, blanks", async () => {
+    const env = makeEnv();
+    await load("xlsx-read.js", env);
+    const X = env.window.XlsxRead;
+    ok(X.isExcel("data.XLSX") && X.isExcel("a.xlsm") && !X.isExcel("a.csv"), "which files count as Excel");
+    const sheets = await X.read(await makeWorkbook(env));
+    eq(sheets.map(s => s.name), ["People", "Notes"], "both sheets, in order");
+    const rows = sheets[0].rows;
+    eq(rows[0], ["Name", "Age", "Joined", "Paid", "Seen"], "the header row: shared, inline and formula strings");
+    eq(rows[1], ['Ana, "the" one', "34", "2024-01-01", "TRUE", "2024-01-01 10:30"], "rich text, a number, a date, a boolean, a custom date-time format");
+    eq(rows[2], ["Bo", "", "2025-01-01", "FALSE", ""], "a blank cell is empty, an error is missing, the gap row is dropped");
+    const csv = X.toCSV(rows);
+    eq(csv.split("\r\n")[1], '"Ana, ""the"" one",34,2024-01-01,TRUE,2024-01-01 10:30', "as CSV, quoted where needed");
+  });
+
+
   /* =========================================================
      TESTS: the browser's database (IndexedDB)
      ========================================================= */
@@ -691,6 +790,7 @@
         const detail = document.createElement("span");
         detail.className = "test-detail";
         detail.textContent = err instanceof Failure ? err.message : `Error: ${err.message}`;
+        if (!(err instanceof Failure)) console.error(`${t.name}:`, err);   // (the stack, for the developer tools)
         li.append(detail);
       }
     }
