@@ -315,5 +315,9 @@
     });
     renderTop();
     show(tab);
+
+    // Transcripts kept outside the project finish loading in the background
+    // (media-core.js): the quote checker needs their words
+    document.addEventListener("transcripts-loaded", () => { if (tab === "check") show("check"); });
   });
 })();

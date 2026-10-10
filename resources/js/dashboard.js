@@ -96,7 +96,7 @@
         const n = (d.parts || []).flatMap(p => p.scenes || []).reduce((s, x) => s + words(x.text), 0);
         return { kind: "Draft", name: d.title || "Untitled", note: `${n.toLocaleString()} words${d.target ? ` of ${Number(d.target).toLocaleString()}` : ""}`, href: "writing.html", pct: d.target ? n / d.target : null };
       }),
-      ...list(id, "screenplays").map(s => ({ kind: "Script", name: s.title || "Untitled", note: `${(s.elements || []).filter(e => e.type === "scene" && e.text.trim()).length} scenes`, href: "screenplay.html" })),
+      ...list(id, "screenplays").map(s => ({ kind: "Script", name: s.title || "Untitled", note: `${(s.elements || []).filter(e => e.type === "scene" && String(e.text || "").trim()).length} scenes`, href: "screenplay.html" })),
       ...list(id, "songs").filter(s => s.status !== "Released").map(s => ({ kind: "Song", name: s.title || "Untitled", note: s.status || "Idea", href: "music.html" })),
       ...list(id, "packaging").map(p => ({ kind: "Package", name: p.name || (p.titles || []).find(t => t.chosen)?.text || "Untitled", note: p.platform, href: "packaging.html" })),
       ...list(id, "edits").map(e => ({ kind: "Paper edit", name: e.name || "Untitled", note: `${(e.blocks || []).length} lines`, href: "media-and-transcripts.html#edit" })),

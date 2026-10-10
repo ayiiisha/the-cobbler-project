@@ -1,3 +1,17 @@
+**10 October 2026 (bug fixes)**
+
+* Saving: a page that edits the stored list in place but saves a tidied copy (e.g. Ideas, which never saves empty cards) could be merged with itself and bring back what it had just removed. Only changes that actually arrived from elsewhere (a collaborator, another tab, an undo) trigger a merge now
+* Ideas: clicking "+ Add idea" (or anything else) while an empty card was open did nothing the first time, because the empty card's disappearance redrew the board under the click. Empty cards now slip out on their own
+* Loading: if the saved record of which project is active ever pointed at a project that no longer existed, the app started over with a fresh project and saved it on top of the others. The projects are kept and the first one becomes active (projects-core.js)
+* Screenplay: the shortcut hints always said Ctrl+1–7, even on a Mac, because a function in the page was named `navigator` and hid the browser's own. Renamed
+* Zine Planner: opening a zine or switching tabs drew the page twice (once directly, once for the address change)
+* Packaging: "Copy everything" and the .txt download put an "undefined:" line in packages that had preview text but weren't newsletters
+* Team › Tasks: choosing your name under "I am" now signs you in the same way as the person button, so the button, comments and the dashboard update at once
+* Pitches: "Copy email" is signed with the name you signed in with (it only looked at the old comments name)
+* Writing › Check: the quote checker re-checks once transcripts kept outside the project have finished loading
+* The sidebar's page links are a proper list (ul), as HTML requires; every page has the logo as its tab icon, so browsers stop asking for a missing favicon.ico
+* Code: 2 new self-tests (31 in all); comments.js and dashboard.js tolerate oddly shaped saved data
+
 **10 October 2026 (default resources)**
 
 * The default resources CSV now sits at the top of the app (default-resources-cobbler-project.csv, next to index.html), so it can be replaced on GitHub by uploading a file with the same name. Its old place, resources/data/, still works

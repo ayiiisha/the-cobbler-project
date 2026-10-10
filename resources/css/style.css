@@ -502,6 +502,13 @@ main > h1 {
   transform: none;
   visibility: visible;
 }
+
+/* The page links are a plain list: no bullets or indent */
+.nav-links ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 .nav-ready .main-header          { transition: transform 0.3s ease-in-out, visibility 0s 0.3s; }
 .nav-ready.nav-open .main-header { transition: transform 0.3s ease-in-out, visibility 0s 0s; }
 

@@ -72,7 +72,12 @@
   const me = () => {
     try { return localStorage.getItem(ME_KEY) || localStorage.getItem("commentAuthor") || ""; } catch { return ""; }
   };
-  const setMe = (name) => { try { localStorage.setItem(ME_KEY, name); } catch {} };
+  // Signing in here is the same as with the person button (account.js), so the
+  // button, comments and the rest of the app see the new name straight away
+  const setMe = (name) => {
+    if (window.CobblerAccount?.setName) { CobblerAccount.setName(name); return; }
+    try { localStorage.setItem(ME_KEY, name); } catch {}
+  };
 
   const tasksOf = (pid) => { const v = Projects.getDataFor(pid, "tasks", []); return Array.isArray(v) ? v : []; };
   const saveTasks = (pid, list) => Projects.setDataFor(pid, "tasks", list);

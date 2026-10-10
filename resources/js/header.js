@@ -40,6 +40,7 @@
       <!-- project-ui.js inserts the "Projects" button here -->
 
       <nav class="nav-links">
+        <ul>
         <li><a href="av-script.html">A/V Script</a></li>
         <li><a href="about.html">About</a></li>
         <li><a href="calendar.html">Calendar</a></li>
@@ -61,6 +62,7 @@
         <li><a href="writing.html">Writing</a></li>
         <li><a href="zine-planner.html">Zine Planner</a></li>
         <li><a href="settings.html">Settings</a></li>
+        </ul>
       </nav>
     </header>
   `;
@@ -102,6 +104,15 @@
 
   /* Set the state right away, before the page paints, so nothing jumps */
   root.classList.toggle("nav-open", initialState());
+
+  /* The browser-tab icon (the logo), so browsers stop asking for a missing favicon.ico */
+  if (!document.querySelector("link[rel~='icon']")) {
+    const icon = document.createElement("link");
+    icon.rel = "icon";
+    icon.type = "image/svg+xml";
+    icon.href = new URL("../assets/cobbler-logo.svg", document.currentScript?.src || location.href).href;
+    document.head.append(icon);
+  }
 
 
   /* =========================================================

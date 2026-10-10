@@ -114,9 +114,24 @@
     // Use the saved projects if they exist and look valid
     let raw = null;
     try { raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(OLD_STORAGE_KEY); } catch {}
+    const obj = (v) => v && typeof v === "object" && !Array.isArray(v);   // (isObject is defined further down)
     try {
       const saved = decode(raw);
-      if (saved && saved.projects && saved.projects[saved.activeId]) return saved;
+      if (saved && obj(saved.projects)) {
+        // Keep whatever projects are there, even if the record of which one is
+        // active is missing or points at a project that's gone (e.g. deleted in
+        // another tab). Starting over here would save an empty project on top of them.
+        const ids = Object.keys(saved.projects).filter(id => obj(saved.projects[id]));
+        if (ids.length) {
+          ids.forEach(id => {
+            const p = saved.projects[id];
+            if (typeof p.name !== "string") p.name = "Untitled";
+            if (!obj(p.data)) p.data = {};
+          });
+          if (!ids.includes(saved.activeId)) saved.activeId = ids[0];
+          return saved;
+        }
+      }
     } catch (err) {
       // Something's saved but unreadable here: keep it safe rather than start over on top of it
       if (raw) {
@@ -624,8 +639,14 @@
     if (replaced !== undefined && replaced !== JSON.stringify(value)) recordStep(id, key, replaced);
 
     // Changed underneath the page? Merge the page's changes into what's there now.
+    // "Underneath" means what's stored moved on since the page read or last saved
+    // it (changes arrived from a collaborator, another tab or an undo), which the
+    // shadow records. A page's own edits to the stored object don't count, so a
+    // page that edits in place but saves a tidied copy isn't merged with itself
+    // (which could bring back things it had just removed).
+    const moved = shadow === undefined || shadow !== seen;
     let result = value;
-    if (current !== undefined && current !== value && seen !== undefined && JSON.stringify(current) !== seen) {
+    if (current !== undefined && current !== value && seen !== undefined && moved && JSON.stringify(current) !== seen) {
       result = mergeData(value, current, JSON.parse(seen), { prefer: "mine" }).data;
     }
     project.data[key] = result;

@@ -155,10 +155,10 @@
 
   // Opens a zine (or the library, if no id). `replace` skips a Back-button step.
   function go(zineId, tab = "sketch", { replace = false } = {}) {
-    const hash = zineId ? `#zine=${encodeURIComponent(zineId)}&tab=${tab}` : "#";
-    if (replace) history.replaceState(null, "", hash === "#" ? location.pathname : hash);
-    else location.hash = hash;
-    route();
+    const hash = zineId ? `#zine=${encodeURIComponent(zineId)}&tab=${tab}` : "";
+    if (replace) { history.replaceState(null, "", hash || location.pathname); route(); }
+    else if (location.hash !== hash) location.hash = hash || "#";   // "hashchange" then calls route()
+    else route();
   }
 
   let openZine = null;   // the zine on screen, or null for the library

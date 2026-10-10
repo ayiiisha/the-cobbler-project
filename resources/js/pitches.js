@@ -84,8 +84,8 @@
     statusTimer = setTimeout(() => { $("pitch-status-msg").textContent = ""; }, 6000);
   }
 
-  // Your name, as set for comments (used to sign pitch emails)
-  const myName = () => { try { return localStorage.getItem("commentAuthor") || ""; } catch { return ""; } };
+  // Your name, as signed in with the person button (used to sign pitch emails)
+  const myName = () => Projects.me();
 
 
   /* =========================================================

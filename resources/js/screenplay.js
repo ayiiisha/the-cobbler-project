@@ -401,7 +401,7 @@
       revisionBar(s),
       titleDetails(s),
       el("div", { class: "sp-layout" },
-        navigator(s),
+        sceneNavigator(s),
         view === "write" ? editor(s) : view === "pages" ? el("div", { class: "sp-pages-view", id: "sp-pages-view" }) : breakdownView(s)));
     renderPages();
     updateTypeButtons();
@@ -647,8 +647,10 @@
     setTimeout(() => { window.print(); document.title = title; }, 60);
   }
 
-  /* Scenes and characters, beside the script */
-  function navigator(s) {
+  /* Scenes and characters, beside the script.
+     (Not called "navigator": that name would hide the browser's own
+     navigator, which the shortcut hints read to tell Macs apart.) */
+  function sceneNavigator(s) {
     let n = 0;
     const scenes = s.elements.filter(e => e.type === "scene" && e.text.trim()).map(e => ({ e, n: ++n }));
     const counts = new Map();
@@ -866,7 +868,7 @@
     old.replaceWith(editor(s).querySelector(".sp-editor"));
     const fresh = document.querySelector(".sp-editor");
     fresh.querySelectorAll("textarea").forEach(grow);
-    document.querySelector(".sp-nav")?.replaceWith(navigator(s));
+    document.querySelector(".sp-nav")?.replaceWith(sceneNavigator(s));
     window.scrollTo(0, scroll);
     focusEl(id, caret);
   }

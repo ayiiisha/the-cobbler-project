@@ -836,7 +836,7 @@
     const lines = [`${config(p).name}${p.name ? `: ${p.name}` : ""}`, ""];
     const add = (label, value) => { if (String(value || "").trim()) lines.push(`${label}:`, String(value).trim(), ""); };
     add(c.title?.label || "Title", chosenTitle(p));
-    add(c.previewText?.label, p.previewText);
+    if (c.previewText) add(c.previewText.label, p.previewText);
     add(c.description.label, p.description);
     if (p.tags.length) add("Tags", p.tags.join(", "));
     if (c.hashtags && p.hashtags.length) add("Hashtags", p.hashtags.map(h => "#" + h).join(" "));

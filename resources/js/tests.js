@@ -311,6 +311,30 @@
   });
 
 
+  test("Projects stay when the record of the active one is stale", async () => {
+    const env = makeEnv();
+    env.localStorage.setItem("cobblerProjects2", JSON.stringify({ activeId: "gone", projects: {
+      p1: { name: "One", data: { research: [{ id: "a" }] } }, p2: { name: "Two", data: {} } } }));
+    await load("projects-core.js", env);
+    const core = env.window.Projects;
+    eq(core.list().map(p => p.name), ["One", "Two"], "both projects are still there");
+    eq(core.activeName(), "One", "the first one becomes active");
+    eq(JSON.parse(env.localStorage.getItem("cobblerProjects2")).projects.p1.data.research.length, 1, "nothing was saved over them");
+  });
+
+  test("A page that edits in place but saves a tidied copy doesn't bring back what it removed", async () => {
+    const { core, env } = await withCore();
+    core.getData("ideas", []);
+    core.setData("ideas", [{ id: "a", text: "A" }, { id: "b", text: "B" }]);
+    env.tick();
+    const live = core.getData("ideas");           // the stored list itself, as pages get it
+    live.unshift({ id: "empty", text: "" });       // an empty card, added in place but never meant to be saved
+    live[1].text = "A2";
+    core.setData("ideas", live.filter(i => i.text.trim()));
+    eq(core.getData("ideas").map(i => i.id), ["a", "b"], "the empty card isn't merged back in");
+    eq(core.getData("ideas")[0].text, "A2", "the edit is kept");
+  });
+
   test("Projects saved under the old name are moved, not lost", async () => {
     const env = makeEnv();
     env.localStorage.setItem("cobblerProjects", JSON.stringify({ activeId: "p1", projects: { p1: { name: "Old", data: { research: [{ id: "a" }] } } } }));

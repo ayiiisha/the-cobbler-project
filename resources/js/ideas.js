@@ -126,9 +126,14 @@
     text.addEventListener("blur", () => {
       if (editing === idea) editing = null;
       if (!idea.text.trim()) {               // empty cards disappear
-        ideas.splice(ideas.indexOf(idea), 1);
+        const at = ideas.indexOf(idea);
+        if (at >= 0) ideas.splice(at, 1);
+        // Take just this card out rather than redrawing the board: the click that
+        // caused the blur (e.g. on "+ Add idea" or another card) still lands
+        const list = node.parentElement;
+        node.remove();
+        if (list && !list.querySelector(".ideas-card")) list.append(el("li", { class: "ideas-empty" }, "Nothing here yet"));
         save();
-        render();
       } else save();
     });
 
@@ -152,7 +157,8 @@
         } }, "Pitch it →"),
         el("button", { type: "button", class: "comment-action ideas-delete", "aria-label": "Delete idea", onclick: () => {
           if (idea.text.trim().length > 80 && !confirm("Delete this idea?")) return;
-          ideas.splice(ideas.indexOf(idea), 1);
+          const at = ideas.indexOf(idea);
+          if (at >= 0) ideas.splice(at, 1);
           save();
           render();
         } }, "×")),

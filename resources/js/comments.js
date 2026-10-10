@@ -343,7 +343,7 @@
 
   // Saves, dropping pages with no comments left
   function saveStore() {
-    for (const key of Object.keys(store)) if (!store[key].length) delete store[key];
+    for (const key of Object.keys(store)) if (!Array.isArray(store[key]) || !store[key].length) delete store[key];
     Projects.setData(DATA_KEY, store);
     updateCount();
     document.dispatchEvent(new Event("comments-changed"));   // e.g. the Team page's task lists
