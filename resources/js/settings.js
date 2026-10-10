@@ -30,10 +30,12 @@
     "default-resources-cobbler-project.csv",
     "resources/vendor/abcjs/LICENSE.txt",
     "resources/vendor/lz-string/LICENSE.txt",
-    "index.html",
+    "index.html", "manifest.webmanifest", "sw.js",
+    "resources/assets/icon-192.png", "resources/assets/icon-512.png",
+    "eslint.config.mjs", "package.json", "tests/run.mjs", ".github/workflows/tests.yml",
   ];
-  const FILE_TYPES = /\.(html|js|css|svg|png|jpe?g|gif|webp|csv|pdf|md|sh|json|txt)$/i;
-  const TEXT_TYPES = /\.(html|js|css|svg|md|sh|json|txt|csv)$/i;
+  const FILE_TYPES = /\.(html|js|mjs|css|svg|png|jpe?g|gif|webp|csv|pdf|md|sh|json|txt|webmanifest|yml)$/i;
+  const TEXT_TYPES = /\.(html|js|mjs|css|svg|md|sh|json|txt|csv|webmanifest|yml)$/i;
 
   function setStatus(message) { $("app-zip-status").textContent = message; }
 
@@ -51,7 +53,7 @@
       url.hash = ""; url.search = "";
       if (!url.href.startsWith(root.href)) return;        // other websites (e.g. Google Fonts)
       const path = pathOf(url);
-      if (!path || !FILE_TYPES.test(path) || path.startsWith("_backup") || path.startsWith(".")) return;
+      if (!path || !FILE_TYPES.test(path) || path.startsWith("_backup") || (path.startsWith(".") && !path.startsWith(".github/"))) return;
       if (tried.has(url.href)) return;
       tried.add(url.href);
       queue.push(url);
@@ -75,11 +77,15 @@
       // Follow anything this file points to (relative to it, or to the pages folder for page templates)
       if (TEXT_TYPES.test(path)) {
         const text = new TextDecoder().decode(bytes);
-        const refs = text.matchAll(/["'(]((?:\.{1,2}\/)*[\w.-]+(?:\/[\w.-]+)*\.(?:html|js|css|svg|png|jpe?g|gif|webp|csv|pdf|md))["')]/gi);
+        const refs = text.matchAll(/["'(]((?:\.{1,2}\/)*[\w.-]+(?:\/[\w.-]+)*\.(?:html|js|css|svg|png|jpe?g|gif|webp|csv|pdf|md|webmanifest))["')]/gi);
         for (const [, ref] of refs) {
           if (/^(https?:|data:|\/\/)/i.test(ref)) continue;
           consider(ref, url);
           consider(ref, pagesDir);
+        }
+        // Scripts a page lists for boot.js (data-scripts="a.js b.js …") live in resources/js/
+        for (const [, list] of text.matchAll(/data-scripts="([^"]+)"/g)) {
+          list.split(/\s+/).filter(Boolean).forEach(name => consider(name, new URL("resources/js/", root)));
         }
       }
     }
@@ -135,26 +141,37 @@
     const box = $("storage-panel");
     if (!box) return;
     const info = Projects.storageInfo();
-    const pct = Math.min(100, Math.round(info.used / info.limit * 100));
+    const inDatabase = info.where === "indexeddb";
+
+    let estimate = null, persisted = false;
+    try { estimate = await navigator.storage?.estimate?.(); persisted = await navigator.storage?.persisted?.(); } catch {}
+    // The meter: projects against localStorage's 5 MB, or everything the site keeps
+    // here (projects and files, in the browser's database) against what the browser allows
+    const used = inDatabase ? (estimate?.usage ?? info.used) : info.used;
+    const limit = inDatabase ? (estimate?.quota || 0) : info.limit;
+    const pct = limit ? Math.min(100, Math.round(used / limit * 100)) : 0;
     const bar = el("div", `storage-bar${pct >= 90 ? " is-full" : pct >= 75 ? " is-high" : ""}`, el("span", "storage-fill"));
     bar.firstChild.style.width = `${pct}%`;
     bar.setAttribute("role", "meter");
     bar.setAttribute("aria-valuemin", "0");
     bar.setAttribute("aria-valuemax", "100");
     bar.setAttribute("aria-valuenow", String(pct));
-    bar.setAttribute("aria-label", "Project storage used");
-
-    let files = null, persisted = false;
-    try { files = await navigator.storage?.estimate?.(); persisted = await navigator.storage?.persisted?.(); } catch {}
-    const fileUse = files?.usage != null ? `${(files.usage / 1024 / 1024).toFixed(1)} MB used${files.quota ? ` of about ${Math.round(files.quota / 1024 / 1024 / 1024)} GB available` : ""}` : "not available in this browser";
+    bar.setAttribute("aria-label", "Storage used");
+    const allowance = estimate?.quota ? (estimate.quota >= 1e9 ? `${Math.round(estimate.quota / 1e9)} GB` : `${Math.round(estimate.quota / 1e6)} MB`) : "";
+    const siteUse = estimate?.usage != null ? `${(estimate.usage / 1024 / 1024).toFixed(1)} MB used${allowance ? ` of about ${allowance} available` : ""}` : "not available in this browser";
+    const safe = persisted ? " · kept safe ✓" : " · the browser may clear it if your disk runs low (click “Keep my files safe”)";
 
     box.replaceChildren(
-      el("p", "storage-line", el("strong", null, `Projects: ${mb(info.used)} of about 5 MB (${pct}%)`),
-        pct >= 75 ? " · Getting full: trim old history, delete or archive projects you've backed up, or move long transcripts out." : ""),
+      inDatabase
+        ? el("p", "storage-line", el("strong", null, `Projects: ${mb(info.plain)}`), " in this browser's database (room for far more than the old 5 MB).")
+        : el("p", "storage-line", el("strong", null, `Projects: ${mb(info.used)} of about 5 MB (${pct}%)`),
+            pct >= 75 ? " · Getting full: trim old history, delete or archive projects you've backed up, or move long transcripts out." : ""),
+      inDatabase
+        ? el("p", "storage-line", el("strong", null, "Everything this site keeps here (projects and files): "), siteUse, limit ? ` (${pct}%)` : "", safe)
+        : el("p", "storage-line", el("strong", null, "Files: "), siteUse, safe),
       bar,
-      info.compressed && el("p", "storage-line", el("strong", null, "Compressed: "),
+      !inDatabase && info.compressed && el("p", "storage-line", el("strong", null, "Compressed: "),
         `${mb(info.plain)} of projects stored in ${mb(info.stored)} (${(info.plain / Math.max(1, info.stored)).toFixed(1)}× smaller)`),
-      el("p", "storage-line", el("strong", null, "Files: "), fileUse, persisted ? " · kept safe ✓" : " · the browser may clear them if your disk runs low (click “Keep my files safe”)"),
       el("table", "storage-table",
         el("thead", null, el("tr", null, el("th", null, "Project"), el("th", null, "Size"), el("th", null, "Biggest parts"))),
         el("tbody", null, info.projects.map(p => el("tr", null,
@@ -190,8 +207,8 @@
       tx.length
         ? el("p", "storage-line", el("strong", null, "Transcripts inside projects: "),
             tx.map(p => `${p.name}: ${p.count} (${mb(p.size)})`).join(" · "), ". ",
-            "Move them to this browser's file storage or a folder (e.g. Google Drive) on ",
-            link("media-and-transcripts.html", "Media & Transcripts"), " (one project at a time: switch project first).")
+            "They can be moved to this browser's file storage or a folder (e.g. Google Drive) on ",
+            link("media-and-transcripts.html", "Media & Transcripts"), ", which keeps shared files small and lets collaborators share one copy (one project at a time: switch project first).")
         : el("p", "storage-line", el("strong", null, "Transcripts: "), "none are kept inside projects."),
       archived.length > 0 && el("div", null,
         el("p", "storage-line", el("strong", null, "Archived projects: "), "download a backup (with its files) and remove it from this browser to free space. Import the backup to bring it back."),
@@ -250,6 +267,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     $("app-zip").addEventListener("click", downloadApp);
     renderStorage();
+    document.addEventListener("projects-refresh", (event) => { renderStorage(); event.detail.handled = true; });
     $("storage-trim").addEventListener("click", () => {
       if (!confirm("Remove activity history older than 90 days, and old deletion records, from every project? Your work isn't touched.")) return;
       const before = Projects.storageInfo().used;

@@ -37,21 +37,9 @@
      SMALL HELPERS
      ========================================================= */
 
-  /* Builds an element; text children are added as plain text */
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const plural = Cobbler.plural;
 
   // Each speaker gets a colour (the same one everywhere on the page)
   const SPEAKER_COLORS = ["#FAD39D", "#BCF4FA", "#E7B7FA", "#FAA8C1", "#C8F2B8", "#FFE08A", "#C9D4FF", "#F7C6A3"];
@@ -60,12 +48,7 @@
     return SPEAKER_COLORS[Math.max(0, keys.indexOf(raw)) % SPEAKER_COLORS.length];
   }
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("media-status").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("media-status").textContent = ""; }, 9000);
-  }
+  const setStatus = Cobbler.statusLine("media-status", 9000);
 
 
   /* =========================================================
@@ -73,11 +56,14 @@
      ========================================================= */
 
   const tabs = {};
-  const media = M.loadMedia();
-  media.markerSets = Array.isArray(media.markerSets) ? media.markerSets : [];
-  media.locations = Array.isArray(media.locations) ? media.locations : [];
+  function loadMedia() {
+    const media = M.loadMedia();
+    media.markerSets = Array.isArray(media.markerSets) ? media.markerSets : [];
+    media.locations = Array.isArray(media.locations) ? media.locations : [];
+    return media;
+  }
   const Page = {
-    media,
+    media: loadMedia(),
     edits: M.loadEdits(),
     el, plural, speakerColor, setStatus,
 
@@ -697,5 +683,15 @@
       Page.show(["edit", "export"].includes(start) ? start : "media");
       if (missing.length) setStatus(`Couldn't find the words of ${missing.map(m => `“${m}”`).join(", ")}. See “Stored in” on each transcript.`);
     });
+  });
+
+  // After an undo, or when changes arrive from elsewhere: read everything again and redraw the open tab
+  document.addEventListener("projects-refresh", (event) => {
+    event.detail.handled = true;
+    if (event.detail.reason === "switch" && window.TextEdit?.reset) TextEdit.reset();   // another project: its own open edit
+    Page.media = loadMedia();
+    Page.edits = M.loadEdits();
+    const tab = document.querySelector("#media-tabs [aria-selected=true]")?.dataset.tab || "media";
+    M.hydrate(Page.media).then(() => Page.show(tab));
   });
 })();

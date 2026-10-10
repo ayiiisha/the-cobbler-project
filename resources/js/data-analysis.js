@@ -24,9 +24,13 @@
 
    The CSV itself is kept by file-store.js (IndexedDB). The project
    keeps each dataset's details, filters and chart settings:
-     project.data.datasets = [{ id, name, blob, size, rows, cols, added, filters, chart }]
+     project.data.datasets = [{ id, name, blob, size, rows, cols, added, filters, chart,
+                                sheet }]   ← sheet: for an Excel file, which sheet was read
 
-   Needs projects-core.js and file-store.js.
+   Excel files (.xlsx) are read in the browser (xlsx-read.js) and
+   kept as CSV; the R code then uses readxl::read_excel().
+
+   Needs projects-core.js, file-store.js and xlsx-read.js.
    ========================================================= */
 (() => {
 
@@ -36,7 +40,7 @@
   }
 
   const $ = (id) => document.getElementById(id);
-  const CURRENT_KEY = `dataAnalysisCurrent:${Projects.activeId()}`;
+  const currentKey = () => `dataAnalysisCurrent:${Projects.activeId()}`;   // (a function: the active project can change without a reload)
 
   /* Chart colours (validated categorical slots 1–3; see style.css section 21).
      Scatter groups beyond three fold into "Other". */
@@ -49,18 +53,7 @@
      SMALL HELPERS
      ========================================================= */
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
   const NS = "http://www.w3.org/2000/svg";
   function svg(tag, attrs = {}, ...children) {
@@ -70,7 +63,7 @@
     return node;
   }
 
-  const newId = () => "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = () => Cobbler.newId("d");
   const fmtInt = (n) => n.toLocaleString();
 
   // Numbers for display: 12,345 · 3.14 · 0.0021 · 1.2e9
@@ -81,25 +74,13 @@
     return n.toLocaleString(undefined, { maximumFractionDigits: a >= 100 ? 1 : a >= 1 ? 2 : 4 });
   }
 
-  const pad = (n) => String(n).padStart(2, "0");
+  const pad = Cobbler.pad;
   const isoDay = (ms) => { const d = new Date(ms); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`; };
   const fmtDate = (ms, withTime) => withTime ? `${isoDay(ms)} ${pad(new Date(ms).getUTCHours())}:${pad(new Date(ms).getUTCMinutes())}` : isoDay(ms);
 
-  function download(text, filename, type) {
-    const url = URL.createObjectURL(new Blob([text], { type }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("da-status").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("da-status").textContent = ""; }, 9000);
-  }
+  const setStatus = Cobbler.statusLine("da-status", 9000);
 
 
   /* =========================================================
@@ -931,8 +912,12 @@
       "",
       "library(tidyverse)",
       "",
-      "# Load the data (save this script in the same folder as the CSV, or change the path)",
-      `data <- read_csv(${rString(file)})`,
+      ...(S.meta.sheet != null
+        ? ["# Load the data (save this script in the same folder as the Excel file, or change the path)",
+           "library(readxl)",
+           `data <- read_excel(${rString(file)}, sheet = ${rString(S.meta.sheet)})`]
+        : ["# Load the data (save this script in the same folder as the CSV, or change the path)",
+           `data <- read_csv(${rString(file)})`]),
       "",
       "# Profile: each column's type, a preview, and summary statistics",
       "glimpse(data)",
@@ -1048,7 +1033,7 @@
 
   function renderPicker() {
     const pick = $("da-pick");
-    pick.replaceChildren(...datasets.map(d => el("option", { value: d.id }, d.name)));
+    pick.replaceChildren(...datasets.map(d => el("option", { value: d.id }, d.sheet != null ? `${d.name} › ${d.sheet}` : d.name)));
     $("da-pick-wrap").hidden = !datasets.length;
     $("da-remove").hidden = !S.meta;
     if (S.meta) pick.value = S.meta.id;
@@ -1070,7 +1055,7 @@
     S.meta = meta;
     meta.filters ||= [];
     meta.chart ||= {};
-    try { localStorage.setItem(CURRENT_KEY, meta.id); } catch {}
+    try { localStorage.setItem(currentKey(), meta.id); } catch {}
 
     $("da-work").hidden = false;
     $("da-file-name").textContent = meta.name;
@@ -1084,10 +1069,35 @@
     changed();
   }
 
+  /* Which sheet of a workbook? (asked only when there's more than one with something in it) */
+  function pickSheet(sheets) {
+    const usable = sheets.filter(s => s.rows.length > 1);
+    if (usable.length <= 1) return Promise.resolve(usable[0] || sheets[0]);
+    return new Promise(resolve => {
+      const dialog = $("da-sheet");
+      const list = $("da-sheet-list");
+      list.replaceChildren(...usable.map(s => el("li", {},
+        el("button", { type: "button", class: "small-btn", onclick: () => { dialog.close(); resolve(s); } },
+          `${s.name} (${fmtInt(s.rows.length - 1)} rows, ${s.rows[0].length} columns)`))));
+      dialog.addEventListener("close", () => resolve(null), { once: true });
+      dialog.showModal();
+    });
+  }
+
   async function loadFile(file) {
-    const text = await file.text();
+    let text, sheet = null;
+    if (window.XlsxRead?.isExcel(file.name)) {
+      let sheets;
+      try { sheets = await XlsxRead.read(file); } catch (err) { setStatus(`Couldn't read ${file.name}: ${err.message}.`); return; }
+      const chosen = await pickSheet(sheets);
+      if (!chosen) return;
+      sheet = chosen.name;
+      text = XlsxRead.toCSV(chosen.rows);
+    } else {
+      text = await file.text();
+    }
     try { buildTable(text); } catch (err) { setStatus(`Couldn't read ${file.name}: ${err.message}.`); return; }
-    const meta = { id: newId(), name: file.name, blob: newId(), size: file.size, added: Date.now(), filters: [], chart: {} };
+    const meta = { id: newId(), name: file.name, blob: newId(), size: file.size, added: Date.now(), filters: [], chart: {}, ...(sheet != null ? { sheet } : {}) };
     try {
       await FileStore.put(meta.blob, new Blob([text], { type: "text/csv" }));
     } catch {
@@ -1139,9 +1149,23 @@
 
     renderPicker();
     let last = null;
-    try { last = localStorage.getItem(CURRENT_KEY); } catch {}
+    try { last = localStorage.getItem(currentKey()); } catch {}
     const start = datasets.find(d => d.id === last) || datasets[0];
     if (start) openDataset(start);
+  });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    event.detail.handled = true;
+    datasets = Projects.getData("datasets", []);
+    if (!Array.isArray(datasets)) datasets = [];
+    const meta = S.meta && datasets.find(d => d.id === S.meta.id);
+    if (meta) { openDataset(meta); return; }
+    S.meta = null;
+    $("da-work").hidden = true;
+    $("da-summary").textContent = "";
+    renderPicker();
+    if (datasets[0]) openDataset(datasets[0]);
   });
 
   window.DataAnalysis = { buildTable, rCode: () => $("da-code").textContent };

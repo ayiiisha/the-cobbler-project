@@ -53,23 +53,9 @@
      ========================================================= */
 
   // A unique id for a comment, e.g. "clx4k2m9ab"
-  const newId = () => "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = () => Cobbler.newId("c");
 
-  /* Builds an element. Text children are always added as plain text,
-     so nothing typed into a comment can inject code into the page.
-       el("button", { class: "small-btn", onclick: fn }, "Reply") */
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false));
-    return node;
-  }
+  const el = Cobbler.el;
 
   // "8 Oct 2026, 22:10"
   const formatTime = (ms) => new Date(ms).toLocaleString(undefined, {
@@ -343,7 +329,7 @@
 
   // Saves, dropping pages with no comments left
   function saveStore() {
-    for (const key of Object.keys(store)) if (!store[key].length) delete store[key];
+    for (const key of Object.keys(store)) if (!Array.isArray(store[key]) || !store[key].length) delete store[key];
     Projects.setData(DATA_KEY, store);
     updateCount();
     document.dispatchEvent(new Event("comments-changed"));   // e.g. the Team page's task lists
@@ -460,16 +446,11 @@
   let scope = "page";         // "page" or "all"
   let draftQuote = "";        // quote attached to the comment being written
   let lastSelection = "";     // most recent text selected on the page
-  let statusTimer = 0;
 
   const isOpen = () => !$("comments-drawer").hidden;
   const showResolved = () => $("comments-show-resolved").checked;
 
-  function setStatus(message) {
-    $("comments-status").textContent = message;
-    clearTimeout(statusTimer);
-    if (message) statusTimer = setTimeout(() => { $("comments-status").textContent = ""; }, 5000);
-  }
+  const setStatus = Cobbler.statusLine("comments-status", 5000);
 
   /* Number of open comments on this page, shown on the button */
   function updateCount() {
@@ -649,6 +630,13 @@
   }
 
   document.addEventListener("DOMContentLoaded", setUpDrawer);
+
+  // After an undo, or when changes arrive from elsewhere: show the comments as they're stored now
+  document.addEventListener("projects-refresh", () => {
+    store = loadStore();
+    updateCount();
+    if (isOpen()) renderList();
+  });
 
 
   /* ---------- Let other scripts use the comment threads ---------- */

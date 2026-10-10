@@ -37,6 +37,8 @@
    34. Screenplay
    35. Storage meter, self-tests
    36. Collaboration polish, dashboard, connections
+   37. Shot List
+   38. Ideas panel (every page)
    ========================================================= */
 
 
@@ -501,6 +503,13 @@ main > h1 {
 .nav-open .main-header {
   transform: none;
   visibility: visible;
+}
+
+/* The page links are a plain list: no bullets or indent */
+.nav-links ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 .nav-ready .main-header          { transition: transform 0.3s ease-in-out, visibility 0s 0.3s; }
 .nav-ready.nav-open .main-header { transition: transform 0.3s ease-in-out, visibility 0s 0s; }
@@ -4147,6 +4156,7 @@ main .pitch-outlet-summary { font-size: 0.9rem; max-width: none; }
 /* A small colour key per source (always next to its name, never alone) */
 .cal-chip.is-tracker,    .cal-entry.is-tracker,    .cal-pill.is-tracker    { --key: var(--color-accent-3); }
 .cal-chip.is-interviews, .cal-entry.is-interviews, .cal-pill.is-interviews { --key: var(--color-accent-4); }
+.cal-chip.is-shots,      .cal-entry.is-shots,      .cal-pill.is-shots      { --key: var(--color-accent); }
 .cal-chip.is-pitches,    .cal-entry.is-pitches,    .cal-pill.is-pitches    { --key: var(--color-accent-2); }
 .cal-chip.is-events,     .cal-entry.is-events,     .cal-pill.is-events     { --key: var(--color-accent); }
 .cal-sources { margin-top: -1rem; }
@@ -5548,3 +5558,172 @@ main .tutorial-text p { max-width: 40rem; }
 .storage-housekeeping h3 { margin: 0 0 0.4rem; }
 .storage-archived { margin: 0.3rem 0 0.6rem 1.2rem; }
 .storage-archived li { margin-bottom: 0.3rem; }
+
+
+/* =========================================================
+   37. SHOT LIST (shot-list.js)
+   ========================================================= */
+
+/* Library cards */
+.sl-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.sl-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem 1rem;
+  color: var(--color-text);
+  background: var(--color-background);
+  border: 2px solid var(--color-text);
+  border-radius: var(--border-radius);
+}
+.sl-card.is-complete { background: color-mix(in srgb, var(--color-accent) 35%, var(--color-background)); }
+.sl-card-name {
+  padding: 0;
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: none;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+main .sl-card-when, main .sl-card-sum { font-size: 0.9rem; line-height: 1.4; }
+main .sl-card-when { opacity: 0.85; }
+.sl-card-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
+
+/* One list */
+.sl-head { align-items: flex-start; }
+.sl-head-text { flex: 1; min-width: 12rem; display: flex; flex-direction: column; gap: 0.2rem; }
+main .sl-title { margin: 0; font-size: 1.6rem; text-align: left; }
+main .sl-notes { font-size: 0.95rem; white-space: pre-wrap; }
+.sl-summary { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.25rem 0 0.75rem; }
+.sl-tools { align-items: center; }
+.sl-tools-gap { flex: 1; }
+
+.sl-table { min-width: 72rem; }
+.sl-table th, .sl-table td { vertical-align: top; }
+.sl-table td { padding: 0.3rem 0.35rem; }
+.sl-table input, .sl-table select, .sl-table textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.3rem 0.4rem;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: calc(var(--border-radius) / 2);
+}
+.sl-table select { min-width: 8.5rem; }
+.sl-table textarea { min-width: 14rem; resize: none; overflow: hidden; line-height: 1.35; }
+.sl-col-description textarea { min-width: 18rem; }
+.sl-table :is(input, select, textarea):is(:hover, :focus) { border-color: var(--color-text); background: var(--color-background); outline: none; }
+.sl-col-done { width: 2.2rem; text-align: center; }
+.sl-col-done input { width: 1.1rem; height: 1.1rem; margin: 0.45rem 0 0; padding: 0; }
+.sl-col-num { white-space: nowrap; font-weight: 700; }
+.sl-col-num .ideas-drag { margin-right: 0.3rem; cursor: grab; }
+.sl-num { display: inline-block; min-width: 2rem; }
+.sl-board-link { margin-left: 0.3rem; font-size: 0.9rem; text-decoration: none; }
+.sl-col-actions { white-space: nowrap; }
+.sl-col-actions .comment-action { padding: 0.2rem 0.4rem; }
+.sl-row.is-done :is(input:not([type=checkbox]), select, textarea) { opacity: 0.55; text-decoration: line-through; }
+.sl-row.is-dragging { opacity: 0.4; }
+.sl-row.is-drop > * { border-top: 3px solid var(--color-text); }
+.sl-pick-list { display: flex; flex-direction: column; gap: 0.5rem; list-style: none; margin: 0.5rem 0 1rem; }
+@media print { .sl-table :is(input, select, textarea) { border-color: transparent; } }
+
+
+/* =========================================================
+   38. IDEAS PANEL (ideas-panel.js, every page)
+   ---------------------------------------------------------
+   The lightbulb button sits above the person button; the panel
+   slides in from the right like the comments drawer.
+   ========================================================= */
+
+.ideas-fab {
+  bottom: 15rem;
+  padding: 0;
+  background: var(--color-accent);
+  color: #1E1E24;
+}
+.ideas-fab:is(:hover, :focus-visible) { transform: scale(1.1) rotate(-12deg); background-color: var(--color-accent-2); }
+.ideas-fab:active { transform: scale(0.88); transition-duration: 0.08s; }
+.ideas-fab[aria-expanded="true"] { background: var(--color-text); color: var(--color-on-text); }
+
+.ideas-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1040;               /* under the comments drawer (1050), above the page and buttons */
+  width: min(26rem, 100vw);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.25rem 2rem;
+  background: var(--color-background);
+  color: var(--color-text);
+  border-left: 0.5rem solid var(--color-accent);
+  animation: comments-slide-in 0.25s ease;
+}
+.ideas-drawer .panel-head { align-items: flex-start; }
+.ideas-drawer .panel-head h2 { font-size: 1.5rem; }
+.ideas-drawer-add { display: flex; gap: 0.5rem; align-items: flex-end; }
+.ideas-drawer-add textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: var(--color-background);
+  border: 2px solid var(--color-text);
+  border-radius: var(--border-radius);
+  resize: vertical;
+}
+.ideas-drawer-columns { display: flex; flex-direction: column; gap: 1rem; }
+.ideas-drawer-column h3 { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.4rem; font-size: 1.05rem; text-align: left; }
+.ideas-drawer-column .ideas-count { color: var(--color-on-text); background: var(--color-text); }
+.ideas-drawer-cards { display: flex; flex-direction: column; gap: 0.5rem; list-style: none; padding: 0; margin: 0; }
+.ideas-drawer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.6rem;
+  background: color-mix(in srgb, var(--color-accent) 30%, var(--color-background));
+  border: 2px solid var(--color-text);
+  border-radius: var(--border-radius);
+}
+.ideas-drawer-card textarea {
+  width: 100%;
+  padding: 0.2rem 0.3rem;
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--color-text);
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: calc(var(--border-radius) / 2);
+  resize: none;
+  overflow: hidden;
+}
+.ideas-drawer-card textarea:is(:hover, :focus) { border-color: var(--color-text); background: var(--color-background); outline: none; }
+.ideas-drawer-card-bar { display: flex; gap: 0.25rem; justify-content: flex-end; }
+.ideas-drawer-card-bar .comment-action { padding: 0.15rem 0.45rem; }
+.ideas-drawer .ideas-empty { font-size: 0.9rem; }
+[data-selected-theme="rainbow"] .ideas-drawer { --color-background: var(--color-accent-4); }
+.comments-open .ideas-drawer { display: none; }   /* comments take the same side; the lightbulb brings the ideas back */
+@media (min-width: 1400px) { .ideas-open body { padding-right: calc(26rem + 2rem); } }
+/* The round buttons step left of the open panel, so they stay in reach while it's open */
+@media (min-width: 700px) { .ideas-open:not(.comments-open) .fab { right: calc(min(26rem, 100vw) + 1.5rem); } }
+@media (prefers-reduced-motion: reduce) { .ideas-drawer { animation-duration: 0.01s; } .ideas-fab, .ideas-fab:is(:hover, :focus-visible, :active) { transform: none !important; } }

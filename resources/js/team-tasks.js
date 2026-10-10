@@ -23,34 +23,15 @@
   if (!window.Projects) return;
   const $ = (id) => document.getElementById(id);
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = () => "k" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const pad = (n) => String(n).padStart(2, "0");
+  const newId = () => Cobbler.newId("k");
+  const pad = Cobbler.pad;
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   const same = (a, b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
-  const slug = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "credits";
-  const fmtDue = (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, { day: "numeric", month: "short" }); };
+  const slug = (text) => Cobbler.slug(text, "credits");
 
-  function download(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
   // A page's name as the sidebar shows it, e.g. "zine-planner" → "Zine Planner"
   const pageTitle = (key) => document.querySelector(`.nav-links a[href="${CSS.escape(key)}.html"]`)?.textContent
@@ -72,7 +53,12 @@
   const me = () => {
     try { return localStorage.getItem(ME_KEY) || localStorage.getItem("commentAuthor") || ""; } catch { return ""; }
   };
-  const setMe = (name) => { try { localStorage.setItem(ME_KEY, name); } catch {} };
+  // Signing in here is the same as with the person button (account.js), so the
+  // button, comments and the rest of the app see the new name straight away
+  const setMe = (name) => {
+    if (window.CobblerAccount?.setName) { CobblerAccount.setName(name); return; }
+    try { localStorage.setItem(ME_KEY, name); } catch {}
+  };
 
   const tasksOf = (pid) => { const v = Projects.getDataFor(pid, "tasks", []); return Array.isArray(v) ? v : []; };
   const saveTasks = (pid, list) => Projects.setDataFor(pid, "tasks", list);

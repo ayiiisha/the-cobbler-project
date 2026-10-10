@@ -27,9 +27,9 @@
     return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   };
   const list = (v) => Array.isArray(v) ? v : [];
-  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const plural = Cobbler.plural;
   const filled = (pairs) => pairs.filter(([, v]) => v != null && String(v).trim() !== "");
-  const slug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "project";
+  const slug = (text) => Cobbler.slug(text, "project");
   const seconds = (s) => { const t = Math.round(s || 0); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
 
   function blocks(projectId) {
@@ -239,6 +239,22 @@
         rows: list(board.frames).map((f, i) => [String(i + 1), f.scene || "", [f.shot, f.move].filter(Boolean).join(", "), String(f.duration ?? ""),
           f.action || "", [f.dialogue, f.sound].filter(Boolean).join("\n")]) },
     ]));
+
+    /* ---------- Shot lists ---------- */
+    section("Shot lists", list(get("shotLists", [])).flatMap(sl => {
+      const shots = list(sl.shots);
+      const numbered = shots.length > 0 && shots.every(s => /^\d+[A-Za-z]?$/.test(String(s.scene ?? "").trim()));
+      const seen = {};
+      const number = (s, i) => { if (!numbered) return String(i + 1); const sc = String(s.scene).trim(); seen[sc] = (seen[sc] || 0) + 1; return sc + String.fromCharCode(64 + Math.min(seen[sc], 26)); };
+      return [
+        { t: "h2", text: sl.name || "Shot list" },
+        { t: "meta", text: [sl.date, sl.callTime && `call ${sl.callTime}`, sl.location, `${shots.filter(s => s.done).length}/${plural(shots.length, "shot")} done`].filter(Boolean).join(" · ") },
+        ...(sl.notes ? [{ t: "p", text: sl.notes }] : []),
+        { t: "table", head: ["#", "Scene", "Size / angle / move", "Lens", "Subject & action", "Int/Ext · Day/Night", "Secs", "Gear / sound", "Notes", "Done"],
+          rows: shots.map((s, i) => [number(s, i), s.scene || "", [s.size, s.angle, s.move].filter(Boolean).join(", "), s.lens || "", s.description || "",
+            [s.intExt, s.dayNight].filter(Boolean).join(" · "), String(s.seconds ?? ""), [s.gear, s.sound].filter(Boolean).join("\n"), s.notes || "", s.done ? "✓" : ""]) },
+      ];
+    }));
 
     /* ---------- Zines ---------- */
     const zines = list(get("zines", []));

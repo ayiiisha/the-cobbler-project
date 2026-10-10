@@ -7,6 +7,8 @@ all-projects-backup-*.json
 *.ics
 
 # Old copies and local tools
+node_modules
+package-lock.json
 _backup-*/
 .claude/
 

@@ -71,62 +71,31 @@
      SMALL HELPERS
      ========================================================= */
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const pad = (n) => String(n).padStart(2, "0");
-  const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
-
-  // "2026-10-20" → "Tue 20 Oct 2026"
-  function formatDate(iso) {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-").map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
-  }
-  // "14:00" → "2:00 PM" (in this computer's style)
-  function formatTime(hhmm) {
-    if (!hhmm) return "";
-    const [h, m] = hhmm.split(":").map(Number);
-    return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-  }
-
-  function download(text, filename, type) {
-    const url = URL.createObjectURL(new Blob([text], { type }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const { newId, pad, todayISO, download, formatTime, dragReorder } = Cobbler;
+  const formatDate = (iso) => Cobbler.formatDate(iso, { weekday: true });   // "Tue 20 Oct 2026"
 
 
   /* =========================================================
      SAVED DATA
      ========================================================= */
 
-  let people = Projects.getData("interviewees", []);
-  if (!Array.isArray(people)) people = [];
-  people.forEach(p => {
-    p.stage = STAGES.includes(p.stage) ? p.stage : STAGES[0];
-    p.release = { status: "Not sent", date: "", notes: "", ...(p.release || {}) };
-    p.checklist = Array.isArray(p.checklist) ? p.checklist : [];
-    p.questionIds = Array.isArray(p.questionIds) ? p.questionIds : [];
-    for (const key of ["name", "role", "contact", "notes", "shootDate", "shootTime", "location"]) p[key] ??= "";
-  });
-
-  let questions = Projects.getData("questions", []);
-  if (!Array.isArray(questions)) questions = [];
+  let people = [], questions = [];
+  function loadData() {
+    people = Projects.getData("interviewees", []);
+    if (!Array.isArray(people)) people = [];
+    people.forEach(p => {
+      p.stage = STAGES.includes(p.stage) ? p.stage : STAGES[0];
+      p.release = { status: "Not sent", date: "", notes: "", ...(p.release || {}) };
+      p.checklist = Array.isArray(p.checklist) ? p.checklist : [];
+      p.questionIds = Array.isArray(p.questionIds) ? p.questionIds : [];
+      for (const key of ["name", "role", "contact", "notes", "shootDate", "shootTime", "location"]) p[key] ??= "";
+    });
+    questions = Projects.getData("questions", []);
+    if (!Array.isArray(questions)) questions = [];
+  }
+  loadData();
 
   const savePeople = () => Projects.setData("interviewees", people);
   const saveQuestions = () => Projects.setData("questions", questions);
@@ -159,7 +128,7 @@
      PEOPLE BOARD
      ========================================================= */
 
-  let dragged = null;
+  const drag = { item: null };   // the person being dragged (Cobbler.dragReorder)
 
   function renderBoard() {
     $("iv-board").replaceChildren(...STAGES.map((stage, s) => {
@@ -167,14 +136,14 @@
         people.filter(p => p.stage === stage).map(p => personCard(p, s)));
       if (!list.children.length) list.append(el("li", { class: "ideas-empty" }, "Nobody here"));
 
-      list.addEventListener("dragover", (event) => { if (dragged) { event.preventDefault(); list.classList.add("is-drop"); } });
+      list.addEventListener("dragover", (event) => { if (drag.item) { event.preventDefault(); list.classList.add("is-drop"); } });
       list.addEventListener("dragleave", (event) => { if (!list.contains(event.relatedTarget)) list.classList.remove("is-drop"); });
       list.addEventListener("drop", (event) => {
         event.preventDefault();
         list.classList.remove("is-drop");
-        if (!dragged) return;
-        dragged.stage = stage;
-        dragged = null;
+        if (!drag.item) return;
+        drag.item.stage = stage;
+        drag.item = null;
         savePeople();
         renderBoard();
       });
@@ -203,15 +172,7 @@
         p.checklist.length > 0 && el("li", {}, `☑ Checklist ${checklistDone(p)}`),
         p.questionIds.length > 0 && el("li", {}, `? ${p.questionIds.length} question${p.questionIds.length === 1 ? "" : "s"}`)));
 
-    const handle = node.querySelector(".ideas-drag");
-    handle.addEventListener("pointerdown", () => { node.draggable = true; });
-    node.addEventListener("dragstart", (event) => {
-      dragged = p;
-      event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData("text/plain", p.name);
-      node.classList.add("is-dragging");
-    });
-    node.addEventListener("dragend", () => { node.draggable = false; node.classList.remove("is-dragging"); dragged = null; });
+    dragReorder(node, { handle: node.querySelector(".ideas-drag"), state: drag, item: p, text: p.name });
     return node;
   }
 
@@ -501,4 +462,7 @@
     const start = location.hash.slice(1);
     showTab(["schedule", "questions"].includes(start) ? start : "board");
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => { drag.item = null; loadData(); renderAll(); event.detail.handled = true; });
 })();

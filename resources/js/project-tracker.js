@@ -90,21 +90,9 @@
      SMALL HELPERS
      ========================================================= */
 
-  /* Builds an element; text children are added as plain text */
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = (prefix) => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = Cobbler.newId;
 
   /* Only allows http, https and mailto links. Adds https:// if there's no scheme. */
   function safeUrl(value) {
@@ -137,7 +125,7 @@
     return parts.findIndex(p => p.type === "day") < parts.findIndex(p => p.type === "month");
   })();
 
-  const pad = (n) => String(n).padStart(2, "0");
+  const pad = Cobbler.pad;
   const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
   // "2026-10-12" → a Date at local midnight
@@ -333,8 +321,8 @@
           row.active && el("span", { class: "badge" }, "Active"),
           row.archived && el("span", { class: "badge" }, "Archived"),
           !row.active && el("button", { type: "button", class: "comment-action", onclick: () => {
-            Projects.switchTo(row.id);   // (also takes it out of the archive)
-            location.reload();
+            if (window.ProjectUI?.switchTo) ProjectUI.switchTo(row.id);   // (also takes it out of the archive; the page redraws)
+            else { Projects.switchTo(row.id); location.reload(); }
           } }, "Make active"),
           !row.active && el("button", { type: "button", class: "comment-action", onclick: () => {
             Projects.setArchived(row.id, !row.archived);
@@ -805,11 +793,7 @@
      EXPORT (CSV for spreadsheets)
      ========================================================= */
 
-  function csvField(value) {
-    let v = String(value ?? "");
-    if (/^[=+\-@]/.test(v)) v = "'" + v;   // stops spreadsheets treating it as a formula
-    return /[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-  }
+  const csvField = Cobbler.csvField;
 
   /* Goals as readable text for one spreadsheet cell, e.g.
      Goal 1: Book interviews [Some Progress]
@@ -906,5 +890,13 @@
     });
 
     renderTable();
+  });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    timers.forEach(clearTimeout);
+    timers.clear();
+    renderTable();
+    event.detail.handled = true;
   });
 })();

@@ -1,3 +1,42 @@
+**10 October 2026 (call sheets, scheduling exports, Excel import, switching in place)**
+
+* Shot List: a call sheet (PDF or Word) for each list: call and wrap time, location, access and parking, weather and nearest hospital (new fields under Details), notes, the crew from the Team page with contacts, the people from the Interviews page booked for that date, and a schedule with each shot's start time from the call time and its minutes
+* Shot List: a CSV laid out for scheduling apps (scene number and shot letter in their own columns, StudioBinder/Shot Lister-style headings) and a calendar file (.ics) with the shoot day and a block per timed shot
+* Data Analysis: loads Excel files (.xlsx) as well as CSV, with a sheet picker for workbooks that have several; dates, numbers and TRUE/FALSE come through as from "Save as CSV". The R code uses readxl::read_excel() for them (xlsx-read.js, no library: the browser unzips the file itself)
+* Switching projects (the Projects panel, the Project Tracker, the Projects page), making a new project and restoring a backup redraw the page in place instead of reloading it; pages that remember an open item per project pick up the other project's
+* Code: date and time formatting and drag-to-reorder are shared helpers in util.js (Cobbler.formatDate, formatTime, dragReorder); the Interviews, Ideas, Storyboarder, Research, Zine Planner and Shot List pages use them
+* 3 new self-tests (shot list exports, the shared helpers, Excel files), 39 in all
+
+**10 October 2026 (shot lists, ideas on every page)**
+
+* New page, Shot List: shot lists for a shoot (one per day, scene or location) with the shoot date, call time, location and notes. Each shot has scene, size, angle, movement, lens, subject and action, INT/EXT, day/night, seconds on screen, minutes to shoot, gear, sound, notes and a box to tick on set. Shots are numbered from scene and order (12A, 12B…); drag or ↑ ↓ to reorder, Sort by scene, Hide done. Shots can be added from a storyboard's frames (with a link back to each frame) or one per scene heading of the screenplay. CSV and a PDF for the set; the project details document includes the lists; shoot days show on the Calendar (shot-list.js, shot-list.html)
+* Ideas on every page: a lightbulb button above the person button opens the project's ideas in a panel on the right. Jot, edit, move (← →) or delete cards there; the panel stays open from page to page until it's closed (ideas-panel.js)
+* 2 new self-tests for the shot list helpers (36 in all)
+
+**10 October 2026 (database, offline, in-place undo, checks)**
+
+* Projects now live in the browser's database (IndexedDB) instead of localStorage, so the old 5 MB limit is gone. Existing projects are moved across on first load. Only the projects that changed are written; tabs tell each other about saves and swap the new data in
+* Undo and redo redraw the page in place instead of reloading it: every page re-reads its data on a "projects-refresh" event. Changes arriving from a sync folder, or saved in another tab, show the same way (while you're typing, the next thing you do shows them). Saving a page's own defaults no longer counts as a step to undo
+* Offline and install: a service worker (sw.js) keeps a copy of the app once it's been opened online, and a web app manifest lets Chrome and Edge install it. A note offers to reload when a new version is published
+* Checks run on every push (GitHub Actions): ESLint and the self-tests page, plus every page opened in a headless browser. `npm run lint` and `npm test` run the same locally
+* The repeated page helpers (el, $, newId, slug, download, …) are shared from util.js; page scripts load through boot.js once the projects have been read
+* Settings › Storage shows the database's usage with the browser's own estimate; the storage warning uses it too
+* Self-tests: 3 new tests for the database (34 in all). Music and Writing tabs name the panel they control (aria-controls); the A/V Script and Packaging pages refresh when transcripts kept elsewhere finish loading; unused code removed
+
+**10 October 2026 (bug fixes)**
+
+* Saving: a page that edits the stored list in place but saves a tidied copy (e.g. Ideas, which never saves empty cards) could be merged with itself and bring back what it had just removed. Only changes that actually arrived from elsewhere (a collaborator, another tab, an undo) trigger a merge now
+* Ideas: clicking "+ Add idea" (or anything else) while an empty card was open did nothing the first time, because the empty card's disappearance redrew the board under the click. Empty cards now slip out on their own
+* Loading: if the saved record of which project is active ever pointed at a project that no longer existed, the app started over with a fresh project and saved it on top of the others. The projects are kept and the first one becomes active (projects-core.js)
+* Screenplay: the shortcut hints always said Ctrl+1–7, even on a Mac, because a function in the page was named `navigator` and hid the browser's own. Renamed
+* Zine Planner: opening a zine or switching tabs drew the page twice (once directly, once for the address change)
+* Packaging: "Copy everything" and the .txt download put an "undefined:" line in packages that had preview text but weren't newsletters
+* Team › Tasks: choosing your name under "I am" now signs you in the same way as the person button, so the button, comments and the dashboard update at once
+* Pitches: "Copy email" is signed with the name you signed in with (it only looked at the old comments name)
+* Writing › Check: the quote checker re-checks once transcripts kept outside the project have finished loading
+* The sidebar's page links are a proper list (ul), as HTML requires; every page has the logo as its tab icon, so browsers stop asking for a missing favicon.ico
+* Code: 2 new self-tests (31 in all); comments.js and dashboard.js tolerate oddly shaped saved data
+
 **10 October 2026 (default resources)**
 
 * The default resources CSV now sits at the top of the app (default-resources-cobbler-project.csv, next to index.html), so it can be replaced on GitHub by uploading a file with the same name. Its old place, resources/data/, still works

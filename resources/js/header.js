@@ -40,6 +40,7 @@
       <!-- project-ui.js inserts the "Projects" button here -->
 
       <nav class="nav-links">
+        <ul>
         <li><a href="av-script.html">A/V Script</a></li>
         <li><a href="about.html">About</a></li>
         <li><a href="calendar.html">Calendar</a></li>
@@ -56,11 +57,13 @@
         <li><a href="research.html">Research</a></li>
         <li><a href="resources.html">Resources</a></li>
         <li><a href="screenplay.html">Screenplay</a></li>
+        <li><a href="shot-list.html">Shot List</a></li>
         <li><a href="storyboarder.html">Storyboarder</a></li>
         <li><a href="team.html">Team</a></li>
         <li><a href="writing.html">Writing</a></li>
         <li><a href="zine-planner.html">Zine Planner</a></li>
         <li><a href="settings.html">Settings</a></li>
+        </ul>
       </nav>
     </header>
   `;
@@ -71,6 +74,9 @@
       <button type="button" class="small-btn" id="return-to-top">Return to top</button>
     </footer>
   `;
+
+
+  const OWN_SRC = document.currentScript?.src || location.href;   // (currentScript is gone by the time events fire)
 
 
   /* =========================================================
@@ -103,11 +109,54 @@
   /* Set the state right away, before the page paints, so nothing jumps */
   root.classList.toggle("nav-open", initialState());
 
+  /* The browser-tab icon (the logo), so browsers stop asking for a missing favicon.ico */
+  if (!document.querySelector("link[rel~='icon']")) {
+    const icon = document.createElement("link");
+    icon.rel = "icon";
+    icon.type = "image/svg+xml";
+    icon.href = new URL("../assets/cobbler-logo.svg", OWN_SRC).href;
+    document.head.append(icon);
+  }
+
+
+  /* =========================================================
+     OFFLINE AND INSTALL: the service worker (sw.js, at the site's root)
+     ---------------------------------------------------------
+     Keeps a copy of the app's pages and scripts so they open
+     without a connection, and lets the browser offer "Install".
+     Registered after the page has loaded so it never slows the
+     first visit. When a new version is ready, a note offers to
+     reload (only when an older copy was in charge: a first visit
+     just gets the new one).
+     ========================================================= */
+  if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener("load", async () => {
+      try {
+        const hadController = !!navigator.serviceWorker.controller;
+        const registration = await navigator.serviceWorker.register(new URL("../../sw.js", OWN_SRC).href);
+        const offerUpdate = () => {
+          if (!hadController) return;
+          const reload = () => location.reload();
+          if (window.CobblerSync?.toast) CobblerSync.toast("A new version of The Cobbler Project is ready.", [["Reload", reload]], { id: "sw-update" });
+        };
+        navigator.serviceWorker.addEventListener("controllerchange", offerUpdate, { once: true });
+        registration.addEventListener("updatefound", () => {
+          registration.installing?.addEventListener("statechange", (event) => {
+            if (event.target.state === "installed" && navigator.serviceWorker.controller) offerUpdate();
+          });
+        });
+      } catch (err) {
+        console.warn("header.js: the offline copy couldn't be set up:", err);
+      }
+    });
+  }
+
 
   /* =========================================================
      BUILD THE SIDEBAR ONCE THE PAGE HAS LOADED
      ========================================================= */
   document.addEventListener("DOMContentLoaded", () => {
+    if (document.querySelector(".main-header")) return;   // already built (boot.js sends the event again for the page's scripts)
 
     /* ---------- Insert the sidebar at the top of the page ---------- */
     document.body.insertAdjacentHTML("afterbegin", headerTemplate);

@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Settings</title>
   <link rel="stylesheet" href="../resources/css/style.css">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <meta name="theme-color" content="#FAD39D">
   <script src="../resources/js/script.js"></script>
 </head>
 
@@ -12,18 +14,12 @@
 
 <!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
 <script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/util.js"></script>
 <script src="../resources/js/projects-core.js"></script>
 <script src="../resources/js/header.js"></script>
-<script src="../resources/js/project-ui.js"></script>
 <script src="../resources/js/color-themes.js"></script>
-<script src="../resources/js/comments.js"></script>
-<script src="../resources/js/file-store.js"></script>
-<script src="../resources/js/share.js"></script>
-<script src="../resources/js/sync.js"></script>
-<script src="../resources/js/undo.js"></script>
-<script src="../resources/js/account.js"></script>
-<script src="../resources/js/zip.js" defer></script>
-<script src="../resources/js/settings.js" defer></script>
+<script src="../resources/js/boot.js"
+        data-scripts="project-ui.js comments.js file-store.js share.js sync.js undo.js account.js ideas-panel.js zip.js settings.js"></script>
 
 <main>
   <h1>Settings</h1>
@@ -42,7 +38,7 @@
 
   <section class="callout-box accent-3 storage-callout" id="storage">
     <h2>Storage</h2>
-    <p>Projects are kept in this browser's storage, which holds about 5 MB for the whole app. Uploaded files (images, audio, PDFs) are kept separately, with much more room.</p>
+    <p>Projects are kept in this browser's database, which has room for far more than the old 5 MB limit. Uploaded files (images, audio, PDFs) are kept in the same database, separately from the projects.</p>
     <div id="storage-panel"></div>
     <div class="help-downloads">
       <button type="button" class="small-btn" id="storage-trim">Trim old history</button>

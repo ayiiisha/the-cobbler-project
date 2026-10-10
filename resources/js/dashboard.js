@@ -16,19 +16,9 @@
   if (!window.Projects) return;
   const $ = (id) => document.getElementById(id);
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const pad = (n) => String(n).padStart(2, "0");
+  const pad = Cobbler.pad;
   const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const fmt = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
   const ago = (t) => {
@@ -96,7 +86,7 @@
         const n = (d.parts || []).flatMap(p => p.scenes || []).reduce((s, x) => s + words(x.text), 0);
         return { kind: "Draft", name: d.title || "Untitled", note: `${n.toLocaleString()} words${d.target ? ` of ${Number(d.target).toLocaleString()}` : ""}`, href: "writing.html", pct: d.target ? n / d.target : null };
       }),
-      ...list(id, "screenplays").map(s => ({ kind: "Script", name: s.title || "Untitled", note: `${(s.elements || []).filter(e => e.type === "scene" && e.text.trim()).length} scenes`, href: "screenplay.html" })),
+      ...list(id, "screenplays").map(s => ({ kind: "Script", name: s.title || "Untitled", note: `${(s.elements || []).filter(e => e.type === "scene" && String(e.text || "").trim()).length} scenes`, href: "screenplay.html" })),
       ...list(id, "songs").filter(s => s.status !== "Released").map(s => ({ kind: "Song", name: s.title || "Untitled", note: s.status || "Idea", href: "music.html" })),
       ...list(id, "packaging").map(p => ({ kind: "Package", name: p.name || (p.titles || []).find(t => t.chosen)?.text || "Untitled", note: p.platform, href: "packaging.html" })),
       ...list(id, "edits").map(e => ({ kind: "Paper edit", name: e.name || "Untitled", note: `${(e.blocks || []).length} lines`, href: "media-and-transcripts.html#edit" })),
@@ -125,4 +115,5 @@
 
   document.addEventListener("DOMContentLoaded", render);
   document.addEventListener("projects-changed", render);
+  document.addEventListener("projects-refresh", (event) => { if (!$("dashboard")) return; render(); event.detail.handled = true; });
 })();

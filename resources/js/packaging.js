@@ -189,46 +189,23 @@
      SMALL HELPERS
      ========================================================= */
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = Cobbler.newId;
   const words = (text) => (String(text).trim().match(/\S+/g) || []).length;
   const slugify = (text) => String(text).toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80);
   const includesWord = (text, keyword) => !!keyword.trim() && String(text).toLowerCase().includes(keyword.trim().toLowerCase());
   const cut = (text, n) => text.length > n ? text.slice(0, n - 1).trimEnd() + "…" : text;
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("pk-status").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("pk-status").textContent = ""; }, 6000);
-  }
+  const setStatus = Cobbler.statusLine("pk-status", 6000);
 
   async function copy(text, what) {
     try { await navigator.clipboard.writeText(text); setStatus(`${what} copied.`); }
     catch { prompt(`Copy the ${what.toLowerCase()}:`, text); }
   }
 
-  function download(text, filename) {
-    const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
   /* "42 / 100" with a bar; amber near the guide, red over the limit */
   function counter(text, { ideal = null, limit = null, unit = "characters" } = {}) {
@@ -250,9 +227,11 @@
      SAVED DATA
      ========================================================= */
 
-  let packages = Projects.getData("packaging", []);
-  if (!Array.isArray(packages)) packages = [];
-  packages.forEach(p => {
+  let packages = [];
+  function loadData() {
+    packages = Projects.getData("packaging", []);
+    if (!Array.isArray(packages)) packages = [];
+    packages.forEach(p => {
     if (!PLATFORMS[p.platform]) p.platform = "other";
     for (const key of ["titles", "thumbs", "tags", "hashtags", "images", "keywords"]) p[key] = Array.isArray(p[key]) ? p[key] : [];
     for (const key of ["name", "keyword", "audience", "notes", "description", "seoTitle", "metaDescription", "slug",
@@ -260,7 +239,9 @@
     p.deliverables = p.deliverables && typeof p.deliverables === "object" ? p.deliverables : {};
     p.deliverables.done ||= {};
     p.deliverables.custom = Array.isArray(p.deliverables.custom) ? p.deliverables.custom : [];
-  });
+    });
+  }
+  loadData();
 
   let saveTimer = 0;
   function save({ soon = false } = {}) {
@@ -270,8 +251,9 @@
   }
   window.addEventListener("pagehide", () => { if (saveTimer) { clearTimeout(saveTimer); Projects.setData("packaging", packages); } });
 
-  const CURRENT_KEY = `packagingCurrent:${Projects.activeId()}`;
-  let currentId = (() => { try { return localStorage.getItem(CURRENT_KEY); } catch { return null; } })();
+  const currentKey = () => `packagingCurrent:${Projects.activeId()}`;   // (a function: the project can change without a reload)
+  const remembered = () => { try { return localStorage.getItem(currentKey()); } catch { return null; } };
+  let currentId = remembered();
   const current = () => packages.find(p => p.id === currentId) || null;
   const config = (p) => PLATFORMS[p.platform];
   const chosenTitle = (p) => (p.titles.find(t => t.chosen) || p.titles[0])?.text || "";
@@ -380,7 +362,7 @@
 
   function select(id) {
     currentId = id;
-    try { localStorage.setItem(CURRENT_KEY, id); } catch {}
+    try { localStorage.setItem(currentKey(), id); } catch {}
     render();
   }
 
@@ -836,7 +818,7 @@
     const lines = [`${config(p).name}${p.name ? `: ${p.name}` : ""}`, ""];
     const add = (label, value) => { if (String(value || "").trim()) lines.push(`${label}:`, String(value).trim(), ""); };
     add(c.title?.label || "Title", chosenTitle(p));
-    add(c.previewText?.label, p.previewText);
+    if (c.previewText) add(c.previewText.label, p.previewText);
     add(c.description.label, p.description);
     if (p.tags.length) add("Tags", p.tags.join(", "));
     if (c.hashtags && p.hashtags.length) add("Hashtags", p.hashtags.map(h => "#" + h).join(" "));
@@ -1075,4 +1057,15 @@
     setUpDialog();
     render();
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    clearTimeout(saveTimer);
+    if (event.detail.reason === "switch") currentId = remembered();   // another project: its own open package
+    loadData();
+    render();
+    event.detail.handled = true;
+  });
+  // Transcripts kept outside the project finished loading (media-core.js): the previews may change
+  document.addEventListener("transcripts-loaded", () => { if (current()) refresh(); });
 })();

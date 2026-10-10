@@ -109,8 +109,8 @@
       actions.className = "section-head";
       actions.append(
         makeButton(p.active ? "Active" : "Make active", () => {
-          Projects.switchTo(p.id);   // (also takes it out of the archive)
-          announceChange();
+          if (window.ProjectUI?.switchTo) ProjectUI.switchTo(p.id);   // (also takes it out of the archive; everything on the page follows)
+          else { Projects.switchTo(p.id); announceChange(); }
           browserStatus.textContent = `"${p.name}" is now the active project.`;
         }, { disabled: p.active, ariaLabel: `Make ${p.name} the active project` }),
 
@@ -359,6 +359,7 @@
     sortSelect.addEventListener("change", renderCards);
     showArchived.addEventListener("change", renderCards);
     document.addEventListener("projects-changed", renderCards);
+    document.addEventListener("projects-refresh", (event) => { renderCards(); event.detail.handled = true; });
 
     $("browser-new").addEventListener("click", () => window.ProjectUI?.openNewProjectDialog());
 

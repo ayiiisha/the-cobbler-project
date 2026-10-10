@@ -86,44 +86,34 @@
 
   const $ = (id) => document.getElementById(id);
 
-  const newId = (prefix) => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = Cobbler.newId;
 
-  /* Builds an element; text children are added as plain text.
-       el("button", { class: "small-btn", onclick: fn }, "Open") */
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const formatDate = (ms) => new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const formatDate = Cobbler.formatDate;   // a time in ms → "20 Oct 2026"
 
   const blankPage = () => ({ strokes: [], texts: [] });
 
-  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const plural = Cobbler.plural;
 
 
   /* =========================================================
      SAVED DATA
      ========================================================= */
 
-  let zines = Projects.getData("zines", []);
-  if (!Array.isArray(zines)) zines = [];
-
-  // Fill in anything missing (e.g. from an older or hand-edited backup)
-  zines.forEach(z => {
-    z.pages = Array.isArray(z.pages) && z.pages.length ? z.pages : Array.from({ length: 8 }, blankPage);
-    z.pages.forEach(p => { p.strokes ||= []; p.texts ||= []; });
-    z.files ||= [];
-    if (!SIZES[z.size]) z.size = "a6";
-  });
+  let zines = [];
+  function loadData() {
+    zines = Projects.getData("zines", []);
+    if (!Array.isArray(zines)) zines = [];
+    // Fill in anything missing (e.g. from an older or hand-edited backup)
+    zines.forEach(z => {
+      z.pages = Array.isArray(z.pages) && z.pages.length ? z.pages : Array.from({ length: 8 }, blankPage);
+      z.pages.forEach(p => { p.strokes ||= []; p.texts ||= []; });
+      z.files ||= [];
+      if (!SIZES[z.size]) z.size = "a6";
+    });
+  }
+  loadData();
 
   /* Saves every zine. Pass the zine that changed to update its "edited" time. */
   function save(zine) {
@@ -155,10 +145,10 @@
 
   // Opens a zine (or the library, if no id). `replace` skips a Back-button step.
   function go(zineId, tab = "sketch", { replace = false } = {}) {
-    const hash = zineId ? `#zine=${encodeURIComponent(zineId)}&tab=${tab}` : "#";
-    if (replace) history.replaceState(null, "", hash === "#" ? location.pathname : hash);
-    else location.hash = hash;
-    route();
+    const hash = zineId ? `#zine=${encodeURIComponent(zineId)}&tab=${tab}` : "";
+    if (replace) { history.replaceState(null, "", hash || location.pathname); route(); }
+    else if (location.hash !== hash) location.hash = hash || "#";   // "hashchange" then calls route()
+    else route();
   }
 
   let openZine = null;   // the zine on screen, or null for the library
@@ -469,5 +459,13 @@
     $("zine-new").addEventListener("click", () => openDialog());
     window.addEventListener("hashchange", route);
     route();
+  });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    closeWorkspace();   // (saves anything the drawing editor still had waiting)
+    loadData();
+    route();
+    event.detail.handled = true;
   });
 })();

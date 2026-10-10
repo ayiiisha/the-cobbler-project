@@ -5,26 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Media &amp; Transcripts</title>
   <link rel="stylesheet" href="../resources/css/style.css">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <meta name="theme-color" content="#FAD39D">
   <script src="../resources/js/script.js"></script>
 </head>
 <body>
 
 <!-- lz-string compresses saved projects (MIT licence, resources/vendor/lz-string/LICENSE.txt) -->
 <script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"></script>
+<script src="../resources/js/util.js"></script>
 <script src="../resources/js/projects-core.js"></script>
 <script src="../resources/js/header.js"></script>
-<script src="../resources/js/project-ui.js"></script>
 <script src="../resources/js/color-themes.js"></script>
-<script src="../resources/js/comments.js"></script>
-<script src="../resources/js/file-store.js"></script>
-<script src="../resources/js/share.js"></script>
-<script src="../resources/js/sync.js"></script>
-<script src="../resources/js/undo.js"></script>
-<script src="../resources/js/account.js"></script>
-<script src="../resources/js/media-core.js" defer></script>
-<script src="../resources/js/media.js" defer></script>
-<script src="../resources/js/text-edit.js" defer></script>
-<script src="../resources/js/timeline-export.js" defer></script>
+<script src="../resources/js/boot.js"
+        data-scripts="project-ui.js comments.js file-store.js share.js sync.js undo.js account.js ideas-panel.js media-core.js media.js text-edit.js timeline-export.js"></script>
 
 <main class="is-wide">
   <h1>Media &amp; Transcripts</h1>
@@ -73,7 +67,7 @@
           <select id="transcripts-move-all" class="team-select" aria-label="Move every transcript"></select>
         </label>
       </div>
-      <p class="media-tip">Transcripts are the biggest thing in a project. Keep them in this browser's file storage, or as files in a folder such as a shared Google Drive folder, to leave room in the browser's 5 MB. Each transcript shows where it's kept and where it's been.</p>
+      <p class="media-tip">Transcripts are the biggest thing in a project. Keep them in this browser's file storage, or as files in a folder such as a shared Google Drive folder, so the project itself stays small enough to share and sync quickly. Each transcript shows where it's kept and where it's been.</p>
       <div id="transcript-list" class="transcript-list"></div>
     </section>
 

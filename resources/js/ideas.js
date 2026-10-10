@@ -23,30 +23,22 @@
 
   const DEFAULT_COLUMNS = ["Raw ideas", "Developing", "Ready to pitch"];
 
-  /* Builds an element; text children are added as plain text */
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = () => "i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = () => Cobbler.newId("i");
 
 
   /* ---------- Saved data ---------- */
 
-  let columns = Projects.getData("ideaColumns", DEFAULT_COLUMNS);
-  if (!Array.isArray(columns) || columns.length !== 3) columns = [...DEFAULT_COLUMNS];
-  let ideas = Projects.getData("ideas", []);
-  if (!Array.isArray(ideas)) ideas = [];
-  ideas.forEach(i => { i.column = [0, 1, 2].includes(i.column) ? i.column : 0; i.text ??= ""; });
+  let columns, ideas;
+  function loadData() {
+    columns = Projects.getData("ideaColumns", DEFAULT_COLUMNS);
+    if (!Array.isArray(columns) || columns.length !== 3) columns = [...DEFAULT_COLUMNS];
+    ideas = Projects.getData("ideas", []);
+    if (!Array.isArray(ideas)) ideas = [];
+    ideas.forEach(i => { i.column = [0, 1, 2].includes(i.column) ? i.column : 0; i.text ??= ""; });
+  }
+  loadData();
 
   let saveTimer = 0;
   function save({ soon = false } = {}) {
@@ -60,7 +52,7 @@
   window.addEventListener("pagehide", () => { clearTimeout(saveTimer); Projects.setData("ideas", ideas.filter(i => i.text.trim())); });
 
   let editing = null;   // a new card that hasn't been typed in yet
-  let dragged = null;
+  const drag = { item: null };   // the card being dragged (Cobbler.dragReorder)
 
 
   /* =========================================================
@@ -84,7 +76,7 @@
 
     // Drop a dragged card into this column (above the card the pointer is over)
     list.addEventListener("dragover", (event) => {
-      if (!dragged) return;
+      if (!drag.item) return;
       event.preventDefault();
       list.classList.add("is-drop");
     });
@@ -92,6 +84,7 @@
     list.addEventListener("drop", (event) => {
       event.preventDefault();
       list.classList.remove("is-drop");
+      const dragged = drag.item;
       if (!dragged) return;
       const over = [...list.querySelectorAll(".ideas-card")].find(n => {
         const r = n.getBoundingClientRect();
@@ -101,7 +94,7 @@
       ideas.splice(ideas.indexOf(dragged), 1);
       dragged.column = c;
       ideas.splice(target ? ideas.indexOf(target) : ideas.length, 0, dragged);
-      dragged = null;
+      drag.item = null;
       save();
       render();
     });
@@ -126,9 +119,14 @@
     text.addEventListener("blur", () => {
       if (editing === idea) editing = null;
       if (!idea.text.trim()) {               // empty cards disappear
-        ideas.splice(ideas.indexOf(idea), 1);
+        const at = ideas.indexOf(idea);
+        if (at >= 0) ideas.splice(at, 1);
+        // Take just this card out rather than redrawing the board: the click that
+        // caused the blur (e.g. on "+ Add idea" or another card) still lands
+        const list = node.parentElement;
+        node.remove();
+        if (list && !list.querySelector(".ideas-card")) list.append(el("li", { class: "ideas-empty" }, "Nothing here yet"));
         save();
-        render();
       } else save();
     });
 
@@ -152,24 +150,26 @@
         } }, "Pitch it →"),
         el("button", { type: "button", class: "comment-action ideas-delete", "aria-label": "Delete idea", onclick: () => {
           if (idea.text.trim().length > 80 && !confirm("Delete this idea?")) return;
-          ideas.splice(ideas.indexOf(idea), 1);
+          const at = ideas.indexOf(idea);
+          if (at >= 0) ideas.splice(at, 1);
           save();
           render();
         } }, "×")),
       text);
 
-    // Only the ⠿ handle starts a drag, so selecting text still works
-    const handle = node.querySelector(".ideas-drag");
-    handle.addEventListener("pointerdown", () => { node.draggable = true; });
-    node.addEventListener("dragstart", (event) => {
-      dragged = idea;
-      event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData("text/plain", idea.text);
-      node.classList.add("is-dragging");
-    });
-    node.addEventListener("dragend", () => { node.draggable = false; node.classList.remove("is-dragging"); dragged = null; });
+    // Only the ⠿ handle starts a drag, so selecting text still works (the columns take the drops)
+    Cobbler.dragReorder(node, { handle: node.querySelector(".ideas-drag"), state: drag, item: idea, text: idea.text });
     return node;
   }
 
   document.addEventListener("DOMContentLoaded", () => render());
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    clearTimeout(saveTimer);
+    editing = null; drag.item = null;
+    loadData();
+    render();
+    event.detail.handled = true;
+  });
 })();

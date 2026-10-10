@@ -40,6 +40,7 @@
   const SOURCES = {
     tracker:    { name: "Project Tracker", page: "project-tracker.html" },
     interviews: { name: "Interviews",      page: "interviews.html" },
+    shots:      { name: "Shot lists",      page: "shot-list.html" },
     pitches:    { name: "Pitches",         page: "pitches.html" },
     tasks:      { name: "Tasks",           page: "team.html#tasks" },
     writing:    { name: "Writing",         page: "writing.html" },
@@ -60,25 +61,14 @@
      SMALL HELPERS
      ========================================================= */
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
   const ISO = /^\d{4}-\d{2}-\d{2}$/;
-  const pad = (n) => String(n).padStart(2, "0");
+  const pad = Cobbler.pad;
   const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const fromISO = (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
   const todayISO = () => toISO(new Date());
-  const newId = () => "v" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = () => Cobbler.newId("v");
 
   const fmtDay = (iso) => fromISO(iso).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const fmtMonth = (iso) => fromISO(iso).toLocaleDateString(undefined, { month: "long", year: "numeric" });
@@ -88,14 +78,7 @@
     return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
   }
 
-  function download(text, filename, type) {
-    const url = URL.createObjectURL(new Blob([text], { type }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
 
   /* =========================================================
@@ -123,6 +106,15 @@
         add({ uid: `release-${p.id}`, date: p.release.date, title: `Release form ${(p.release.status || "").toLowerCase()}: ${p.name || "Unnamed"}`,
               detail: p.release.notes || "", source: "interviews" });
       }
+    });
+
+    // Shot lists: shoot days
+    const shotLists = Array.isArray(get("shotLists", [])) ? get("shotLists", []) : [];
+    shotLists.forEach(sl => {
+      const shots = Array.isArray(sl.shots) ? sl.shots : [];
+      add({ uid: `shoot-day-${sl.id}`, date: sl.date, time: sl.callTime || "", title: `Shoot: ${sl.name || "Shot list"}`,
+            detail: [sl.location, `${shots.filter(s => s.done).length}/${shots.length} shots done`].filter(Boolean).join(" · "),
+            source: "shots" });
     });
 
     // Pitches sent
@@ -474,6 +466,13 @@
 
   // Other pages (the Home dashboard) can gather dates too
   window.CobblerCalendar = { datesFor, SOURCES };
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    if (!$("cal-body")) return;   // loaded on another page just for its dates
+    render();
+    event.detail.handled = true;
+  });
 
   document.addEventListener("DOMContentLoaded", () => {
     if (!$("cal-body")) return;   // loaded on another page just for its dates

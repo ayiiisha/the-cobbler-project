@@ -48,23 +48,11 @@
      SMALL HELPERS
      ========================================================= */
 
-  /* Builds an element; text children are added as plain text */
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = () => "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = () => Cobbler.newId("m");
   const people = (n) => n === 1 ? "1 person" : `${n} people`;
-  const slug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "team";
+  const slug = (text) => Cobbler.slug(text, "team");
 
   /* Only allows http, https and mailto links. Adds https:// to things like "example.com". */
   function safeUrl(value) {
@@ -87,21 +75,9 @@
   };
 
   // A browser download of some text
-  function download(text, filename, type) {
-    const url = URL.createObjectURL(new Blob([text], { type }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("team-status").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("team-status").textContent = ""; }, 6000);
-  }
+  const setStatus = Cobbler.statusLine("team-status", 6000);
 
 
   /* =========================================================
@@ -380,11 +356,7 @@
     }).join("\r\n") + "\r\n";
   }
 
-  function csvField(value) {
-    let v = String(value ?? "");
-    if (/^[=+\-@]/.test(v)) v = "'" + v;   // stops spreadsheets treating it as a formula
-    return /[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-  }
+  const csvField = Cobbler.csvField;
 
   function exportCSV() {
     const columns = [["Name", "name"], ["Pronouns", "pronouns"], ["Roles", "roles"], ["Email", "email"], ["Phone", "phone"],
@@ -438,5 +410,13 @@
     document.addEventListener("projects-changed", render);
 
     render();
+  });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    loadTeam();
+    render();
+    document.dispatchEvent(new Event("team-changed"));   // the Tasks and Credits parts redraw too
+    event.detail.handled = true;
   });
 })();

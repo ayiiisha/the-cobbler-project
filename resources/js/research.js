@@ -31,21 +31,10 @@
     disputed:   { name: "Disputed",   icon: "⚠" },
   };
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = () => "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const formatDate = (ms) => new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const newId = () => Cobbler.newId("r");
+  const formatDate = Cobbler.formatDate;   // a time in ms → "20 Oct 2026"
 
   /* Only http, https and mailto links become clickable */
   function safeUrl(value) {
@@ -60,16 +49,20 @@
 
   /* ---------- Saved data ---------- */
 
-  let notes = Projects.getData("research", []);
-  if (!Array.isArray(notes)) notes = [];
-  notes.forEach(n => {
+  let notes = [];
+  function loadData() {
+    notes = Projects.getData("research", []);
+    if (!Array.isArray(notes)) notes = [];
+    notes.forEach(n => {
     n.status = STATUSES[n.status] ? n.status : "unverified";
     n.tags = Array.isArray(n.tags) ? n.tags : [];
     // Notes from before several sources were possible had one `source`
     if (!Array.isArray(n.sources)) n.sources = n.source ? [n.source] : [];
     delete n.source;
     for (const key of ["title", "claim", "body"]) n[key] ??= "";
-  });
+    });
+  }
+  loadData();
   const save = () => Projects.setData("research", notes);
 
   const view = { status: "", tag: "", search: "" };
@@ -249,4 +242,7 @@
     $("research-search").addEventListener("input", (event) => { view.search = event.target.value; render(); });
     render();
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => { loadData(); render(); event.detail.handled = true; });
 })();

@@ -10,8 +10,10 @@
    typing there, as usual. The drawing pages keep their own
    undo for strokes while you draw.
 
-   After an undo the page reloads (keeping your place) so it
-   shows the data as it now is, and a note offers Redo/Undo.
+   After an undo the page redraws itself from the data as it now
+   is (Projects.refresh: each page listens for "projects-refresh")
+   and a note offers Redo/Undo. A page that can't redraw itself
+   reloads instead, keeping your place.
 
    Needs projects-core.js (and sync.js for the note).
    ========================================================= */
@@ -24,6 +26,8 @@
 
   const typing = (target) => target?.closest?.("input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=range]):not([type=color]), textarea, [contenteditable=''], [contenteditable=true]");
 
+  const describe = (label, project) => `${label}${project && project !== Projects.activeName() ? ` in “${project}”` : ""}`;
+
   function go(redo) {
     // Save anything waiting to be saved first (pages save on "pagehide")
     window.dispatchEvent(new Event("pagehide"));
@@ -32,6 +36,16 @@
       note(redo ? "Nothing to redo." : "Nothing to undo.", []);
       return;
     }
+
+    // Pages that can redraw themselves do, right here
+    if (Projects.refresh({ reason: redo ? "redo" : "undo", key: done.key, projectId: done.projectId })) {
+      note(`${redo ? "Redone" : "Undone"}: change to ${describe(done.label, done.project)}.`, [
+        redo ? ["Undo", () => go(false)] : ["Redo", () => go(true)],
+      ]);
+      return;
+    }
+
+    // Otherwise reload, keeping the place and the note for afterwards
     Projects.freeze();   // stop this page saving its old copy while it reloads
     try {
       sessionStorage.setItem(NOTE_KEY, JSON.stringify({ redo, label: done.label, project: done.project, at: Date.now() }));
@@ -57,7 +71,7 @@
     go(isRedo);
   });
 
-  // After the reload: back to where you were, and say what happened
+  // After a reload: back to where you were, and say what happened
   document.addEventListener("DOMContentLoaded", () => {
     let saved = null, scroll = null;
     try {
@@ -70,8 +84,7 @@
       setTimeout(() => window.scrollTo(0, scroll.y), 120);
     }
     if (saved && Date.now() - saved.at < 10000) {
-      const what = `${saved.label}${saved.project && saved.project !== Projects.activeName() ? ` in “${saved.project}”` : ""}`;
-      setTimeout(() => note(`${saved.redo ? "Redone" : "Undone"}: change to ${what}.`, [
+      setTimeout(() => note(`${saved.redo ? "Redone" : "Undone"}: change to ${describe(saved.label, saved.project)}.`, [
         saved.redo ? ["Undo", () => go(false)] : ["Redo", () => go(true)],
       ]), 150);
     }

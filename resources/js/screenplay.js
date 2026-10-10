@@ -47,22 +47,10 @@
   if (!window.Projects) return;
   const $ = (id) => document.getElementById(id);
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key === "style") node.setAttribute("style", value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const slug = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "script";
+  const newId = Cobbler.newId;
+  const slug = (text) => Cobbler.slug(text, "script");
 
 
   /* =========================================================
@@ -89,8 +77,13 @@
      DATA
      ========================================================= */
 
-  let scripts = (() => { const v = Projects.getData("screenplays", []); return Array.isArray(v) ? v : []; })();
-  scripts.forEach(normalize);
+  let scripts = [];
+  function loadData() {
+    const v = Projects.getData("screenplays", []);
+    scripts = Array.isArray(v) ? v : [];
+    scripts.forEach(normalize);
+  }
+  loadData();
   function normalize(s) {
     for (const k of ["title", "author", "basedOn", "contact", "draftDate"]) s[k] ??= "";
     s.elements = Array.isArray(s.elements) ? s.elements.filter(e => TYPES[e.type]) : [];
@@ -102,8 +95,9 @@
     s.breakdown = Array.isArray(s.breakdown) ? s.breakdown : [];
     return s;
   }
-  const CURRENT_KEY = `screenplayCurrent:${Projects.activeId()}`;
-  let currentId = (() => { try { return localStorage.getItem(CURRENT_KEY); } catch { return null; } })();
+  const currentKey = () => `screenplayCurrent:${Projects.activeId()}`;   // (a function: the project can change without a reload)
+  const remembered = () => { try { return localStorage.getItem(currentKey()); } catch { return null; } };
+  let currentId = remembered();
   const current = () => scripts.find(s => s.id === currentId) || scripts[0] || null;
 
   let saveTimer = 0;
@@ -114,12 +108,7 @@
   }
   window.addEventListener("pagehide", () => { if (saveTimer) { clearTimeout(saveTimer); Projects.setData("screenplays", scripts); } });
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("sp-status").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("sp-status").textContent = ""; }, 7000);
-  }
+  const setStatus = Cobbler.statusLine("sp-status", 7000);
 
   let view = "write";     // "write", "pages" or "breakdown"
   let focusId = null;     // the element being edited
@@ -401,7 +390,7 @@
       revisionBar(s),
       titleDetails(s),
       el("div", { class: "sp-layout" },
-        navigator(s),
+        sceneNavigator(s),
         view === "write" ? editor(s) : view === "pages" ? el("div", { class: "sp-pages-view", id: "sp-pages-view" }) : breakdownView(s)));
     renderPages();
     updateTypeButtons();
@@ -647,8 +636,10 @@
     setTimeout(() => { window.print(); document.title = title; }, 60);
   }
 
-  /* Scenes and characters, beside the script */
-  function navigator(s) {
+  /* Scenes and characters, beside the script.
+     (Not called "navigator": that name would hide the browser's own
+     navigator, which the shortcut hints read to tell Macs apart.) */
+  function sceneNavigator(s) {
     let n = 0;
     const scenes = s.elements.filter(e => e.type === "scene" && e.text.trim()).map(e => ({ e, n: ++n }));
     const counts = new Map();
@@ -866,7 +857,7 @@
     old.replaceWith(editor(s).querySelector(".sp-editor"));
     const fresh = document.querySelector(".sp-editor");
     fresh.querySelectorAll("textarea").forEach(grow);
-    document.querySelector(".sp-nav")?.replaceWith(navigator(s));
+    document.querySelector(".sp-nav")?.replaceWith(sceneNavigator(s));
     window.scrollTo(0, scroll);
     focusEl(id, caret);
   }
@@ -892,14 +883,7 @@
      EXPORT AND IMPORT
      ========================================================= */
 
-  function download(text, filename, type) {
-    const url = URL.createObjectURL(new Blob([text], { type }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
   function exportScript(s, kind) {
     const name = slug(s.title || "script");
@@ -1044,7 +1028,7 @@ ${titlePage}
 
   function select(id) {
     currentId = id;
-    try { localStorage.setItem(CURRENT_KEY, id); } catch {}
+    try { localStorage.setItem(currentKey(), id); } catch {}
     render();
   }
 
@@ -1075,6 +1059,15 @@ ${titlePage}
       setStatus(`Imported ${file.name}: ${s.elements.length} elements.`);
     });
     render();
+  });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    clearTimeout(saveTimer); saveTimer = 0;
+    if (event.detail.reason === "switch") currentId = remembered();   // another project: its own open script
+    loadData();
+    render();
+    event.detail.handled = true;
   });
 
   window.Screenplay = { paginate, wrap, toFDX, toFountain, fromFountain, current, scenesOf, sceneEighths, eighthsLabel, breakdownCSV, REV_COLORS };

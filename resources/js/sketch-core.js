@@ -82,19 +82,7 @@
   // Only real "#rrggbb" colours get into the page's styles
   const safeColor = (c) => /^#[0-9a-f]{6}$/i.test(c) ? c : "#1e1e24";
 
-  /* Builds an element; text children are added as plain text */
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false));
-    return node;
-  }
+  const el = Cobbler.el;
 
   function loadPrefs() {
     try { return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem(PREFS_KEY)) }; }
@@ -348,6 +336,8 @@
     clearTimeout(E.saveTimer);
     E.saveTimer = setTimeout(persist, 500);
   }
+  // Anything still waiting is saved before the page is left (or an undo)
+  window.addEventListener("pagehide", () => { if (E?.saveTimer) persist(); });
 
   function savePrefs() {
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(E.prefs)); } catch {}

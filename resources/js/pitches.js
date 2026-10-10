@@ -42,64 +42,36 @@
      SMALL HELPERS
      ========================================================= */
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const slug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "pitch";
+  const newId = Cobbler.newId;
+  const slug = (text) => Cobbler.slug(text, "pitch");
   const statusClass = (s) => "is-" + s.toLowerCase().replace(/\s+/g, "-");
 
-  function safeUrl(value) {
-    const v = String(value || "").trim();
-    if (!/^(https?:\/\/|www\.)/i.test(v) || /\s/.test(v)) return null;
-    try {
-      const url = new URL(/^www\./i.test(v) ? "https://" + v : v);
-      return ["http:", "https:"].includes(url.protocol) ? url.href : null;
-    } catch { return null; }
-  }
+  const download = (text, filename) => Cobbler.download(text, filename, "text/markdown");
 
-  function download(text, filename) {
-    const url = URL.createObjectURL(new Blob([text], { type: "text/markdown" }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const setStatus = Cobbler.statusLine("pitch-status-msg", 6000);
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("pitch-status-msg").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("pitch-status-msg").textContent = ""; }, 6000);
-  }
-
-  // Your name, as set for comments (used to sign pitch emails)
-  const myName = () => { try { return localStorage.getItem("commentAuthor") || ""; } catch { return ""; } };
+  // Your name, as signed in with the person button (used to sign pitch emails)
+  const myName = () => Projects.me();
 
 
   /* =========================================================
      SAVED DATA
      ========================================================= */
 
-  let pitches = Projects.getData("pitches", []);
-  if (!Array.isArray(pitches)) pitches = [];
-  pitches.forEach(p => {
-    p.status = STATUSES.includes(p.status) ? p.status : "Drafting";
-    p.links = Array.isArray(p.links) ? p.links : [];
-    p.outlets = Array.isArray(p.outlets) ? p.outlets : [];
-    FIELDS.forEach(k => { p[k] ??= ""; });
-  });
+  let pitches = [];
+  function loadData() {
+    pitches = Projects.getData("pitches", []);
+    if (!Array.isArray(pitches)) pitches = [];
+    pitches.forEach(p => {
+      p.status = STATUSES.includes(p.status) ? p.status : "Drafting";
+      p.links = Array.isArray(p.links) ? p.links : [];
+      p.outlets = Array.isArray(p.outlets) ? p.outlets : [];
+      FIELDS.forEach(k => { p[k] ??= ""; });
+    });
+  }
+  loadData();
   const save = () => Projects.setData("pitches", pitches);
 
   const view = { status: "", search: "" };
@@ -377,4 +349,7 @@
       }
     }
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => { loadData(); render(); event.detail.handled = true; });
 })();

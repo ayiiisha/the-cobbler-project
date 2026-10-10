@@ -47,8 +47,10 @@
 
   const songs = () => M.list("songs");
   const saveSongs = (list) => M.saveList("songs", list);
-  let saveTimer = 0;
-  const saveSoon = (list) => { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveSongs(list), 500); };
+  let saveTimer = 0, pending = null;
+  const saveSoon = (list) => { pending = list; clearTimeout(saveTimer); saveTimer = setTimeout(() => { saveTimer = 0; pending = null; saveSongs(list); }, 500); };
+  // Anything still waiting is saved before the page is left (or an undo)
+  window.addEventListener("pagehide", () => { if (saveTimer) { clearTimeout(saveTimer); saveTimer = 0; const list = pending; pending = null; saveSongs(list); } });
 
   function normalize(s) {
     for (const k of ["title", "key", "time", "length", "lyrics", "abc", "notes"]) s[k] ??= "";
@@ -329,7 +331,7 @@
         await synth.prime();
         synth.start();
         button.textContent = "■ Stop";
-      } catch (err) {
+      } catch {
         synth = null;
         button.textContent = "▶ Play";
         M.setStatus("Couldn't play it: the instrument sounds load from the internet. Check your connection.");

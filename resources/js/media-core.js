@@ -80,7 +80,7 @@
      SMALL HELPERS
      ========================================================= */
 
-  const newId = (prefix) => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = Cobbler.newId;
   const wordCount = (text) => (text.trim().match(/\S+/g) || []).length;
 
   // "Interview_Aisha_01.mov" → "interviewaisha01" (for matching names)
@@ -683,7 +683,7 @@
 
   // "This browser's file storage" / "Google Drive › Cobbler transcripts › …"
   function describeStorage(entry) {
-    if (!entry || entry.where === "project") return "Inside the project (counts towards the browser's 5 MB)";
+    if (!entry || entry.where === "project") return "Inside the project";
     if (entry.where === "browser") return "This browser's file storage";
     return `Folder “${entry.folder}” › ${String(entry.path || "").split("/").join(" › ")}`;
   }

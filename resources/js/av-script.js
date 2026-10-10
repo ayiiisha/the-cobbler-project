@@ -27,45 +27,28 @@
 
   const M = window.MediaCore;
   const $ = (id) => document.getElementById(id);
-  const EDIT_KEY = `textEditCurrent:${Projects.activeId()}`;   // same "open edit" as Text Edit
+  const editKey = () => `textEditCurrent:${Projects.activeId()}`;   // same "open edit" as Text Edit (a function: the project can change without a reload)
 
 
   /* =========================================================
      SMALL HELPERS
      ========================================================= */
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const slug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "script";
+  const slug = (text) => Cobbler.slug(text, "script");
 
-  function download(text, filename, type) {
-    const url = URL.createObjectURL(new Blob([text], { type }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
 
   /* =========================================================
      DATA
      ========================================================= */
 
-  const media = M.loadMedia();
-  const edits = M.loadEdits();
-  let editId = (() => { try { return localStorage.getItem(EDIT_KEY); } catch { return null; } })();
+  let media = M.loadMedia();
+  let edits = M.loadEdits();
+  const rememberedEdit = () => { try { return localStorage.getItem(editKey()); } catch { return null; } };
+  let editId = rememberedEdit();
 
   const currentEdit = () => edits.find(e => e.id === editId) || edits[0] || null;
   const saveEdits = () => Projects.setData("edits", edits);
@@ -277,7 +260,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     $("av-edit").addEventListener("change", (event) => {
       editId = event.target.value;
-      try { localStorage.setItem(EDIT_KEY, editId); } catch {}
+      try { localStorage.setItem(editKey(), editId); } catch {}
       render();
     });
     $("av-md").addEventListener("click", () => {
@@ -291,6 +274,17 @@
     });
     render();
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    if (event.detail.reason === "switch") editId = rememberedEdit();   // another project: its own open edit
+    media = M.loadMedia();
+    edits = M.loadEdits();
+    M.hydrate(media).then(render);
+    event.detail.handled = true;
+  });
+  // Transcripts kept outside the project finished loading (media-core.js): speaker names may now be known
+  document.addEventListener("transcripts-loaded", () => { media = M.loadMedia(); render(); });
 
   window.AVScript = { toMarkdown, toText, scriptRows };
 })();

@@ -43,17 +43,24 @@
    ========================================================= */
 (() => {
 
-  /* ---------- Settings ---------- */
+  /* ---------- Where projects are kept ----------
+     IndexedDB, database "cobbler-projects": one record per project in the
+     store "projects" (key: the project's id) and which one is active in
+     "meta". It holds far more than the few megabytes of localStorage, where
+     projects used to live (key cobblerProjects2; cobblerProjects before
+     compression). An older save there is read once, written to IndexedDB
+     and removed. If IndexedDB isn't available (some browsers block it for
+     pages opened straight from the disk), localStorage is used as before,
+     with big saves compressed to fit.
 
-  // The browser storage slot that holds every project. It was "cobblerProjects"
-  // before saves could be compressed; the new name means an out-of-date copy of
-  // the app (e.g. a page the browser cached) can't mistake a compressed save
-  // for no projects and start over on top of it. The old slot is read once,
-  // moved here, and removed.
+     Reading IndexedDB takes a moment, so the projects aren't ready the
+     instant this file runs: Projects.ready is a promise that resolves when
+     they are. boot.js waits for it before loading the page's scripts. */
+  const DB_NAME = window.COBBLER_DB_NAME || "cobbler-projects";   // the self-tests use a scratch database
   const STORAGE_KEY = "cobblerProjects2";
   const OLD_STORAGE_KEY = "cobblerProjects";
 
-  /* Saved projects are compressed (lz-string, about 3–5 times smaller) once
+  /* localStorage saves are compressed (lz-string, about 3–5 times smaller) once
      they're big enough for it to matter. "LZ1:" marks a compressed save;
      plain JSON (starting with "{") still loads, so older saves keep working. */
   const LZ_PREFIX = "LZ1:";
@@ -107,31 +114,50 @@
   const slug = (text) =>
     text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "project";
 
+  const obj = (v) => v && typeof v === "object" && !Array.isArray(v);   // (isObject, below, is the same)
+
 
   /* ---------- Load saved projects (or start fresh) ---------- */
 
-  function loadState() {
-    // Use the saved projects if they exist and look valid
+  /* A saved { activeId, projects } tidied up, or null if there's nothing usable in it.
+     Whatever projects are there are kept, even if the record of which one is
+     active is missing or points at a project that's gone (e.g. deleted in
+     another tab): starting over would save an empty project on top of them. */
+  function normalizeSaved(saved) {
+    if (!saved || !obj(saved.projects)) return null;
+    const ids = Object.keys(saved.projects).filter(id => obj(saved.projects[id]));
+    if (!ids.length) return null;
+    ids.forEach(id => {
+      const p = saved.projects[id];
+      if (typeof p.name !== "string") p.name = "Untitled";
+      if (!obj(p.data)) p.data = {};
+    });
+    for (const id of Object.keys(saved.projects)) if (!ids.includes(id)) delete saved.projects[id];
+    if (!ids.includes(saved.activeId)) saved.activeId = ids[0];
+    return { activeId: saved.activeId, projects: saved.projects };
+  }
+
+  // The projects saved in localStorage (older versions of the app, or the fallback), or null
+  function readLocal() {
     let raw = null;
     try { raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(OLD_STORAGE_KEY); } catch {}
+    if (raw == null) return null;
     try {
-      const saved = decode(raw);
-      if (saved && saved.projects && saved.projects[saved.activeId]) return saved;
+      return normalizeSaved(decode(raw));
     } catch (err) {
       // Something's saved but unreadable here: keep it safe rather than start over on top of it
-      if (raw) {
-        unreadable = true;
-        console.error("projects-core.js: couldn't read the saved projects:", err);
-        setTimeout(() => alert("Your projects couldn't be loaded on this page, so nothing will be saved here (to keep them safe). Try reloading; if it keeps happening, open Settings and download a backup."), 0);
-      }
+      unreadable = true;
+      console.error("projects-core.js: couldn't read the saved projects:", err);
+      setTimeout(() => alert("Your projects couldn't be loaded on this page, so nothing will be saved here (to keep them safe). Try reloading; if it keeps happening, open Settings and download a backup."), 0);
+      return null;
     }
+  }
 
-    // First visit: make one project. If the old Resources table
-    // (from before projects existed) is there, move it in.
+  // First visit: one project. If the old Resources table (from before projects existed) is there, move it in.
+  function freshState() {
     let oldResources = [];
     try { oldResources = JSON.parse(localStorage.getItem("uploadedResources") || "[]"); } catch {}
     if (!Array.isArray(oldResources)) oldResources = [];
-
     const id = newId();
     return {
       activeId: id,
@@ -147,35 +173,100 @@
     };
   }
 
-  // Everything, in memory: { activeId, projects: { id: project, ... } }
-  let state = loadState();
 
-  // Another tab saved: pick up its changes (keeping this tab's project)
-  window.addEventListener("storage", (event) => {
-    if (event.key !== STORAGE_KEY || !event.newValue) return;
-    try {
-      const fresh = decode(event.newValue);
-      if (!fresh?.projects) return;
-      const active = state.activeId;
-      // Undo steps for anything another tab changed would undo its work: drop them
-      for (const [pid, p] of Object.entries(fresh.projects)) {
-        for (const key of new Set([...Object.keys(p.data || {}), ...Object.keys(state.projects[pid]?.data || {})])) {
-          if (JSON.stringify(p.data?.[key]) !== JSON.stringify(state.projects[pid]?.data?.[key])) dropHistory(pid, key);
-        }
-      }
-      state = fresh;
-      if (state.projects[active]) state.activeId = active;
-      shadows.clear();   // filled in again as pages read
-      document.dispatchEvent(new Event("projects-data-changed"));
-    } catch {}
+  /* ---------- IndexedDB ---------- */
+
+  const idb = window.indexedDB || null;
+  let db = null;            // the open database (IndexedDB mode)
+  let mode = "local";       // "idb" or "local"
+
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const request = idb.open(DB_NAME, 1);
+      request.onupgradeneeded = () => {
+        const d = request.result;
+        if (!d.objectStoreNames.contains("projects")) d.createObjectStore("projects");
+        if (!d.objectStoreNames.contains("meta")) d.createObjectStore("meta");
+      };
+      request.onsuccess = () => {
+        request.result.onversionchange = () => request.result.close();   // let a newer version (or a delete) through
+        resolve(request.result);
+      };
+      request.onerror = () => reject(request.error || new Error("IndexedDB is blocked"));
+      request.onblocked = () => reject(new Error("IndexedDB is blocked"));
+    });
+  }
+
+  // One transaction; resolves when it has committed
+  const transaction = (stores, kind, run) => new Promise((resolve, reject) => {
+    const t = db.transaction(stores, kind);
+    run(t);
+    t.oncomplete = () => resolve();
+    t.onerror = t.onabort = () => reject(t.error || new Error("the database couldn't be written"));
+  });
+
+  async function readDB() {
+    const out = { projects: {}, activeId: null };
+    await transaction(["projects", "meta"], "readonly", (t) => {
+      const cursor = t.objectStore("projects").openCursor();
+      cursor.onsuccess = () => { const c = cursor.result; if (c) { out.projects[c.key] = c.value; c.continue(); } };
+      const meta = t.objectStore("meta").get("activeId");
+      meta.onsuccess = () => { out.activeId = meta.result ?? null; };
+    });
+    return Object.keys(out.projects).length ? out : null;
+  }
+
+  // Writes these projects (as they are now), removes those, and records the active one
+  const writeDB = (ids, removed) => transaction(["projects", "meta"], "readwrite", (t) => {
+    const store = t.objectStore("projects");
+    ids.forEach(id => { if (state.projects[id]) store.put(state.projects[id], id); });
+    removed.forEach(id => store.delete(id));
+    t.objectStore("meta").put(state.activeId, "activeId");
   });
 
 
-  /* ---------- Save to the browser ---------- */
+  /* ---------- Save ----------
+     saveState(ids, removed) says which projects changed (none given = all).
+     In IndexedDB mode the writes are gathered and done a moment later, so
+     several saves in a row become one; Projects.flushed() waits for them. */
 
-  let lastSaved = { plain: 0, stored: 0 };   // sizes of the last save, for Settings › Storage
-  function saveState() {
-    if (unreadable) return false;
+  let state = null;         // everything, in memory: { activeId, projects: { id: project, ... } }
+  let lastSaved = { plain: 0, stored: 0 };   // sizes of the last localStorage save, for Settings › Storage
+  const dirty = new Set(), gone = new Set();
+  let everything = false, flushScheduled = false, saveFailed = false, migrating = false;
+  let writing = Promise.resolve();
+
+  // Other tabs: told after each write, so they pick up the changes
+  const channel = typeof BroadcastChannel === "function" ? new BroadcastChannel(DB_NAME) : null;
+
+  function saveState(ids = null, removed = []) {
+    if (unreadable || !state) return false;
+    if (mode === "local") return saveLocal();
+    if (ids === null) everything = true; else ids.forEach(id => dirty.add(id));
+    removed.forEach(id => { gone.add(id); dirty.delete(id); });
+    if (!flushScheduled) { flushScheduled = true; queueMicrotask(flush); }
+    return true;
+  }
+
+  function flush() {
+    flushScheduled = false;
+    const ids = everything ? Object.keys(state.projects) : [...dirty];
+    const removed = [...gone];
+    everything = false; dirty.clear(); gone.clear();
+    if (!ids.length && !removed.length) return;
+    writing = writing.then(() => writeDB(ids, removed)).then(() => {
+      if (migrating) {   // the old localStorage save is now in the database: free the space
+        migrating = false;
+        try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(OLD_STORAGE_KEY); } catch {}
+      }
+      try { channel?.postMessage({ type: "saved" }); } catch {}
+    }, (err) => {
+      console.error("projects-core.js: couldn't save:", err);
+      if (!saveFailed) { saveFailed = true; alert("Couldn't save your changes to the browser's database. Back up your projects (Settings) and reload."); }
+    });
+  }
+
+  function saveLocal() {
     try {
       const json = JSON.stringify(state);
       const stored = encode(json);
@@ -188,7 +279,63 @@
       return false;
     }
   }
-  saveState();   // make sure a first-visit project is stored right away
+
+  /* Changes saved elsewhere (another tab): take the fresh copy, keeping this tab's project */
+  function adopt(fresh) {
+    const next = normalizeSaved(fresh);
+    if (!next) return;
+    const active = state?.activeId;
+    // Undo steps for anything another tab changed would undo its work: drop them
+    for (const [pid, p] of Object.entries(next.projects)) {
+      for (const key of new Set([...Object.keys(p.data || {}), ...Object.keys(state?.projects[pid]?.data || {})])) {
+        if (JSON.stringify(p.data?.[key]) !== JSON.stringify(state?.projects[pid]?.data?.[key])) dropHistory(pid, key);
+      }
+    }
+    state = next;
+    if (state.projects[active]) state.activeId = active;
+    shadows.clear();   // filled in again as pages read
+    document.dispatchEvent(new Event("projects-data-changed"));
+  }
+  channel?.addEventListener("message", async (event) => {
+    if (event.data?.type !== "saved" || mode !== "idb") return;
+    try { const fresh = await readDB(); if (fresh) adopt(fresh); } catch {}
+  });
+  window.addEventListener("storage", (event) => {
+    if (mode !== "local" || event.key !== STORAGE_KEY || !event.newValue) return;
+    try { adopt(decode(event.newValue)); } catch {}
+  });
+
+
+  /* ---------- Start ---------- */
+
+  let resolveReady;
+  const ready = new Promise(resolve => { resolveReady = resolve; });
+
+  async function start() {
+    if (idb) {
+      try {
+        db = await openDB();
+        mode = "idb";
+        state = normalizeSaved(await readDB());
+        if (!state) {
+          state = readLocal();            // an older save, to move across
+          if (state) migrating = true;
+        }
+        if (!state) state = freshState();
+        saveState();   // a first-visit project is stored right away; an older save is moved across
+      } catch (err) {
+        console.warn("projects-core.js: IndexedDB isn't available here, so projects are kept in localStorage:", err);
+        db = null;
+        mode = "local";
+      }
+    }
+    if (mode === "local") {
+      state = readLocal() || freshState();
+      saveState();   // (not when what's saved couldn't be read: that's left alone)
+    }
+    resolveReady();
+  }
+  start();   // (without IndexedDB this finishes before the line below runs)
 
 
   /* ---------- Naming ---------- */
@@ -247,7 +394,7 @@
     sourceLog: "Sources", recordsRequests: "Records requests", eventTimeline: "Event timeline",
     submissions: "Submissions", corrections: "Corrections", writingLog: "Writing goals",
     screenplays: "Screenplay", songs: "Songs", gigs: "Gigs", releases: "Releases", samples: "Sample clearances",
-    claims: "Who's working on what",
+    claims: "Who's working on what", shotLists: "Shot List",
   };
 
   const isObject = (v) => v && typeof v === "object" && !Array.isArray(v);
@@ -508,6 +655,7 @@
      page, mustn't hide changes that arrived since); every save updates it. */
   const views = new Map();
   const viewKey = (id, key) => `${id}\u0000${key}`;
+  const fallbacks = new Map();   // the fallback a page read for a key that had nothing saved (JSON)
   function remember(id, key, value) {
     if (key.startsWith("_")) return;
     try { views.set(viewKey(id, key), value === undefined ? undefined : JSON.stringify(value)); } catch {}
@@ -567,7 +715,7 @@
     project.updated = Date.now();
     remember(id, key, value);
     shade(id, key, value);
-    saveState();
+    saveState([id]);
     document.dispatchEvent(new Event("projects-saved"));
     return true;
   }
@@ -601,7 +749,7 @@
       document.dispatchEvent(new CustomEvent("projects-read-only", { detail: { id, key } }));
       return;
     }
-    if (key.startsWith("_")) { project.data[key] = value; project.updated = Date.now(); saveState(); return; }
+    if (key.startsWith("_")) { project.data[key] = value; project.updated = Date.now(); saveState([id]); return; }
 
     const current = project.data[key];
     const seen = views.has(viewKey(id, key)) ? views.get(viewKey(id, key)) : undefined;
@@ -620,19 +768,27 @@
     }
 
     // For undo: what this save replaces
+    // (a page saving the very fallback it read, e.g. its default columns, changes nothing worth undoing)
     const replaced = current === undefined ? null : current === value ? shadow : JSON.stringify(current);
-    if (replaced !== undefined && replaced !== JSON.stringify(value)) recordStep(id, key, replaced);
+    const justTheFallback = current === undefined && fallbacks.get(viewKey(id, key)) === JSON.stringify(value);
+    if (replaced !== undefined && replaced !== JSON.stringify(value) && !justTheFallback) recordStep(id, key, replaced);
 
     // Changed underneath the page? Merge the page's changes into what's there now.
+    // "Underneath" means what's stored moved on since the page read or last saved
+    // it (changes arrived from a collaborator, another tab or an undo), which the
+    // shadow records. A page's own edits to the stored object don't count, so a
+    // page that edits in place but saves a tidied copy isn't merged with itself
+    // (which could bring back things it had just removed).
+    const moved = shadow === undefined || shadow !== seen;
     let result = value;
-    if (current !== undefined && current !== value && seen !== undefined && JSON.stringify(current) !== seen) {
+    if (current !== undefined && current !== value && seen !== undefined && moved && JSON.stringify(current) !== seen) {
       result = mergeData(value, current, JSON.parse(seen), { prefer: "mine" }).data;
     }
     project.data[key] = result;
     project.updated = Date.now();
     remember(id, key, value);
     shade(id, key, result);
-    saveState();
+    saveState([id]);
     document.dispatchEvent(new Event("projects-saved"));   // e.g. sync.js syncs soon after
   }
 
@@ -651,6 +807,26 @@
     // How many things a page has saved (see countItems above)
     countItems,
 
+    /* ----- Loading and saving ----- */
+
+    // Resolves once the saved projects have been read (boot.js waits for this before the page's scripts run)
+    ready,
+    // Resolves once every save so far has been written
+    flushed() { if (flushScheduled) flush(); return writing; },
+    /** Saves what's waiting, then lets go of the database (the self-tests tidy up with this). */
+    async closeStorage() { await this.flushed(); db?.close(); db = null; try { channel?.close(); } catch {} },
+    // "indexeddb" or "localStorage" (the fallback)
+    storageMode: () => mode === "idb" ? "indexeddb" : "localStorage",
+
+    /* Asks the page to redraw itself from what's stored now (after an undo, or
+       changes that arrived). Page scripts listen for "projects-refresh" and set
+       event.detail.handled; returns false if none did, so the caller can reload instead. */
+    refresh(detail = {}) {
+      const event = new CustomEvent("projects-refresh", { detail: { handled: false, ...detail } });
+      document.dispatchEvent(event);
+      return event.detail.handled === true;
+    },
+
     // [{ id, name, archived }, ...] for menus
     list: () => Object.entries(state.projects).map(([id, p]) => ({ id, name: p.name, archived: !!p.archived })),
 
@@ -664,6 +840,7 @@
       const value = state.projects[state.activeId].data[key];
       if (!views.has(viewKey(state.activeId, key))) remember(state.activeId, key, value);
       if (!shadows.has(viewKey(state.activeId, key))) shade(state.activeId, key, value);
+      if (value === undefined) { try { fallbacks.set(viewKey(state.activeId, key), JSON.stringify(fallback)); } catch {} }
       return value === undefined ? fallback : value;
     },
 
@@ -697,15 +874,21 @@
     /* ----- Storage (Settings › Storage) ----- */
 
     storageInfo() {
-      let used = 0;
-      try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); used += k.length + (localStorage.getItem(k) || "").length; } } catch {}
       const projects = Object.entries(state.projects).map(([id, p]) => {
         const keys = Object.entries(p.data).map(([key, v]) => ({ key, size: JSON.stringify(v ?? null).length,
           name: KEY_NAMES[key] || (key === "_activity" ? "Activity history" : key === "_deleted" ? "Deletion records" : key) }));
         return { id, name: p.name, size: keys.reduce((n, k) => n + k.size, 0), keys: keys.sort((a, b) => b.size - a.size) };
       }).sort((a, b) => b.size - a.size);
-      if (!lastSaved.plain) { try { const json = JSON.stringify(state); lastSaved = { plain: json.length, stored: encode(json).length }; } catch {} }
-      return { used, limit: 5_000_000, projects, plain: lastSaved.plain, stored: lastSaved.stored, compressed: lastSaved.stored < lastSaved.plain };
+      const plain = JSON.stringify(state).length;
+      if (mode === "local") {
+        // localStorage: everything the site keeps there counts towards its 5 MB
+        let used = 0;
+        try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); used += k.length + (localStorage.getItem(k) || "").length; } } catch {}
+        const stored = lastSaved.stored || encode(JSON.stringify(state)).length;
+        return { where: "localStorage", used, limit: 5_000_000, projects, plain, stored, compressed: stored < plain };
+      }
+      // IndexedDB has no fixed ceiling of its own: Settings asks the browser (navigator.storage.estimate) for the real one
+      return { where: "indexeddb", used: plain, limit: null, projects, plain, stored: plain, compressed: false };
     },
 
     // Shortens bookkeeping: activity older than `days`, deletion records older than twice that
@@ -729,7 +912,7 @@
       const p = state.projects[id];
       if (!p) return;
       delete p.readOnly; delete p.sharedBy; delete p.shareId;
-      saveState();
+      saveState([id]);
     },
     me,
     setMe(name) { try { localStorage.setItem("cobblerMe", String(name || "").trim()); } catch {} },
@@ -745,7 +928,7 @@
     markShared(id) {
       if (!state.projects[id]) return;
       state.projects[id].lastShared = Date.now();
-      saveState();
+      saveState([id]);
     },
 
     // Sync folder: whether this project syncs (this browser only)
@@ -753,7 +936,7 @@
     setSync(id, on) {
       if (!state.projects[id]) return;
       if (on) state.projects[id].sync = true; else delete state.projects[id].sync;
-      saveState();
+      saveState([id]);
     },
 
     // Every project's value for one key, e.g. all the "zines" lists.
@@ -802,7 +985,7 @@
         data: {},
       };
       if (activate) state.activeId = id;
-      saveState();
+      saveState([id]);
       return id;
     },
 
@@ -811,7 +994,7 @@
       if (!state.projects[id]) return;
       state.activeId = id;
       delete state.projects[id].archived;
-      saveState();
+      saveState([id]);
     },
 
 
@@ -823,7 +1006,7 @@
       if (!project || (archived && id === state.activeId)) return false;
       if (archived) project.archived = true;
       else delete project.archived;
-      saveState();
+      saveState([id]);
       return true;
     },
 
@@ -832,7 +1015,7 @@
     renameById(id, name) {
       if (!state.projects[id]) return;
       state.projects[id].name = name.trim() || "Untitled";
-      saveState();
+      saveState([id]);
     },
 
 
@@ -849,7 +1032,7 @@
         updated: Date.now(),
         data: JSON.parse(JSON.stringify(p.data)),   // a real copy, not a shared reference
       };
-      saveState();
+      saveState([copyId]);
       return copyId;
     },
 
@@ -858,7 +1041,7 @@
       if (!state.projects[id] || Object.keys(state.projects).length < 2) return false;
       delete state.projects[id];
       if (state.activeId === id) state.activeId = Object.keys(state.projects)[0];
-      saveState();
+      saveState([], [id]);
       return true;
     },
 
@@ -871,14 +1054,14 @@
     shareIdOf(id, { create = false } = {}) {
       const p = state.projects[id];
       if (!p) return null;
-      if (!p.shareId && create) { p.shareId = "s" + newId().slice(1); saveState(); }
+      if (!p.shareId && create) { p.shareId = "s" + newId().slice(1); saveState([id]); }
       return p.shareId || null;
     },
 
     setShareId(id, shareId) {
       if (!state.projects[id] || !shareId) return;
       state.projects[id].shareId = shareId;
-      saveState();
+      saveState([id]);
     },
 
     // The project with this share id, if this browser has a copy
@@ -904,14 +1087,14 @@
       p.updated = Date.now();
       Object.keys(data).forEach(k => shade(id, k, data[k]));
       document.dispatchEvent(new CustomEvent("projects-data-changed", { detail: { id } }));
-      return saveState();
+      return saveState([id]);
     },
 
     // Makes a project from someone else's synced copy; returns its id
     addFromShare({ name, description = "", shareId, data }) {
       const id = newId();
       state.projects[id] = { name: uniqueName(name || "Shared project"), description, created: Date.now(), updated: Date.now(), data, shareId, sync: true, lastShared: Date.now() };
-      saveState();
+      saveState([id]);
       return id;
     },
 
@@ -963,8 +1146,10 @@
     // Adds projects as new entries; returns the id of the last one added
     addImported(list) {
       let lastId = null;
+      const added = [];
       list.forEach(p => {
         const id = newId();
+        added.push(id);
         state.projects[id] = {
           name: uniqueName(p.name),
           description: p.description || "",
@@ -979,7 +1164,7 @@
         if (p.shareId && (p.readOnly || !Object.values(state.projects).some(x => x.shareId === p.shareId))) state.projects[id].shareId = p.shareId;
         lastId = id;
       });
-      saveState();
+      saveState(added);
       return lastId;
     },
 

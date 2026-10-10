@@ -39,45 +39,21 @@
   if (!window.Projects) return;
   const $ = (id) => document.getElementById(id);
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = Cobbler.newId;
   const words = (text) => (String(text || "").match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || []).length;
-  const pad = (n) => String(n).padStart(2, "0");
-  const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const todayISO = Cobbler.todayISO;
   const fmtDate = (iso) => {
     if (!iso) return "";
     const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number);
     return y ? new Date(y, m - 1, d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : String(iso);
   };
-  const slug = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "draft";
+  const slug = (text) => Cobbler.slug(text, "draft");
 
-  function download(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("wr-status").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("wr-status").textContent = ""; }, 8000);
-  }
+  const setStatus = Cobbler.statusLine("wr-status", 8000);
 
 
   /* =========================================================
@@ -144,9 +120,12 @@
     return d;
   }
 
-  let drafts = (() => { const v = Projects.getData("drafts", []); return Array.isArray(v) ? v : []; })().map(normalize);
-  const CURRENT_KEY = `writingCurrent:${Projects.activeId()}`;
-  let currentId = (() => { try { return localStorage.getItem(CURRENT_KEY); } catch { return null; } })();
+  let drafts = [];
+  function loadData() { const v = Projects.getData("drafts", []); drafts = (Array.isArray(v) ? v : []).map(normalize); }
+  loadData();
+  const currentKey = () => `writingCurrent:${Projects.activeId()}`;   // (a function: the project can change without a reload)
+  const remembered = () => { try { return localStorage.getItem(currentKey()); } catch { return null; } };
+  let currentId = remembered();
   const current = () => drafts.find(d => d.id === currentId) || drafts[0] || null;
 
   let saveTimer = 0;
@@ -194,13 +173,13 @@
      Only increases count, so cutting text doesn't lose your day.
      ========================================================= */
 
-  const LAST_TOTAL_KEY = `writingLastTotal:${Projects.activeId()}`;
+  const lastTotalKey = () => `writingLastTotal:${Projects.activeId()}`;
   function totalWords() { return drafts.reduce((n, d) => n + draftWords(d), 0); }
   function logWords() {
     const total = totalWords();
     let last = null;
-    try { last = JSON.parse(localStorage.getItem(LAST_TOTAL_KEY)); } catch {}
-    try { localStorage.setItem(LAST_TOTAL_KEY, JSON.stringify(total)); } catch {}
+    try { last = JSON.parse(localStorage.getItem(lastTotalKey())); } catch {}
+    try { localStorage.setItem(lastTotalKey(), JSON.stringify(total)); } catch {}
     if (last == null || total <= last) return;
     const person = Projects.me() || "Me";
     const log = list("writingLog");
@@ -211,7 +190,7 @@
     saveList("writingLog", log);
   }
   // Start counting from what's here now, so words that arrived from collaborators aren't counted as yours
-  (() => { try { localStorage.setItem(LAST_TOTAL_KEY, JSON.stringify(totalWords())); } catch {} })();
+  (() => { try { localStorage.setItem(lastTotalKey(), JSON.stringify(totalWords())); } catch {} })();
 
 
   /* =========================================================
@@ -229,6 +208,7 @@
       b.setAttribute("aria-selected", String(on));
       b.tabIndex = on ? 0 : -1;
     });
+    $("wr-panel").setAttribute("aria-labelledby", `wr-tab-${name}`);
     history.replaceState(null, "", name === "draft" ? location.pathname : `#${name}`);
     const panel = $("wr-panel");
     tabs[name].render(panel);
@@ -256,7 +236,7 @@
 
   function select(id) {
     currentId = id;
-    try { localStorage.setItem(CURRENT_KEY, id); } catch {}
+    try { localStorage.setItem(currentKey(), id); } catch {}
     renderTop();
     show(tab);
   }
@@ -315,5 +295,20 @@
     });
     renderTop();
     show(tab);
+
+    // Transcripts kept outside the project finish loading in the background
+    // (media-core.js): the quote checker needs their words
+    document.addEventListener("transcripts-loaded", () => { if (tab === "check") show("check"); });
+
+    // After an undo, or when changes arrive from elsewhere: draw the open tab again from what's stored
+    document.addEventListener("projects-refresh", (event) => {
+      clearTimeout(saveTimer); saveTimer = 0;
+      if (event.detail.reason === "switch") currentId = remembered();   // another project: its own open draft
+      loadData();
+      try { localStorage.setItem(lastTotalKey(), JSON.stringify(totalWords())); } catch {}   // words put back by an undo weren't written today
+      renderTop();
+      show(tab);
+      event.detail.handled = true;
+    });
   });
 })();
