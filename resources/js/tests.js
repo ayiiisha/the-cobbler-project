@@ -235,6 +235,23 @@
     eq(core.getData("tracker", undefined), undefined, "one undo removes the whole burst of typing");
   });
 
+  test("A sort or a deletion right after typing is its own undo step", async () => {
+    const { core, env } = await withCore();
+    core.getData("shotLists", []);
+    core.setData("shotLists", [{ id: "a", text: "" }, { id: "b", text: "" }]);
+    env.tick();                                                                          // a moment later
+    core.setData("shotLists", [{ id: "a", text: "Hel" }, { id: "b", text: "" }]);      // typing…
+    core.setData("shotLists", [{ id: "a", text: "Hello" }, { id: "b", text: "" }]);    // …still typing: one step
+    core.setData("shotLists", [{ id: "b", text: "" }, { id: "a", text: "Hello" }]);    // a sort, straight after
+    core.setData("shotLists", [{ id: "b", text: "" }]);                                 // a deletion, straight after
+    eq(core.undo().key, "shotLists", "undo the deletion");
+    eq(core.getData("shotLists").map(s => s.id), ["b", "a"], "the deleted item is back, the sort is kept");
+    core.undo();
+    eq(core.getData("shotLists").map(s => s.id), ["a", "b"], "then the sort is undone");
+    core.undo();
+    eq(core.getData("shotLists")[0].text, "", "then the typing, as one step");
+  });
+
   test("Undo never throws away changes that arrived from collaborators", async () => {
     const { core, env } = await withCore();
     core.getData("research", []);
@@ -460,7 +477,7 @@
         '<row r="2"><c r="A2" t="s"><v>3</v></c><c r="B2"><v>34</v></c><c r="C2" s="1"><v>45292</v></c><c r="D2" t="b"><v>1</v></c><c r="E2" s="2"><v>45292.4375</v></c></row>' +
         '<row r="4"><c r="A4" t="s"><v>4</v></c><c r="C4" s="1"><v>45658</v></c><c r="D4" t="b"><v>0</v></c><c r="E4" t="e"><v>#DIV/0!</v></c></row>' +
         '</sheetData></worksheet>') },
-      { name: "xl/worksheets/sheet2.xml", data: xml('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Just a note</t></is></c></row></sheetData></worksheet>') },
+      { name: "xl/worksheets/sheet2.xml", data: xml('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c t="inlineStr"><is><t>Just a note</t></is></c><c><v>7</v></c></row><row r="2"><c t="inlineStr"><is><t>Second</t></is></c></row></sheetData></worksheet>') },
     ];
     const blob = env.window.Zip.create(files);
     return new File([blob], "people.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
@@ -479,6 +496,7 @@
     eq(rows[2], ["Bo", "", "2025-01-01", "FALSE", ""], "a blank cell is empty, an error is missing, the gap row is dropped");
     const csv = X.toCSV(rows);
     eq(csv.split("\r\n")[1], '"Ana, ""the"" one",34,2024-01-01,TRUE,2024-01-01 10:30', "as CSV, quoted where needed");
+    eq(sheets[1].rows, [["Just a note", "7"], ["Second", ""]], "cells written without a reference are placed along the row");
   });
 
 

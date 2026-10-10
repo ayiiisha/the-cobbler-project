@@ -684,12 +684,27 @@
   }
 
   // before = JSON of the value the save replaced (null: there wasn't one)
-  function recordStep(id, key, before) {
+  // The "shape" of a value: which items a list holds (by id), or an object's keys.
+  // Typing changes text but not the shape; adding, removing or reordering items does.
+  function shapeOf(json) {
+    try {
+      const v = JSON.parse(json);
+      if (Array.isArray(v)) return "a:" + v.map(x => x && typeof x === "object" ? (x.id ?? "?") : "·").join(",");
+      if (v && typeof v === "object") return "o:" + Object.keys(v).join(",");
+      return "s";
+    } catch { return "?"; }
+  }
+
+  // before = JSON of the value the save replaced (null: there wasn't one); after = JSON of the new value
+  function recordStep(id, key, before, after) {
     if (before !== null && before.length > 1_500_000) return;   // too big to keep (e.g. huge transcripts)
     const now = Date.now();
+    const shape = shapeOf(after);
     const last = history.undo[history.undo.length - 1];
-    if (last && last.id === id && last.key === key && now - last.at < 1500) last.at = now;   // one step while typing
-    else history.undo.push({ id, key, before, at: now });
+    // Saves of the same key in quick succession are one step while they look like typing
+    // (same items, different text). A sort, an import or a deletion right after is its own step.
+    if (last && last.id === id && last.key === key && now - last.at < 1500 && last.shape === shape) last.at = now;
+    else history.undo.push({ id, key, before, at: now, shape });
     while (history.undo.length > MAX_STEPS) history.undo.shift();
     history.redo = [];
     persistHistory();
@@ -771,7 +786,8 @@
     // (a page saving the very fallback it read, e.g. its default columns, changes nothing worth undoing)
     const replaced = current === undefined ? null : current === value ? shadow : JSON.stringify(current);
     const justTheFallback = current === undefined && fallbacks.get(viewKey(id, key)) === JSON.stringify(value);
-    if (replaced !== undefined && replaced !== JSON.stringify(value) && !justTheFallback) recordStep(id, key, replaced);
+    const afterJSON = JSON.stringify(value);
+    if (replaced !== undefined && replaced !== afterJSON && !justTheFallback) recordStep(id, key, replaced, afterJSON);
 
     // Changed underneath the page? Merge the page's changes into what's there now.
     // "Underneath" means what's stored moved on since the page read or last saved

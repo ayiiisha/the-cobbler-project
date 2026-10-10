@@ -1,3 +1,10 @@
+**10 October 2026 (bug fixes)**
+
+* Offline copy: the service worker refreshed its files through the browser's ordinary cache, so a fresh copy could be replaced by one the browser still had from before a deploy (GitHub Pages keeps files for 10 minutes). It now always checks with the server
+* Undo: different changes made within a moment of each other (an import, then Sort by scene) were undone together, because saves within 1.5 seconds were treated as typing. Only saves that look like typing (the same items, different text) are one step now
+* Data Analysis: Excel cells written without a cell reference (some apps leave it out) were skipped; they're placed along the row instead
+* Self-tests: one more, one extended (40 in all)
+
 **10 October 2026 (call sheets, scheduling exports, Excel import, switching in place)**
 
 * Shot List: a call sheet (PDF or Word) for each list: call and wrap time, location, access and parking, weather and nearest hospital (new fields under Details), notes, the crew from the Team page with contacts, the people from the Interviews page booked for that date, and a schedule with each shot's start time from the call time and its minutes
