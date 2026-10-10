@@ -104,11 +104,7 @@
 
   /* Makes one cell safe for CSV: quotes it if needed, and stops
      spreadsheets treating text like "=SUM(...)" as a formula */
-  function csvField(value) {
-    let v = String(value ?? "");
-    if (/^[=+\-@]/.test(v)) v = "'" + v;
-    return /[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-  }
+  const csvField = Cobbler.csvField;
 
   function toCSV(records) {
     const lines = [COLUMNS.join(",")];

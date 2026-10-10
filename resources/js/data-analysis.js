@@ -49,18 +49,7 @@
      SMALL HELPERS
      ========================================================= */
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
   const NS = "http://www.w3.org/2000/svg";
   function svg(tag, attrs = {}, ...children) {
@@ -70,7 +59,7 @@
     return node;
   }
 
-  const newId = () => "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = () => Cobbler.newId("d");
   const fmtInt = (n) => n.toLocaleString();
 
   // Numbers for display: 12,345 · 3.14 · 0.0021 · 1.2e9
@@ -81,25 +70,13 @@
     return n.toLocaleString(undefined, { maximumFractionDigits: a >= 100 ? 1 : a >= 1 ? 2 : 4 });
   }
 
-  const pad = (n) => String(n).padStart(2, "0");
+  const pad = Cobbler.pad;
   const isoDay = (ms) => { const d = new Date(ms); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`; };
   const fmtDate = (ms, withTime) => withTime ? `${isoDay(ms)} ${pad(new Date(ms).getUTCHours())}:${pad(new Date(ms).getUTCMinutes())}` : isoDay(ms);
 
-  function download(text, filename, type) {
-    const url = URL.createObjectURL(new Blob([text], { type }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("da-status").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("da-status").textContent = ""; }, 9000);
-  }
+  const setStatus = Cobbler.statusLine("da-status", 9000);
 
 
   /* =========================================================

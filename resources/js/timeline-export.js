@@ -58,16 +58,9 @@
     return t.length > max ? t.slice(0, max - 1) + "…" : t;
   };
 
-  const slug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "edit";
+  const slug = (text) => Cobbler.slug(text, "edit");
 
-  function download(text, filename, type) {
-    const url = URL.createObjectURL(new Blob([text], { type }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
   /* FCPXML frame durations: a frame is num/den seconds */
   function frameDuration(fps) {

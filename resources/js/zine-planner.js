@@ -86,28 +86,15 @@
 
   const $ = (id) => document.getElementById(id);
 
-  const newId = (prefix) => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = Cobbler.newId;
 
-  /* Builds an element; text children are added as plain text.
-       el("button", { class: "small-btn", onclick: fn }, "Open") */
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false));
-    return node;
-  }
+  const el = Cobbler.el;
 
   const formatDate = (ms) => new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
   const blankPage = () => ({ strokes: [], texts: [] });
 
-  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const plural = Cobbler.plural;
 
 
   /* =========================================================

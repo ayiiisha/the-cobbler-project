@@ -189,46 +189,23 @@
      SMALL HELPERS
      ========================================================= */
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = Cobbler.newId;
   const words = (text) => (String(text).trim().match(/\S+/g) || []).length;
   const slugify = (text) => String(text).toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80);
   const includesWord = (text, keyword) => !!keyword.trim() && String(text).toLowerCase().includes(keyword.trim().toLowerCase());
   const cut = (text, n) => text.length > n ? text.slice(0, n - 1).trimEnd() + "…" : text;
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("pk-status").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("pk-status").textContent = ""; }, 6000);
-  }
+  const setStatus = Cobbler.statusLine("pk-status", 6000);
 
   async function copy(text, what) {
     try { await navigator.clipboard.writeText(text); setStatus(`${what} copied.`); }
     catch { prompt(`Copy the ${what.toLowerCase()}:`, text); }
   }
 
-  function download(text, filename) {
-    const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
   /* "42 / 100" with a bar; amber near the guide, red over the limit */
   function counter(text, { ideal = null, limit = null, unit = "characters" } = {}) {

@@ -49,7 +49,7 @@
     return id;
   })();
 
-  const slug = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "someone";
+  const slug = (text) => Cobbler.slug(text, "someone");
   const safeName = (text) => String(text).replace(/[\\/:*?"<>|[\]]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60) || "Project";
   const myFile = () => `${slug(Projects.me())}-${device}.cobbler.json`;
 
@@ -327,17 +327,7 @@
      ON EVERY PAGE: status in the sidebar, "changes arrived", reminders
      ========================================================= */
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
   const ago = (t) => {
     const s = Math.round((Date.now() - t) / 1000);

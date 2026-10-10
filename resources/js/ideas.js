@@ -23,21 +23,9 @@
 
   const DEFAULT_COLUMNS = ["Raw ideas", "Developing", "Ready to pitch"];
 
-  /* Builds an element; text children are added as plain text */
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = () => "i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = () => Cobbler.newId("i");
 
 
   /* ---------- Saved data ---------- */

@@ -39,45 +39,22 @@
   if (!window.Projects) return;
   const $ = (id) => document.getElementById(id);
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = Cobbler.newId;
   const words = (text) => (String(text || "").match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || []).length;
-  const pad = (n) => String(n).padStart(2, "0");
-  const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const pad = Cobbler.pad;
+  const todayISO = Cobbler.todayISO;
   const fmtDate = (iso) => {
     if (!iso) return "";
     const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number);
     return y ? new Date(y, m - 1, d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : String(iso);
   };
-  const slug = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "draft";
+  const slug = (text) => Cobbler.slug(text, "draft");
 
-  function download(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("wr-status").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("wr-status").textContent = ""; }, 8000);
-  }
+  const setStatus = Cobbler.statusLine("wr-status", 8000);
 
 
   /* =========================================================

@@ -80,7 +80,7 @@
      SMALL HELPERS
      ========================================================= */
 
-  const newId = (prefix) => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = Cobbler.newId;
   const wordCount = (text) => (text.trim().match(/\S+/g) || []).length;
 
   // "Interview_Aisha_01.mov" → "interviewaisha01" (for matching names)

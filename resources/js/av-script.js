@@ -34,29 +34,11 @@
      SMALL HELPERS
      ========================================================= */
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const slug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "script";
+  const slug = (text) => Cobbler.slug(text, "script");
 
-  function download(text, filename, type) {
-    const url = URL.createObjectURL(new Blob([text], { type }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
 
   /* =========================================================

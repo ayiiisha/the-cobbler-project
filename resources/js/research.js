@@ -31,20 +31,9 @@
     disputed:   { name: "Disputed",   icon: "⚠" },
   };
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = () => "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = () => Cobbler.newId("r");
   const formatDate = (ms) => new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
   /* Only http, https and mailto links become clickable */

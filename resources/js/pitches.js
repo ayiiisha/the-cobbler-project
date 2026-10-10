@@ -42,21 +42,10 @@
      SMALL HELPERS
      ========================================================= */
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const slug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "pitch";
+  const newId = Cobbler.newId;
+  const slug = (text) => Cobbler.slug(text, "pitch");
   const statusClass = (s) => "is-" + s.toLowerCase().replace(/\s+/g, "-");
 
   function safeUrl(value) {
@@ -68,21 +57,9 @@
     } catch { return null; }
   }
 
-  function download(text, filename) {
-    const url = URL.createObjectURL(new Blob([text], { type: "text/markdown" }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = (text, filename) => Cobbler.download(text, filename, "text/markdown");
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("pitch-status-msg").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("pitch-status-msg").textContent = ""; }, 6000);
-  }
+  const setStatus = Cobbler.statusLine("pitch-status-msg", 6000);
 
   // Your name, as signed in with the person button (used to sign pitch emails)
   const myName = () => Projects.me();

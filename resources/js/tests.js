@@ -73,7 +73,9 @@
   const sources = new Map();
   async function load(file, env, extra = {}) {
     if (!sources.has(file)) sources.set(file, await (await fetch(`../resources/js/${file}`, { cache: "no-store" })).text());
-    const vars = { ...env, ...extra };
+    // The shared helpers (util.js) come first in the sandbox, as on every page
+    if (file !== "util.js" && !env.window.Cobbler) await load("util.js", env);
+    const vars = { ...env, Cobbler: env.window.Cobbler, ...extra };
     delete vars.tick;
     const names = Object.keys(vars);
     new Function(...names, sources.get(file))(...names.map(n => vars[n]));

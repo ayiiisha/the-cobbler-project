@@ -96,8 +96,8 @@
      SMALL HELPERS
      ========================================================= */
 
-  const newId = (prefix) => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const newId = Cobbler.newId;
+  const plural = Cobbler.plural;
   const formatDate = (ms) => new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
   // 83.5 → "1:23.5", 24 → "0:24"

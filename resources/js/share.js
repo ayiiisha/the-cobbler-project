@@ -125,7 +125,7 @@
      THE SHARE FILE
      ========================================================= */
 
-  const slugOf = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "project";
+  const slugOf = (text) => Cobbler.slug(text, "project");
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
   /* Builds the file to share: { file (a File), name, bytes, files (how many uploads) } */

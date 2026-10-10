@@ -60,25 +60,14 @@
      SMALL HELPERS
      ========================================================= */
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
   const ISO = /^\d{4}-\d{2}-\d{2}$/;
-  const pad = (n) => String(n).padStart(2, "0");
+  const pad = Cobbler.pad;
   const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const fromISO = (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
   const todayISO = () => toISO(new Date());
-  const newId = () => "v" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const newId = () => Cobbler.newId("v");
 
   const fmtDay = (iso) => fromISO(iso).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const fmtMonth = (iso) => fromISO(iso).toLocaleDateString(undefined, { month: "long", year: "numeric" });
@@ -88,14 +77,7 @@
     return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
   }
 
-  function download(text, filename, type) {
-    const url = URL.createObjectURL(new Blob([text], { type }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
 
   /* =========================================================

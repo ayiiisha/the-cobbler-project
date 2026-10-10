@@ -27,9 +27,9 @@
     return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   };
   const list = (v) => Array.isArray(v) ? v : [];
-  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const plural = Cobbler.plural;
   const filled = (pairs) => pairs.filter(([, v]) => v != null && String(v).trim() !== "");
-  const slug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "project";
+  const slug = (text) => Cobbler.slug(text, "project");
   const seconds = (s) => { const t = Math.round(s || 0); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
 
   function blocks(projectId) {

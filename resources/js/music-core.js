@@ -18,22 +18,11 @@
   if (!window.Projects) return;
   const $ = (id) => document.getElementById(id);
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const pad = (n) => String(n).padStart(2, "0");
-  const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const newId = Cobbler.newId;
+  const pad = Cobbler.pad;
+  const todayISO = Cobbler.todayISO;
   const fmtDate = (iso) => {
     if (!iso) return "";
     const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number);
@@ -45,23 +34,11 @@
     const t = new Date(y, m - 1, d + n);
     return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
   };
-  const slug = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "song";
+  const slug = (text) => Cobbler.slug(text, "song");
 
-  function download(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("mu-status").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("mu-status").textContent = ""; }, 8000);
-  }
+  const setStatus = Cobbler.statusLine("mu-status", 8000);
 
   // Lists saved in the project, by key
   const list = (key) => { const v = Projects.getData(key, []); return Array.isArray(v) ? v : []; };

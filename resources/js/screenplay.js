@@ -47,22 +47,10 @@
   if (!window.Projects) return;
   const $ = (id) => document.getElementById(id);
 
-  function el(tag, props = {}, ...children) {
-    const node = document.createElement(tag);
-    for (const [key, value] of Object.entries(props)) {
-      if (value == null || value === false) continue;
-      if (key === "class") node.className = value;
-      else if (key === "dataset") Object.assign(node.dataset, value);
-      else if (key === "style") node.setAttribute("style", value);
-      else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
-      else node.setAttribute(key, value === true ? "" : value);
-    }
-    node.append(...children.flat().filter(c => c != null && c !== false && c !== ""));
-    return node;
-  }
+  const el = Cobbler.el;
 
-  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const slug = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "script";
+  const newId = Cobbler.newId;
+  const slug = (text) => Cobbler.slug(text, "script");
 
 
   /* =========================================================
@@ -114,12 +102,7 @@
   }
   window.addEventListener("pagehide", () => { if (saveTimer) { clearTimeout(saveTimer); Projects.setData("screenplays", scripts); } });
 
-  let statusTimer = 0;
-  function setStatus(message) {
-    $("sp-status").textContent = message;
-    clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => { $("sp-status").textContent = ""; }, 7000);
-  }
+  const setStatus = Cobbler.statusLine("sp-status", 7000);
 
   let view = "write";     // "write", "pages" or "breakdown"
   let focusId = null;     // the element being edited
@@ -894,14 +877,7 @@
      EXPORT AND IMPORT
      ========================================================= */
 
-  function download(text, filename, type) {
-    const url = URL.createObjectURL(new Blob([text], { type }));
-    const link = el("a", { href: url, download: filename });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  const download = Cobbler.download;
 
   function exportScript(s, kind) {
     const name = slug(s.title || "script");
