@@ -56,11 +56,14 @@
      ========================================================= */
 
   const tabs = {};
-  const media = M.loadMedia();
-  media.markerSets = Array.isArray(media.markerSets) ? media.markerSets : [];
-  media.locations = Array.isArray(media.locations) ? media.locations : [];
+  function loadMedia() {
+    const media = M.loadMedia();
+    media.markerSets = Array.isArray(media.markerSets) ? media.markerSets : [];
+    media.locations = Array.isArray(media.locations) ? media.locations : [];
+    return media;
+  }
   const Page = {
-    media,
+    media: loadMedia(),
     edits: M.loadEdits(),
     el, plural, speakerColor, setStatus,
 
@@ -680,5 +683,14 @@
       Page.show(["edit", "export"].includes(start) ? start : "media");
       if (missing.length) setStatus(`Couldn't find the words of ${missing.map(m => `“${m}”`).join(", ")}. See “Stored in” on each transcript.`);
     });
+  });
+
+  // After an undo, or when changes arrive from elsewhere: read everything again and redraw the open tab
+  document.addEventListener("projects-refresh", (event) => {
+    event.detail.handled = true;
+    Page.media = loadMedia();
+    Page.edits = M.loadEdits();
+    const tab = document.querySelector("#media-tabs [aria-selected=true]")?.dataset.tab || "media";
+    M.hydrate(Page.media).then(() => Page.show(tab));
   });
 })();

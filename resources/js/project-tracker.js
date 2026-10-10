@@ -891,4 +891,12 @@
 
     renderTable();
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    timers.forEach(clearTimeout);
+    timers.clear();
+    renderTable();
+    event.detail.handled = true;
+  });
 })();

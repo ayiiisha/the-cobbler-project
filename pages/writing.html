@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Writing</title>
   <link rel="stylesheet" href="../resources/css/style.css">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <meta name="theme-color" content="#FAD39D">
   <script src="../resources/js/script.js"></script>
 </head>
 <body>
@@ -14,24 +16,9 @@
 <script src="../resources/js/util.js"></script>
 <script src="../resources/js/projects-core.js"></script>
 <script src="../resources/js/header.js"></script>
-<script src="../resources/js/project-ui.js"></script>
 <script src="../resources/js/color-themes.js"></script>
-<script src="../resources/js/comments.js"></script>
-<script src="../resources/js/file-store.js"></script>
-<script src="../resources/js/share.js"></script>
-<script src="../resources/js/sync.js"></script>
-<script src="../resources/js/undo.js"></script>
-<script src="../resources/js/account.js"></script>
-<script src="../resources/js/zip.js" defer></script>
-<script src="../resources/js/doc-export.js" defer></script>
-<script src="../resources/js/media-core.js" defer></script>
-<script src="../resources/js/writing-core.js" defer></script>
-<script src="../resources/js/writing-draft.js" defer></script>
-<script src="../resources/js/writing-check.js" defer></script>
-<script src="../resources/js/writing-story.js" defer></script>
-<script src="../resources/js/writing-reporting.js" defer></script>
-<script src="../resources/js/writing-revisions.js" defer></script>
-<script src="../resources/js/writing-business.js" defer></script>
+<script src="../resources/js/boot.js"
+        data-scripts="project-ui.js comments.js file-store.js share.js sync.js undo.js account.js zip.js doc-export.js media-core.js writing-core.js writing-draft.js writing-check.js writing-story.js writing-reporting.js writing-revisions.js writing-business.js"></script>
 
 <main class="is-wide">
   <h1>Writing</h1>
@@ -47,15 +34,15 @@
   <p class="media-status" id="wr-status" role="status"></p>
 
   <div class="zine-tabs" id="wr-tabs" role="tablist" aria-label="Writing tools">
-    <button type="button" role="tab" data-tab="draft" aria-selected="true">Draft</button>
-    <button type="button" role="tab" data-tab="check" aria-selected="false">Check</button>
-    <button type="button" role="tab" data-tab="story" aria-selected="false">Story</button>
-    <button type="button" role="tab" data-tab="reporting" aria-selected="false">Reporting</button>
-    <button type="button" role="tab" data-tab="revisions" aria-selected="false">Revisions</button>
-    <button type="button" role="tab" data-tab="business" aria-selected="false">Business</button>
-    <button type="button" role="tab" data-tab="goals" aria-selected="false">Goals</button>
+    <button type="button" role="tab" id="wr-tab-draft" data-tab="draft" aria-controls="wr-panel" aria-selected="true">Draft</button>
+    <button type="button" role="tab" id="wr-tab-check" data-tab="check" aria-controls="wr-panel" aria-selected="false">Check</button>
+    <button type="button" role="tab" id="wr-tab-story" data-tab="story" aria-controls="wr-panel" aria-selected="false">Story</button>
+    <button type="button" role="tab" id="wr-tab-reporting" data-tab="reporting" aria-controls="wr-panel" aria-selected="false">Reporting</button>
+    <button type="button" role="tab" id="wr-tab-revisions" data-tab="revisions" aria-controls="wr-panel" aria-selected="false">Revisions</button>
+    <button type="button" role="tab" id="wr-tab-business" data-tab="business" aria-controls="wr-panel" aria-selected="false">Business</button>
+    <button type="button" role="tab" id="wr-tab-goals" data-tab="goals" aria-controls="wr-panel" aria-selected="false">Goals</button>
   </div>
-  <div class="zine-panel wr-panel" id="wr-panel" role="tabpanel"></div>
+  <div class="zine-panel wr-panel" id="wr-panel" role="tabpanel" aria-labelledby="wr-tab-draft"></div>
 
   <!-- ===== New draft ===== -->
   <dialog id="wr-dialog" class="project-dialog" aria-labelledby="wr-dialog-title">

@@ -347,6 +347,85 @@
 
 
   /* =========================================================
+     TESTS: the browser's database (IndexedDB)
+     ========================================================= */
+
+  // A sandbox whose projects live in a scratch database of their own
+  let dbCount = 0;
+  async function withDatabase(name, setup = () => {}) {
+    const env = makeEnv();
+    env.window.indexedDB = indexedDB;
+    env.window.COBBLER_DB_NAME = name;
+    setup(env);
+    await load("projects-core.js", env);
+    await env.window.Projects.ready;
+    return env;
+  }
+  const scratchDB = () => `cobbler-tests-${Date.now()}-${++dbCount}`;
+  async function dropDatabase(name, ...envs) {
+    for (const env of envs) await env.window.Projects.closeStorage();
+    await new Promise(resolve => {
+      const request = indexedDB.deleteDatabase(name);
+      request.onsuccess = request.onerror = () => resolve();
+      setTimeout(resolve, 3000);
+    });
+  }
+  const until = async (check, ms = 3000) => {
+    const end = Date.now() + ms;
+    while (!check() && Date.now() < end) await new Promise(r => setTimeout(r, 20));
+    return check();
+  };
+
+  test("Projects are kept in the browser's database and read back by the next page", async () => {
+    if (!window.indexedDB) return;
+    const name = scratchDB();
+    const a = await withDatabase(name);
+    const core = a.window.Projects;
+    eq(core.storageMode(), "indexeddb", "the database is in use");
+    core.create("Database project", { activate: true });
+    core.getData("research", []);
+    core.setData("research", [{ id: "a", title: "A" }]);
+    await core.flushed();
+    eq(a.localStorage.getItem("cobblerProjects2"), null, "nothing goes to localStorage");
+    const b = await withDatabase(name);
+    eq(b.window.Projects.activeName(), "Database project", "the next page sees the project");
+    eq(b.window.Projects.getData("research")[0].title, "A", "with its data");
+    await dropDatabase(name, a, b);
+  });
+
+  test("An older localStorage save is moved into the database", async () => {
+    if (!window.indexedDB) return;
+    const name = scratchDB();
+    const env = await withDatabase(name, (e) => e.localStorage.setItem("cobblerProjects2",
+      JSON.stringify({ activeId: "p1", projects: { p1: { name: "Old", data: { research: [{ id: "a" }] } } } })));
+    const core = env.window.Projects;
+    eq(core.activeName(), "Old", "the old projects load");
+    await core.flushed();
+    eq(env.localStorage.getItem("cobblerProjects2"), null, "and the localStorage copy is removed once they're in the database");
+    const again = await withDatabase(name);
+    eq(again.window.Projects.getData("research").length, 1, "they read back from the database");
+    await dropDatabase(name, env, again);
+  });
+
+  test("A change saved in one tab shows up in another", async () => {
+    if (!window.indexedDB || typeof BroadcastChannel !== "function") return;
+    const name = scratchDB();
+    const a = await withDatabase(name);
+    a.window.Projects.create("Shared", { activate: true });
+    await a.window.Projects.flushed();
+    const b = await withDatabase(name);
+    let told = 0;
+    b.document.addEventListener("projects-data-changed", () => told++);
+    a.window.Projects.getData("ideas", []);
+    a.window.Projects.setData("ideas", [{ id: "x", text: "From tab A" }]);
+    await a.window.Projects.flushed();
+    ok(await until(() => b.window.Projects.getData("ideas", [])[0]?.text === "From tab A"), "tab B has the change");
+    ok(told >= 1, "and its pages were told to redraw");
+    await dropDatabase(name, a, b);
+  });
+
+
+  /* =========================================================
      TESTS: transcripts and markers (media-core.js)
      ========================================================= */
 

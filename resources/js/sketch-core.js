@@ -336,6 +336,8 @@
     clearTimeout(E.saveTimer);
     E.saveTimer = setTimeout(persist, 500);
   }
+  // Anything still waiting is saved before the page is left (or an undo)
+  window.addEventListener("pagehide", () => { if (E?.saveTimer) persist(); });
 
   function savePrefs() {
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(E.prefs)); } catch {}

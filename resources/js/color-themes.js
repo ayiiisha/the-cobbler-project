@@ -69,8 +69,11 @@
 
 
   /* ---------- 2. Wire up the theme buttons, if this page has them ---------- */
+  let wired = false;
   document.addEventListener("DOMContentLoaded", () => {
     applyTheme(savedTheme());   // the buttons exist now, so sync their pressed state
+    if (wired) return;          // (boot.js sends the event again for the page's scripts)
+    wired = true;
 
     document.querySelectorAll(".theme-switcher [data-theme]").forEach(button => {
       button.addEventListener("click", () => {

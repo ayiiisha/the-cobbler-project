@@ -49,16 +49,20 @@
 
   /* ---------- Saved data ---------- */
 
-  let notes = Projects.getData("research", []);
-  if (!Array.isArray(notes)) notes = [];
-  notes.forEach(n => {
+  let notes = [];
+  function loadData() {
+    notes = Projects.getData("research", []);
+    if (!Array.isArray(notes)) notes = [];
+    notes.forEach(n => {
     n.status = STATUSES[n.status] ? n.status : "unverified";
     n.tags = Array.isArray(n.tags) ? n.tags : [];
     // Notes from before several sources were possible had one `source`
     if (!Array.isArray(n.sources)) n.sources = n.source ? [n.source] : [];
     delete n.source;
     for (const key of ["title", "claim", "body"]) n[key] ??= "";
-  });
+    });
+  }
+  loadData();
   const save = () => Projects.setData("research", notes);
 
   const view = { status: "", tag: "", search: "" };
@@ -238,4 +242,7 @@
     $("research-search").addEventListener("input", (event) => { view.search = event.target.value; render(); });
     render();
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => { loadData(); render(); event.detail.handled = true; });
 })();

@@ -75,6 +75,9 @@
   `;
 
 
+  const OWN_SRC = document.currentScript?.src || location.href;   // (currentScript is gone by the time events fire)
+
+
   /* =========================================================
      SIDEBAR OPEN / CLOSED STATE
      ========================================================= */
@@ -110,8 +113,41 @@
     const icon = document.createElement("link");
     icon.rel = "icon";
     icon.type = "image/svg+xml";
-    icon.href = new URL("../assets/cobbler-logo.svg", document.currentScript?.src || location.href).href;
+    icon.href = new URL("../assets/cobbler-logo.svg", OWN_SRC).href;
     document.head.append(icon);
+  }
+
+
+  /* =========================================================
+     OFFLINE AND INSTALL: the service worker (sw.js, at the site's root)
+     ---------------------------------------------------------
+     Keeps a copy of the app's pages and scripts so they open
+     without a connection, and lets the browser offer "Install".
+     Registered after the page has loaded so it never slows the
+     first visit. When a new version is ready, a note offers to
+     reload (only when an older copy was in charge: a first visit
+     just gets the new one).
+     ========================================================= */
+  if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener("load", async () => {
+      try {
+        const hadController = !!navigator.serviceWorker.controller;
+        const registration = await navigator.serviceWorker.register(new URL("../../sw.js", OWN_SRC).href);
+        const offerUpdate = () => {
+          if (!hadController) return;
+          const reload = () => location.reload();
+          if (window.CobblerSync?.toast) CobblerSync.toast("A new version of The Cobbler Project is ready.", [["Reload", reload]], { id: "sw-update" });
+        };
+        navigator.serviceWorker.addEventListener("controllerchange", offerUpdate, { once: true });
+        registration.addEventListener("updatefound", () => {
+          registration.installing?.addEventListener("statechange", (event) => {
+            if (event.target.state === "installed" && navigator.serviceWorker.controller) offerUpdate();
+          });
+        });
+      } catch (err) {
+        console.warn("header.js: the offline copy couldn't be set up:", err);
+      }
+    });
   }
 
 
@@ -119,6 +155,7 @@
      BUILD THE SIDEBAR ONCE THE PAGE HAS LOADED
      ========================================================= */
   document.addEventListener("DOMContentLoaded", () => {
+    if (document.querySelector(".main-header")) return;   // already built (boot.js sends the event again for the page's scripts)
 
     /* ---------- Insert the sidebar at the top of the page ---------- */
     document.body.insertAdjacentHTML("afterbegin", headerTemplate);

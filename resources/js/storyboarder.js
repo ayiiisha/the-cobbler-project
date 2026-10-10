@@ -141,20 +141,23 @@
      SAVED DATA
      ========================================================= */
 
-  let boards = Projects.getData(DATA_KEY, []);
-  if (!Array.isArray(boards)) boards = [];
-
-  // Fill in anything missing (e.g. from an older or hand-edited backup)
-  boards.forEach(b => {
-    if (!ASPECTS[b.aspect]) b.aspect = "16:9";
-    if (!KINDS[b.kind]) b.kind = "video";
-    b.fps = FRAME_RATES.includes(b.fps) ? b.fps : 24;
-    b.frames = Array.isArray(b.frames) && b.frames.length ? b.frames : [blankFrame()];
-    b.frames.forEach(f => {
-      const fresh = blankFrame();
-      for (const key of Object.keys(fresh)) if (f[key] === undefined) f[key] = fresh[key];
+  let boards = [];
+  function loadData() {
+    boards = Projects.getData(DATA_KEY, []);
+    if (!Array.isArray(boards)) boards = [];
+    // Fill in anything missing (e.g. from an older or hand-edited backup)
+    boards.forEach(b => {
+      if (!ASPECTS[b.aspect]) b.aspect = "16:9";
+      if (!KINDS[b.kind]) b.kind = "video";
+      b.fps = FRAME_RATES.includes(b.fps) ? b.fps : 24;
+      b.frames = Array.isArray(b.frames) && b.frames.length ? b.frames : [blankFrame()];
+      b.frames.forEach(f => {
+        const fresh = blankFrame();
+        for (const key of Object.keys(fresh)) if (f[key] === undefined) f[key] = fresh[key];
+      });
     });
-  });
+  }
+  loadData();
 
   let saveTimer = 0;
 
@@ -976,5 +979,14 @@
     $("sb-new").addEventListener("click", () => openDialog());
     window.addEventListener("hashchange", route);
     route();
+  });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    clearTimeout(saveTimer); saveTimer = 0;
+    dragged = null;
+    loadData();
+    route();
+    event.detail.handled = true;
   });
 })();

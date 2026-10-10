@@ -379,5 +379,13 @@
       render();
       status.textContent = "Table cleared.";
     });
+
+    // After an undo, or when changes arrive from elsewhere: draw the table again from what's stored
+    document.addEventListener("projects-refresh", (event) => {
+      myRows = Projects.getData(DATA_KEY, []);
+      if (!Array.isArray(myRows)) myRows = [];
+      render();
+      event.detail.handled = true;
+    });
   });
 })();

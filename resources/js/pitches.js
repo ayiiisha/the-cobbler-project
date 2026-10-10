@@ -48,15 +48,6 @@
   const slug = (text) => Cobbler.slug(text, "pitch");
   const statusClass = (s) => "is-" + s.toLowerCase().replace(/\s+/g, "-");
 
-  function safeUrl(value) {
-    const v = String(value || "").trim();
-    if (!/^(https?:\/\/|www\.)/i.test(v) || /\s/.test(v)) return null;
-    try {
-      const url = new URL(/^www\./i.test(v) ? "https://" + v : v);
-      return ["http:", "https:"].includes(url.protocol) ? url.href : null;
-    } catch { return null; }
-  }
-
   const download = (text, filename) => Cobbler.download(text, filename, "text/markdown");
 
   const setStatus = Cobbler.statusLine("pitch-status-msg", 6000);
@@ -69,14 +60,18 @@
      SAVED DATA
      ========================================================= */
 
-  let pitches = Projects.getData("pitches", []);
-  if (!Array.isArray(pitches)) pitches = [];
-  pitches.forEach(p => {
-    p.status = STATUSES.includes(p.status) ? p.status : "Drafting";
-    p.links = Array.isArray(p.links) ? p.links : [];
-    p.outlets = Array.isArray(p.outlets) ? p.outlets : [];
-    FIELDS.forEach(k => { p[k] ??= ""; });
-  });
+  let pitches = [];
+  function loadData() {
+    pitches = Projects.getData("pitches", []);
+    if (!Array.isArray(pitches)) pitches = [];
+    pitches.forEach(p => {
+      p.status = STATUSES.includes(p.status) ? p.status : "Drafting";
+      p.links = Array.isArray(p.links) ? p.links : [];
+      p.outlets = Array.isArray(p.outlets) ? p.outlets : [];
+      FIELDS.forEach(k => { p[k] ??= ""; });
+    });
+  }
+  loadData();
   const save = () => Projects.setData("pitches", pitches);
 
   const view = { status: "", search: "" };
@@ -354,4 +349,7 @@
       }
     }
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => { loadData(); render(); event.detail.handled = true; });
 })();

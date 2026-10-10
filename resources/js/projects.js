@@ -359,6 +359,7 @@
     sortSelect.addEventListener("change", renderCards);
     showArchived.addEventListener("change", renderCards);
     document.addEventListener("projects-changed", renderCards);
+    document.addEventListener("projects-refresh", (event) => { renderCards(); event.detail.handled = true; });
 
     $("browser-new").addEventListener("click", () => window.ProjectUI?.openNewProjectDialog());
 

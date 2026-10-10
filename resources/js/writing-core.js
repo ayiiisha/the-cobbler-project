@@ -43,7 +43,6 @@
 
   const newId = Cobbler.newId;
   const words = (text) => (String(text || "").match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || []).length;
-  const pad = Cobbler.pad;
   const todayISO = Cobbler.todayISO;
   const fmtDate = (iso) => {
     if (!iso) return "";
@@ -121,7 +120,9 @@
     return d;
   }
 
-  let drafts = (() => { const v = Projects.getData("drafts", []); return Array.isArray(v) ? v : []; })().map(normalize);
+  let drafts = [];
+  function loadData() { const v = Projects.getData("drafts", []); drafts = (Array.isArray(v) ? v : []).map(normalize); }
+  loadData();
   const CURRENT_KEY = `writingCurrent:${Projects.activeId()}`;
   let currentId = (() => { try { return localStorage.getItem(CURRENT_KEY); } catch { return null; } })();
   const current = () => drafts.find(d => d.id === currentId) || drafts[0] || null;
@@ -206,6 +207,7 @@
       b.setAttribute("aria-selected", String(on));
       b.tabIndex = on ? 0 : -1;
     });
+    $("wr-panel").setAttribute("aria-labelledby", `wr-tab-${name}`);
     history.replaceState(null, "", name === "draft" ? location.pathname : `#${name}`);
     const panel = $("wr-panel");
     tabs[name].render(panel);
@@ -296,5 +298,15 @@
     // Transcripts kept outside the project finish loading in the background
     // (media-core.js): the quote checker needs their words
     document.addEventListener("transcripts-loaded", () => { if (tab === "check") show("check"); });
+
+    // After an undo, or when changes arrive from elsewhere: draw the open tab again from what's stored
+    document.addEventListener("projects-refresh", (event) => {
+      clearTimeout(saveTimer); saveTimer = 0;
+      loadData();
+      try { localStorage.setItem(LAST_TOTAL_KEY, JSON.stringify(totalWords())); } catch {}   // words put back by an undo weren't written today
+      renderTop();
+      show(tab);
+      event.detail.handled = true;
+    });
   });
 })();

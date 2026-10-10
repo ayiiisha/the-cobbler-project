@@ -1121,5 +1121,19 @@
     if (start) openDataset(start);
   });
 
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    event.detail.handled = true;
+    datasets = Projects.getData("datasets", []);
+    if (!Array.isArray(datasets)) datasets = [];
+    const meta = S.meta && datasets.find(d => d.id === S.meta.id);
+    if (meta) { openDataset(meta); return; }
+    S.meta = null;
+    $("da-work").hidden = true;
+    $("da-summary").textContent = "";
+    renderPicker();
+    if (datasets[0]) openDataset(datasets[0]);
+  });
+
   window.DataAnalysis = { buildTable, rCode: () => $("da-code").textContent };
 })();

@@ -683,7 +683,7 @@
 
   // "This browser's file storage" / "Google Drive › Cobbler transcripts › …"
   function describeStorage(entry) {
-    if (!entry || entry.where === "project") return "Inside the project (counts towards the browser's 5 MB)";
+    if (!entry || entry.where === "project") return "Inside the project";
     if (entry.where === "browser") return "This browser's file storage";
     return `Folder “${entry.folder}” › ${String(entry.path || "").split("/").join(" › ")}`;
   }

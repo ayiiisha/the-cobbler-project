@@ -179,6 +179,7 @@
     $("activity-who").addEventListener("change", renderActivity);
     document.addEventListener("projects-changed", () => { renderSync(); renderActivity(); });
     document.addEventListener("projects-data-changed", renderActivity);
+    document.addEventListener("projects-refresh", () => { renderSync(); renderActivity(); renderConflicts(); });
     if (location.hash === "#sync") $("sync").scrollIntoView();
   });
 })();

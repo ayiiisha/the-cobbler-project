@@ -50,7 +50,8 @@
   <li><strong>Speech bubble</strong> opens comments for the page you're on (see Comments). Its number shows how many comments are still open.</li>
 </ul>
 <p>Every page also has a <strong>Return to top</strong> button at the bottom.</p>
-<p><strong>Undo and redo.</strong> Cmd+Z (Ctrl+Z on Windows) undoes your last change on any page: a deleted card, a ticked box, a moved scene, an edited field. Cmd+Shift+Z (or Ctrl+Y) redoes it. While you're typing in a box, Cmd+Z undoes your typing there, as usual; click outside the box to undo whole changes. The page reloads to show the change, and a note at the bottom offers Redo. Undo remembers your last 60 changes in that browser tab. It won't undo changes that arrived from collaborators.</p>
+<p><strong>Offline and installing.</strong> Once you've opened the app online, your browser keeps a copy, so it opens without a connection too (your projects are on your computer anyway). Chrome and Edge also offer to <strong>install</strong> it (the icon in the address bar, or the browser menu › Install), which gives it a window and an icon of its own. When a new version is published, a note offers to reload.</p>
+<p><strong>Undo and redo.</strong> Cmd+Z (Ctrl+Z on Windows) undoes your last change on any page: a deleted card, a ticked box, a moved scene, an edited field. Cmd+Shift+Z (or Ctrl+Y) redoes it. While you're typing in a box, Cmd+Z undoes your typing there, as usual; click outside the box to undo whole changes. The page redraws itself to show the change (no reload), and a note at the bottom offers Redo. Undo remembers your last 60 changes in that browser tab. It won't undo changes that arrived from collaborators.</p>
 <p><strong>Signing in.</strong> Click the person button (bottom right) and type your name. It goes on your changes, comments, tasks and synced files, so the people you work with know who did what, and it's how “My tasks” and the Home page know what's yours. There's no password and no account: the name is kept in this browser only. The same button changes your name or signs you out (your work stays; new changes are marked “Someone” until you sign in again). The first time you open the app it asks once; if you click “Not now”, the button is always there.</p>
 <p><strong>Home</strong> shows what's due in the next week (and what's overdue), what's assigned to you, what's in progress in the active project, and recent activity, plus a link to this tutorial.</p>
 
@@ -93,7 +94,7 @@
   <li>Sign in with your name (the person button). On the Projects page, under <strong>Sync folder</strong>, click <strong>Choose sync folder</strong> and pick that folder. Allow the app to edit files there.</li>
   <li>Tick <strong>Sync</strong> on the projects to share. Collaborators see them under <em>Projects in the folder</em> and click <strong>Join</strong>.</li>
 </ol>
-<p>From then on the app checks the folder every 30 seconds while it's open, and soon after you change something. Each person writes only their own file in the folder, so Google Drive never has to sort out two people saving the same file. When someone's changes arrive on the page you're looking at, a note offers to reload it (your own changes are kept). The sidebar shows when it last synced; if your browser asks for permission again, click that note. Folder sync needs Chrome or Edge on a computer; Dropbox, iCloud Drive or any synced folder works the same way.</p>
+<p>From then on the app checks the folder every 30 seconds while it's open, and soon after you change something. Each person writes only their own file in the folder, so Google Drive never has to sort out two people saving the same file. When someone's changes arrive on the page you're looking at, a note offers to show them (your own changes are kept). Changes you save in another tab of the same browser show up on their own. The sidebar shows when it last synced; if your browser asks for permission again, click that note. Folder sync needs Chrome or Edge on a computer; Dropbox, iCloud Drive or any synced folder works the same way.</p>
 <h3>Differences settled automatically</h3>
 <p>When syncing finds that you and a collaborator both changed the same thing, it keeps the newer change, and lists it under <strong>Differences settled automatically</strong> on the Projects page: what was kept, what the other version was. <strong>Use … instead</strong> switches to the other version (and that syncs too); <strong>That's right</strong> clears it from the list.</p>
 <h3>Activity and claims</h3>
@@ -178,7 +179,7 @@
   <li>Rename speakers, pick a transcript's clip by hand, set the project's frame rate, and <strong>search every transcript</strong>.</li>
   <li><strong>Where transcripts are kept</strong>: transcripts are the biggest thing in a project. Each one says where its words are <em>Stored in</em>, and <strong>Keep it</strong> moves it:
     <ul>
-      <li><strong>Inside the project</strong> (the usual): counts towards the browser's 5 MB.</li>
+      <li><strong>Inside the project</strong> (the usual): shared and synced with the project, so long transcripts make sharing slower.</li>
       <li><strong>This browser's file storage</strong>: plenty of room. Shares and the sync folder still carry it to collaborators.</li>
       <li><strong>A folder</strong>, e.g. a shared Google Drive folder (<em>Choose a folder…</em>, or your sync folder): saved as <em>Cobbler transcripts › project › title [id].json</em>, with a copy in this browser so it opens straight away. If that copy is cleared, the app reads it from the folder.</li>
     </ul>
@@ -307,7 +308,7 @@
 <h2>21. Settings and themes</h2>
 <ul>
   <li><strong>Themes</strong>: Light, Dark, Rainbow (every surface an accent colour) or System Default (follows your computer's light/dark setting).</li>
-  <li><strong>Storage</strong>: how full the browser's storage is (about 5 MB for every project together), which projects and parts use the most, and how much room uploaded files take. <strong>Trim old history</strong> removes activity older than 90 days; <strong>Keep my files safe</strong> asks the browser not to clear uploaded files when your disk is low. A note appears on any page when storage is 80% full.
+  <li><strong>Storage</strong>: how much room the app's projects and files take in this browser (the browser decides the limit, usually gigabytes), which projects and parts use the most, and how much room uploaded files take. <strong>Trim old history</strong> removes activity older than 90 days; <strong>Keep my files safe</strong> asks the browser not to clear uploaded files when your disk is low. A note appears on any page when storage is 80% full.
     <ul>
       <li>Big projects are saved <strong>compressed</strong>, usually 3 to 5 times smaller (transcripts and notes compress well). Storage shows how much it saves.</li>
       <li><strong>Housekeeping</strong>: which projects still keep transcripts inside them (move them on Media &amp; Transcripts); <strong>Back up and remove</strong> for archived projects (downloads a copy with its files, then frees the space: import it to bring it back); and <strong>Find unused files</strong>, which deletes uploads and transcripts no project uses any more, after asking.</li>
@@ -319,7 +320,7 @@
 <h2>22. Where your work is saved</h2>
 <div class="tip">Your work stays in this browser, on this computer, and in a sync folder if you choose one. Nothing is uploaded to the website, even when the app itself is online. Back up regularly from the Projects page.</div>
 <ul>
-  <li>Projects are saved in the browser's storage, which holds a few megabytes. Very long transcripts or many drawings take the most room.</li>
+  <li>Projects are saved in the browser's database (IndexedDB), which has room for far more than a few megabytes. Very long transcripts or many drawings still take the most room, and the browser may ask before letting a site use a lot.</li>
   <li>Uploaded files (critique files, storyboard photos, datasets) and transcripts moved to file storage are kept separately in the browser's file storage. <strong>They aren't part of project backups</strong> (Export), but they are part of shared files (Share): keep your originals, or keep transcripts in a folder.</li>
   <li>Another browser, or another computer, has its own separate copy. Use Backup and Restore, Share, or a sync folder to move projects.</li>
   <li>The app at a different address (say on GitHub Pages instead of your computer) also has its own separate copy: back up all projects at the old address and import them at the new one.</li>

@@ -60,10 +60,12 @@ git push -u origin main</pre>
   <tr><td><code>resources/js/</code></td><td>The scripts: one per page, plus shared ones (below).</td></tr>
   <tr><td><code>default-resources-cobbler-project.csv</code></td><td>The Resources page's default table (Name, Description, Link). At the top so it's easy to replace on GitHub.</td></tr>
   <tr><td><code>resources/data/</code></td><td>The generated copy of the default resources, for opening pages by double-clicking.</td></tr>
-  <tr><td><code>resources/assets/</code></td><td>The logo.</td></tr>
+  <tr><td><code>resources/assets/</code></td><td>The logo, and the app icons for installing (<code>icon-192.png</code>, <code>icon-512.png</code>).</td></tr>
   <tr><td><code>resources/docs/</code></td><td>These guides (HTML) and their PDFs.</td></tr>
   <tr><td><code>resources/vendor/abcjs/</code></td><td>abcjs (MIT licence), which draws sheet music on the Music page.</td></tr>
   <tr><td><code>index.html</code>, <code>.gitignore</code>, <code>.nojekyll</code></td><td>For hosting on GitHub Pages (section 1).</td></tr>
+  <tr><td><code>manifest.webmanifest</code>, <code>sw.js</code></td><td>Installing and offline use: the web app manifest (name, icons, colours) and the service worker that keeps a copy of the app (section 4).</td></tr>
+  <tr><td><code>tests/run.mjs</code>, <code>package.json</code>, <code>eslint.config.mjs</code>, <code>.github/workflows/tests.yml</code></td><td>The checks that run on every push (section 4, <em>Self-tests</em>).</td></tr>
   <tr><td><code>update-resources.sh</code></td><td>Regenerates the default resources copy (for double-clicked pages) after editing the CSV locally.</td></tr>
   <tr><td><code>make-docs.sh</code></td><td>Regenerates the guide PDFs after editing the guides.</td></tr>
   <tr><td><code>change-log.md</code></td><td>What changed, and when.</td></tr>
@@ -72,8 +74,10 @@ git push -u origin main</pre>
 <table>
   <tr><th>File</th><th>What it does</th></tr>
   <tr><td><code>lz-string</code></td><td>Compression (<code>resources/vendor/lz-string/</code>, MIT licence). Loads before projects-core.js, which also fetches it itself if a page lacks the tag.</td></tr>
-  <tr><td><code>projects-core.js</code></td><td>Stores every project and offers the Projects API (section 4). Loads first.</td></tr>
-  <tr><td><code>header.js</code></td><td>Builds the sidebar, the ☰ button and "Return to top". The sidebar's links are listed here.</td></tr>
+  <tr><td><code>util.js</code></td><td>Small helpers every script shares as <code>window.Cobbler</code>: <code>el</code>, <code>$</code>, <code>newId</code>, <code>slug</code>, <code>plural</code>, <code>pad</code>, <code>todayISO</code>, <code>download</code>, <code>csvField</code>, <code>statusLine</code>. Loads first.</td></tr>
+  <tr><td><code>projects-core.js</code></td><td>Stores every project and offers the Projects API (section 4).</td></tr>
+  <tr><td><code>boot.js</code></td><td>Loads the page's remaining scripts (listed on its tag) once the projects have been read from the database, then fires <code>DOMContentLoaded</code> again for them and <code>cobbler-ready</code>.</td></tr>
+  <tr><td><code>header.js</code></td><td>Builds the sidebar, the ☰ button and "Return to top"; registers the service worker. The sidebar's links are listed here.</td></tr>
   <tr><td><code>project-ui.js</code></td><td>The Projects button and panel, the + button and the New Project dialog.</td></tr>
   <tr><td><code>color-themes.js</code></td><td>Applies the theme (light, dark, rainbow, system) and wires the Settings buttons.</td></tr>
   <tr><td><code>comments.js</code></td><td>The comments drawer, and the comment threads other pages reuse.</td></tr>
@@ -107,14 +111,17 @@ git push -u origin main</pre>
 <p>Every page has the same shape. Copy an existing page to start a new one:</p>
 <pre>&lt;head&gt;
   &lt;link rel="stylesheet" href="../resources/css/style.css"&gt;
+  &lt;link rel="manifest" href="../manifest.webmanifest"&gt;
+  &lt;meta name="theme-color" content="#FAD39D"&gt;
 &lt;/head&gt;
 &lt;body&gt;
+&lt;script src="../resources/vendor/lz-string/lz-string-1.5.0.min.js"&gt;&lt;/script&gt;
+&lt;script src="../resources/js/util.js"&gt;&lt;/script&gt;
 &lt;script src="../resources/js/projects-core.js"&gt;&lt;/script&gt;
 &lt;script src="../resources/js/header.js"&gt;&lt;/script&gt;
-&lt;script src="../resources/js/project-ui.js"&gt;&lt;/script&gt;
 &lt;script src="../resources/js/color-themes.js"&gt;&lt;/script&gt;
-&lt;script src="../resources/js/comments.js"&gt;&lt;/script&gt;
-&lt;script src="../resources/js/my-page.js" defer&gt;&lt;/script&gt;
+&lt;script src="../resources/js/boot.js"
+        data-scripts="project-ui.js comments.js file-store.js share.js sync.js undo.js account.js my-page.js"&gt;&lt;/script&gt;
 
 &lt;main&gt;
   &lt;h1&gt;My Page&lt;/h1&gt;
@@ -122,14 +129,16 @@ git push -u origin main</pre>
 &lt;/main&gt;
 &lt;/body&gt;</pre>
 <ul>
-  <li>The order matters: <code>projects-core.js</code> first, then the sidebar, the project controls, the theme (no <code>defer</code>, so the right colours apply before the page appears) and comments.</li>
-  <li>Page scripts use <code>defer</code> and draw the page on <code>DOMContentLoaded</code>.</li>
+  <li>The first tags run as the page loads: the helpers, <code>projects-core.js</code> (which starts reading the projects), the sidebar and the theme (no <code>defer</code>, so the right colours apply before the page appears).</li>
+  <li>Everything that needs the projects is listed on <code>boot.js</code>'s tag, in order, and is loaded once they've been read. Those scripts still draw the page on <code>DOMContentLoaded</code> (boot.js fires it again for them), so a page script looks the same as it always did.</li>
+  <li>To redraw without a reload (after an undo, or when changes arrive), a page listens for <code>projects-refresh</code> on <code>document</code>, reads its data again, re-renders and sets <code>event.detail.handled = true</code>. Pages that don't are reloaded instead.</li>
   <li><code>&lt;main class="is-wide"&gt;</code> lets a page use the full width beside the sidebar (the tracker, the editing pages).</li>
   <li>Scripts build elements with a small <code>el(tag, props, ...children)</code> helper; text is always added as plain text, so nothing typed by a user can inject code.</li>
 </ul>
 
 <h2>4. Where data is saved</h2>
-<p>All projects are saved together in the browser's <code>localStorage</code> under the key <code>cobblerProjects2</code>. Saves of 50,000 characters or more are compressed with lz-string and start with <code>LZ1:</code>; smaller ones are plain JSON. If saved data can't be read, nothing is saved over it. (Before compression the key was <code>cobblerProjects</code>; it's moved on first load. The new name means an out-of-date cached copy of the app can't mistake a compressed save for no projects.) Each page keeps its data inside the project, under its own key:</p>
+<p>Projects are saved in the browser's database, IndexedDB, in a database called <code>cobbler-projects</code>: one record per project in the <code>projects</code> store (key: the project's id) and the active project's id in <code>meta</code>. Only the projects that changed are written, a moment after the save (several saves in a row become one write; <code>Projects.flushed()</code> waits for them). <code>Projects.ready</code> resolves once the projects have been read; <code>boot.js</code> waits for it before loading the page's scripts. Tabs tell each other about saves over a <code>BroadcastChannel</code> of the same name, and swap the new data in (<code>projects-data-changed</code> on <code>document</code>; sync.js then asks the page to redraw).</p>
+<p>Older saves in <code>localStorage</code> (key <code>cobblerProjects2</code>, or <code>cobblerProjects</code> before that; plain JSON, or lz-string compressed with an <code>LZ1:</code> prefix from 50,000 characters) are moved into the database on first load and then removed. Where IndexedDB isn't available (some private windows), the app keeps using localStorage the old way; <code>Projects.storageMode()</code> says which. If saved data can't be read, nothing is saved over it. Each page keeps its data inside the project, under its own key:</p>
 <pre>project.data.tracker        Project Tracker details and goals
 project.data.team           Team
 project.data.tasks          Team: tasks (comments can also have an assignee)
@@ -176,9 +185,12 @@ project.data._activity      Bookkeeping: the activity feed</pre>
   <tr><td><code>Projects.collect(key)</code></td><td>Every project's value for a key (used to check shared files).</td></tr>
 </table>
 <h3>Undo and redo</h3>
-<p>Every <code>setData</code> also records what it replaced (in <code>sessionStorage</code> under <code>cobblerUndo</code>, per tab, up to 60 steps; saves to the same key within 1.5 seconds are one step). <code>Projects.undo()</code>/<code>redo()</code> put a key's value back through the same tracking as any save, so an undo syncs to collaborators. Steps for anything changed by a merge or another tab are dropped. <code>undo.js</code> first dispatches <code>pagehide</code> (pages save pending changes on it), undoes, calls <code>Projects.freeze()</code> (so the page can't save its old copy) and reloads. Pages need nothing special to support it.</p>
+<p>Every <code>setData</code> also records what it replaced (in <code>sessionStorage</code> under <code>cobblerUndo</code>, per tab, up to 60 steps; saves to the same key within 1.5 seconds are one step). <code>Projects.undo()</code>/<code>redo()</code> put a key's value back through the same tracking as any save, so an undo syncs to collaborators. Steps for anything changed by a merge or another tab are dropped. <code>undo.js</code> first dispatches <code>pagehide</code> (pages save pending changes on it), undoes, then calls <code>Projects.refresh()</code>, which sends <code>projects-refresh</code>: the page reads its data again and redraws in place. A page without a listener is reloaded instead (after <code>Projects.freeze()</code>, so it can't save its old copy). Saving the very fallback a page read (its default columns, say) isn't recorded as a step.</p>
 <h3>Self-tests</h3>
-<p><code>tests.js</code> loads the app's scripts into a sandbox (<code>new Function</code> with a fake <code>localStorage</code>, <code>sessionStorage</code>, <code>document</code> and a controllable <code>Date</code>), so tests never touch real projects. Add a test with <code>test("name", async () =&gt; { ok(...); eq(...); })</code>; <code>withCore()</code> gives a fresh projects-core and <code>load(file, env, extras)</code> loads another script. Run them after any change to merging, sync or undo.</p>
+<p><code>tests.js</code> loads the app's scripts into a sandbox (<code>new Function</code> with a fake <code>localStorage</code>, <code>sessionStorage</code>, <code>document</code> and a controllable <code>Date</code>), so tests never touch real projects. Add a test with <code>test("name", async () =&gt; { ok(...); eq(...); })</code>; <code>withCore()</code> gives a fresh projects-core and <code>load(file, env, extras)</code> loads another script. The database tests use a scratch IndexedDB of their own (<code>window.COBBLER_DB_NAME</code>) and delete it afterwards.</p>
+<p>They also run on every push, on GitHub (<code>.github/workflows/tests.yml</code>): <code>npm run lint</code> (ESLint, <code>eslint.config.mjs</code>, which lists the globals each script gets from the others) and <code>npm test</code> (<code>tests/run.mjs</code>: serves the repository, runs the self-tests page in a headless browser and opens every page, failing on any error). To run them yourself: <code>npm install &amp;&amp; npx playwright install --with-deps chromium &amp;&amp; npm run lint &amp;&amp; npm test</code>.</p>
+<h3>Offline use and installing</h3>
+<p><code>sw.js</code> (at the root, registered by <code>header.js</code> once a page has loaded) keeps a copy of every file in its <code>PRECACHE</code> list and answers requests from that copy while fetching a fresh one for next time. Projects aren't involved: they're in the database. <strong>After changing any file, bump <code>VERSION</code> in sw.js</strong> and add new files to the list: the new worker makes a new cache, takes over, drops the old one, and header.js offers a reload. <code>manifest.webmanifest</code> (linked from every page) gives the app its name, icons and colours for installing.</p>
 <h3>Collaboration: change tracking, merging and sync</h3>
 <ul>
   <li><strong>Saving</strong> (<code>setData</code>) compares what the page saves with what it last read: changed items in lists get <code>_mt</code> (time) and <code>_mb</code> (your name, <code>Projects.me()</code>); removed items are recorded in <code>_deleted</code>; a line goes into <code>_activity</code>. If the data changed underneath the page since it read it (a collaborator's changes arrived, or another tab saved), the page's own changes are merged into what's there instead of overwriting it.</li>
@@ -189,10 +201,10 @@ project.data._activity      Bookkeeping: the activity feed</pre>
   <li><strong>Locked versions</strong> are in IndexedDB under <code>lock:&lt;project&gt;:&lt;id&gt;</code> (share.js).</li>
   <li>The last version shared or received, the last version merged from each person, and a copy from before each merge (for <em>Undo last merge</em>) are kept in IndexedDB under <code>share-base:</code>, <code>sync-base:</code> and <code>undo-merge:</code>.</li>
 </ul>
-<p><strong>Files</strong> (critique uploads, storyboard photos, datasets) are too big for localStorage, so <code>file-store.js</code> keeps them in IndexedDB (database <code>cobbler-files</code>): <code>FileStore.put(id, blob)</code>, <code>get(id)</code>, <code>remove(id)</code>. Project data stores only the file's id. Settings › Storage › <em>Find unused files</em> deletes ids no project mentions, except the bookkeeping ones (<code>sync-</code>, <code>share-base:</code>, <code>undo-merge:</code>, <code>lock:</code>, <code>transcripts-folder-handle</code>).</p>
+<p><strong>Files</strong> (critique uploads, storyboard photos, datasets) are kept by <code>file-store.js</code> in their own IndexedDB database (<code>cobbler-files</code>): <code>FileStore.put(id, blob)</code>, <code>get(id)</code>, <code>remove(id)</code>. Project data stores only the file's id. Settings › Storage › <em>Find unused files</em> deletes ids no project mentions, except the bookkeeping ones (<code>sync-</code>, <code>share-base:</code>, <code>undo-merge:</code>, <code>lock:</code>, <code>transcripts-folder-handle</code>).</p>
 <p><strong>Transcripts kept outside the project</strong> (<code>media-core.js</code>): a transcript can have <code>storage: { where: "browser" | "folder", key, folder, path, at, by }</code> and <code>storageLog: [{ at, by, where, folder, path }]</code>. Its words are then in FileStore under <code>key</code> (<code>tx-&lt;id&gt;-&lt;version&gt;</code>; the key changes whenever the words do, so share and sync carry the new copy like any uploaded file) and, for a folder, also in <code>&lt;folder&gt;/Cobbler transcripts/&lt;project&gt; [id]/&lt;title&gt; [id].json</code> (the folder handle is in FileStore as <code>transcripts-folder-handle</code>). The project keeps <code>segments: []</code> plus <code>paragraphs</code> and <code>length</code>. <code>MediaCore.hydrate()</code> reads the words into memory (every page with media-core.js does this on load and fires <code>transcripts-loaded</code>), <code>loadMedia()</code> returns a copy with them filled in, <code>packMedia()</code> takes them out before saving, and <code>moveTranscript(t, where, { root })</code> moves and logs.</p>
 <p><strong>Per-browser settings</strong> (not part of projects) also live in localStorage: <code>selected-theme</code>, <code>navOpen</code>, <code>commentAuthor</code>, <code>sketchTools</code>, <code>trackerView</code>, <code>calendarView</code>, <code>storyboardView</code>, <code>zineSketchView</code>, <code>zinePaper</code>, <code>defaultTableHidden</code>, <code>textEditCurrent:&lt;project&gt;</code>, <code>dataAnalysisCurrent:&lt;project&gt;</code>, <code>writingCurrent:&lt;project&gt;</code>, <code>writingGoal</code>, <code>writingCurrency</code>, <code>cobblerMe</code> (your name), <code>cobblerDevice</code>, <code>shareReminderDays</code>, and the sync bookkeeping <code>cobblerSyncSeen</code> / <code>cobblerSyncWrote</code>.</p>
-<div class="tip">To look at saved data, open the browser's developer tools (Cmd+Option+I / F12) → Application → Local Storage. Back up projects before experimenting.</div>
+<div class="tip">To look at saved data, open the browser's developer tools (Cmd+Option+I / F12) → Application → IndexedDB → cobbler-projects (and Local Storage for the per-browser settings). Back up projects before experimenting.</div>
 
 <h2>5. Styles and themes</h2>
 <p><code>style.css</code> is split into numbered sections, listed at the top of the file (sections 1–4 are fonts, colours, base text and layout; 5 is shared components; later sections belong to pages). Find a page's section by searching for its name in capitals, e.g. <code>PROJECT TRACKER</code>.</p>

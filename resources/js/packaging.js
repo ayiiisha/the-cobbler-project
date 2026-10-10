@@ -227,9 +227,11 @@
      SAVED DATA
      ========================================================= */
 
-  let packages = Projects.getData("packaging", []);
-  if (!Array.isArray(packages)) packages = [];
-  packages.forEach(p => {
+  let packages = [];
+  function loadData() {
+    packages = Projects.getData("packaging", []);
+    if (!Array.isArray(packages)) packages = [];
+    packages.forEach(p => {
     if (!PLATFORMS[p.platform]) p.platform = "other";
     for (const key of ["titles", "thumbs", "tags", "hashtags", "images", "keywords"]) p[key] = Array.isArray(p[key]) ? p[key] : [];
     for (const key of ["name", "keyword", "audience", "notes", "description", "seoTitle", "metaDescription", "slug",
@@ -237,7 +239,9 @@
     p.deliverables = p.deliverables && typeof p.deliverables === "object" ? p.deliverables : {};
     p.deliverables.done ||= {};
     p.deliverables.custom = Array.isArray(p.deliverables.custom) ? p.deliverables.custom : [];
-  });
+    });
+  }
+  loadData();
 
   let saveTimer = 0;
   function save({ soon = false } = {}) {
@@ -1052,4 +1056,14 @@
     setUpDialog();
     render();
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    clearTimeout(saveTimer);
+    loadData();
+    render();
+    event.detail.handled = true;
+  });
+  // Transcripts kept outside the project finished loading (media-core.js): the previews may change
+  document.addEventListener("transcripts-loaded", () => { if (current()) refresh(); });
 })();

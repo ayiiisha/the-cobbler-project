@@ -64,6 +64,7 @@
       b.setAttribute("aria-selected", String(on));
       b.tabIndex = on ? 0 : -1;
     });
+    $("mu-panel").setAttribute("aria-labelledby", `mu-tab-${name}`);
     history.replaceState(null, "", name === "songs" ? location.pathname : `#${name}`);
     tabs[name].render($("mu-panel"));
   }
@@ -87,4 +88,7 @@
     });
     show(tab);
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => { show(tab); event.detail.handled = true; });
 })();

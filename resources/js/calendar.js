@@ -457,6 +457,13 @@
   // Other pages (the Home dashboard) can gather dates too
   window.CobblerCalendar = { datesFor, SOURCES };
 
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    if (!$("cal-body")) return;   // loaded on another page just for its dates
+    render();
+    event.detail.handled = true;
+  });
+
   document.addEventListener("DOMContentLoaded", () => {
     if (!$("cal-body")) return;   // loaded on another page just for its dates
     document.querySelectorAll(".view-toggle [data-view]").forEach(b =>

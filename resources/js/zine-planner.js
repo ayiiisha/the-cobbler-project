@@ -101,16 +101,19 @@
      SAVED DATA
      ========================================================= */
 
-  let zines = Projects.getData("zines", []);
-  if (!Array.isArray(zines)) zines = [];
-
-  // Fill in anything missing (e.g. from an older or hand-edited backup)
-  zines.forEach(z => {
-    z.pages = Array.isArray(z.pages) && z.pages.length ? z.pages : Array.from({ length: 8 }, blankPage);
-    z.pages.forEach(p => { p.strokes ||= []; p.texts ||= []; });
-    z.files ||= [];
-    if (!SIZES[z.size]) z.size = "a6";
-  });
+  let zines = [];
+  function loadData() {
+    zines = Projects.getData("zines", []);
+    if (!Array.isArray(zines)) zines = [];
+    // Fill in anything missing (e.g. from an older or hand-edited backup)
+    zines.forEach(z => {
+      z.pages = Array.isArray(z.pages) && z.pages.length ? z.pages : Array.from({ length: 8 }, blankPage);
+      z.pages.forEach(p => { p.strokes ||= []; p.texts ||= []; });
+      z.files ||= [];
+      if (!SIZES[z.size]) z.size = "a6";
+    });
+  }
+  loadData();
 
   /* Saves every zine. Pass the zine that changed to update its "edited" time. */
   function save(zine) {
@@ -456,5 +459,13 @@
     $("zine-new").addEventListener("click", () => openDialog());
     window.addEventListener("hashchange", route);
     route();
+  });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    closeWorkspace();   // (saves anything the drawing editor still had waiting)
+    loadData();
+    route();
+    event.detail.handled = true;
   });
 })();

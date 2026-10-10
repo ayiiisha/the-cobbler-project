@@ -115,4 +115,5 @@
 
   document.addEventListener("DOMContentLoaded", render);
   document.addEventListener("projects-changed", render);
+  document.addEventListener("projects-refresh", (event) => { if (!$("dashboard")) return; render(); event.detail.handled = true; });
 })();

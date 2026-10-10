@@ -411,4 +411,12 @@
 
     render();
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    loadTeam();
+    render();
+    document.dispatchEvent(new Event("team-changed"));   // the Tasks and Credits parts redraw too
+    event.detail.handled = true;
+  });
 })();

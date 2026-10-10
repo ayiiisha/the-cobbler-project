@@ -45,8 +45,8 @@
      DATA
      ========================================================= */
 
-  const media = M.loadMedia();
-  const edits = M.loadEdits();
+  let media = M.loadMedia();
+  let edits = M.loadEdits();
   let editId = (() => { try { return localStorage.getItem(EDIT_KEY); } catch { return null; } })();
 
   const currentEdit = () => edits.find(e => e.id === editId) || edits[0] || null;
@@ -273,6 +273,16 @@
     });
     render();
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    media = M.loadMedia();
+    edits = M.loadEdits();
+    M.hydrate(media).then(render);
+    event.detail.handled = true;
+  });
+  // Transcripts kept outside the project finished loading (media-core.js): speaker names may now be known
+  document.addEventListener("transcripts-loaded", () => { media = M.loadMedia(); render(); });
 
   window.AVScript = { toMarkdown, toText, scriptRows };
 })();

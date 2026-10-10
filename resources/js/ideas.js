@@ -30,11 +30,15 @@
 
   /* ---------- Saved data ---------- */
 
-  let columns = Projects.getData("ideaColumns", DEFAULT_COLUMNS);
-  if (!Array.isArray(columns) || columns.length !== 3) columns = [...DEFAULT_COLUMNS];
-  let ideas = Projects.getData("ideas", []);
-  if (!Array.isArray(ideas)) ideas = [];
-  ideas.forEach(i => { i.column = [0, 1, 2].includes(i.column) ? i.column : 0; i.text ??= ""; });
+  let columns, ideas;
+  function loadData() {
+    columns = Projects.getData("ideaColumns", DEFAULT_COLUMNS);
+    if (!Array.isArray(columns) || columns.length !== 3) columns = [...DEFAULT_COLUMNS];
+    ideas = Projects.getData("ideas", []);
+    if (!Array.isArray(ideas)) ideas = [];
+    ideas.forEach(i => { i.column = [0, 1, 2].includes(i.column) ? i.column : 0; i.text ??= ""; });
+  }
+  loadData();
 
   let saveTimer = 0;
   function save({ soon = false } = {}) {
@@ -166,4 +170,13 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => render());
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    clearTimeout(saveTimer);
+    editing = null; dragged = null;
+    loadData();
+    render();
+    event.detail.handled = true;
+  });
 })();

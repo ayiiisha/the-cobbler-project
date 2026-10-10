@@ -77,8 +77,13 @@
      DATA
      ========================================================= */
 
-  let scripts = (() => { const v = Projects.getData("screenplays", []); return Array.isArray(v) ? v : []; })();
-  scripts.forEach(normalize);
+  let scripts = [];
+  function loadData() {
+    const v = Projects.getData("screenplays", []);
+    scripts = Array.isArray(v) ? v : [];
+    scripts.forEach(normalize);
+  }
+  loadData();
   function normalize(s) {
     for (const k of ["title", "author", "basedOn", "contact", "draftDate"]) s[k] ??= "";
     s.elements = Array.isArray(s.elements) ? s.elements.filter(e => TYPES[e.type]) : [];
@@ -1053,6 +1058,14 @@ ${titlePage}
       setStatus(`Imported ${file.name}: ${s.elements.length} elements.`);
     });
     render();
+  });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => {
+    clearTimeout(saveTimer); saveTimer = 0;
+    loadData();
+    render();
+    event.detail.handled = true;
   });
 
   window.Screenplay = { paginate, wrap, toFDX, toFountain, fromFountain, current, scenesOf, sceneEighths, eighthsLabel, breakdownCSV, REV_COLORS };

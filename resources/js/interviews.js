@@ -97,18 +97,21 @@
      SAVED DATA
      ========================================================= */
 
-  let people = Projects.getData("interviewees", []);
-  if (!Array.isArray(people)) people = [];
-  people.forEach(p => {
-    p.stage = STAGES.includes(p.stage) ? p.stage : STAGES[0];
-    p.release = { status: "Not sent", date: "", notes: "", ...(p.release || {}) };
-    p.checklist = Array.isArray(p.checklist) ? p.checklist : [];
-    p.questionIds = Array.isArray(p.questionIds) ? p.questionIds : [];
-    for (const key of ["name", "role", "contact", "notes", "shootDate", "shootTime", "location"]) p[key] ??= "";
-  });
-
-  let questions = Projects.getData("questions", []);
-  if (!Array.isArray(questions)) questions = [];
+  let people = [], questions = [];
+  function loadData() {
+    people = Projects.getData("interviewees", []);
+    if (!Array.isArray(people)) people = [];
+    people.forEach(p => {
+      p.stage = STAGES.includes(p.stage) ? p.stage : STAGES[0];
+      p.release = { status: "Not sent", date: "", notes: "", ...(p.release || {}) };
+      p.checklist = Array.isArray(p.checklist) ? p.checklist : [];
+      p.questionIds = Array.isArray(p.questionIds) ? p.questionIds : [];
+      for (const key of ["name", "role", "contact", "notes", "shootDate", "shootTime", "location"]) p[key] ??= "";
+    });
+    questions = Projects.getData("questions", []);
+    if (!Array.isArray(questions)) questions = [];
+  }
+  loadData();
 
   const savePeople = () => Projects.setData("interviewees", people);
   const saveQuestions = () => Projects.setData("questions", questions);
@@ -483,4 +486,7 @@
     const start = location.hash.slice(1);
     showTab(["schedule", "questions"].includes(start) ? start : "board");
   });
+
+  // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  document.addEventListener("projects-refresh", (event) => { dragged = null; loadData(); renderAll(); event.detail.handled = true; });
 })();

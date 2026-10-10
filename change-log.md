@@ -1,3 +1,13 @@
+**10 October 2026 (database, offline, in-place undo, checks)**
+
+* Projects now live in the browser's database (IndexedDB) instead of localStorage, so the old 5 MB limit is gone. Existing projects are moved across on first load. Only the projects that changed are written; tabs tell each other about saves and swap the new data in
+* Undo and redo redraw the page in place instead of reloading it: every page re-reads its data on a "projects-refresh" event. Changes arriving from a sync folder, or saved in another tab, show the same way (while you're typing, the next thing you do shows them). Saving a page's own defaults no longer counts as a step to undo
+* Offline and install: a service worker (sw.js) keeps a copy of the app once it's been opened online, and a web app manifest lets Chrome and Edge install it. A note offers to reload when a new version is published
+* Checks run on every push (GitHub Actions): ESLint and the self-tests page, plus every page opened in a headless browser. `npm run lint` and `npm test` run the same locally
+* The repeated page helpers (el, $, newId, slug, download, …) are shared from util.js; page scripts load through boot.js once the projects have been read
+* Settings › Storage shows the database's usage with the browser's own estimate; the storage warning uses it too
+* Self-tests: 3 new tests for the database (34 in all). Music and Writing tabs name the panel they control (aria-controls); the A/V Script and Packaging pages refresh when transcripts kept elsewhere finish loading; unused code removed
+
 **10 October 2026 (bug fixes)**
 
 * Saving: a page that edits the stored list in place but saves a tidied copy (e.g. Ideas, which never saves empty cards) could be merged with itself and bring back what it had just removed. Only changes that actually arrived from elsewhere (a collaborator, another tab, an undo) trigger a merge now

@@ -631,6 +631,13 @@
 
   document.addEventListener("DOMContentLoaded", setUpDrawer);
 
+  // After an undo, or when changes arrive from elsewhere: show the comments as they're stored now
+  document.addEventListener("projects-refresh", () => {
+    store = loadStore();
+    updateCount();
+    if (isOpen()) renderList();
+  });
+
 
   /* ---------- Let other scripts use the comment threads ---------- */
   window.CobblerComments = { mount, createThread, authorField, authorName, formatTime, submitOnCtrlEnter, addPageComments, PAGE_KEY };

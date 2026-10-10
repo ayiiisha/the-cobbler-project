@@ -362,19 +362,27 @@
   }
   setInterval(() => { if (status.state === "ok") renderPill(); }, 60 * 1000);
 
-  /* Changes arrived for the project you're looking at: reload when it's safe */
+  /* Changes arrived for the project you're looking at: show them when it's safe.
+     The page redraws itself from the stored data (Projects.refresh); a page
+     that can't reloads instead. */
+  const busy = () => document.querySelector("dialog[open]") || document.activeElement?.matches("input, textarea, select, [contenteditable]");
+
+  /* Another tab saved: the data has already been swapped in (projects-core.js); pages that can redraw themselves do,
+     unless you're in the middle of typing (then the next thing you do shows them) */
+  document.addEventListener("projects-data-changed", () => { if (!busy()) Projects.refresh({ reason: "tab" }); });
+
   function offerReload(merged) {
     const who = [...new Set(merged.map(m => m.person))].join(" and ");
-    const busy = () => document.querySelector("dialog[open]") || document.activeElement?.matches("input, textarea, select, [contenteditable]");
+    const show = () => { if (!Projects.refresh({ reason: "sync" })) location.reload(); };
     if (document.hidden) {
       document.addEventListener("visibilitychange", function once() {
         if (document.hidden) return;
         document.removeEventListener("visibilitychange", once);
-        if (!busy()) location.reload(); else toast(`${who}'s changes arrived.`, [["Reload to see them", () => location.reload()]]);
+        if (!busy()) show(); else toast(`${who}'s changes arrived.`, [["Show them", show]]);
       });
       return;
     }
-    toast(`${who}'s changes arrived. Your own changes are kept.`, [["Reload to see them", () => location.reload()]]);
+    toast(`${who}'s changes arrived. Your own changes are kept.`, [["Show them", show]]);
   }
 
   function toast(message, actions = [], { id = "sync-toast" } = {}) {
@@ -423,14 +431,20 @@
     toast("This is a read-only copy: only comments are saved. Your other changes will disappear when you leave the page.", [], { id: "readonly-toast" });
   });
 
-  /* Browser storage nearly full: say so, at most once a day */
-  function storageWarning() {
+  /* Browser storage nearly full: say so, at most once a day. Projects in IndexedDB
+     have no ceiling of their own, so the browser is asked how much the site may use. */
+  async function storageWarning() {
     const info = Projects.storageInfo?.();
-    if (!info || info.used / info.limit < 0.8) return;
+    if (!info) return;
+    let { used, limit } = info;
+    if (!limit) {
+      try { const estimate = await navigator.storage?.estimate?.(); if (estimate?.quota) { used = estimate.usage || 0; limit = estimate.quota; } } catch {}
+    }
+    if (!limit || used / limit < 0.8) return;
     const last = ls.get("storageWarned", 0);
     if (Date.now() - last < 86400000) return;
     ls.set("storageWarned", Date.now());
-    toast(`Browser storage is ${Math.round(info.used / info.limit * 100)}% full. Saving may fail soon.`, [
+    toast(`Browser storage is ${Math.round(used / limit * 100)}% full. Saving may fail soon.`, [
       ["See what's using it", () => { location.href = "settings.html#storage"; }],
     ], { id: "storage-warning" });
   }
