@@ -7,10 +7,12 @@
      sections as a line on their own, e.g. "[Verse 1]". The
      preview shows chords above the words, with syllables per
      line. Transpose up or down a semitone.
-   • Sheet music: written in ABC notation (a plain-text way of
-     writing music; the buttons insert notes for you) and drawn
-     as notation by abcjs. Play it back (needs the internet for
-     the instrument sounds).
+   • Sheet music: drawn by abcjs from ABC notation (a plain-text
+     way of writing music). Notes and rests are placed by clicking
+     on the staff after picking a tool, a length and an accidental;
+     a click on a note selects it to move, relength or delete. The
+     ABC text sits under the score for typing, and is what's saved.
+     Play it back (needs the internet for the instrument sounds).
    • Split sheet: who wrote what share, their performing rights
      organisation and IPI number, publisher, and whether they've
      signed. Export as a PDF to sign.

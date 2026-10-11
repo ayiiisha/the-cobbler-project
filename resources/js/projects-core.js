@@ -34,12 +34,22 @@
 
    UNDO AND REDO
    Every save also records what it replaced (per browser tab, in
-   sessionStorage); saves to the same thing within 1.5 seconds,
-   like typing, count as one step. Projects.undo() / redo() put a
-   page's data back (undo.js wires Cmd/Ctrl+Z and Cmd/Ctrl+Shift+Z
-   and reloads the page). Changes that arrive from collaborators
-   or another tab clear the steps for what they changed, so undo
-   never throws their work away.
+   sessionStorage); saves to the same thing within 1.5 seconds
+   count as one step while they look like typing (the same items,
+   different text). Projects.undo() / redo() put a page's data back;
+   undo.js wires Cmd/Ctrl+Z and Cmd/Ctrl+Shift+Z and asks the page
+   to redraw itself (Projects.refresh sends "projects-refresh";
+   a page without a listener is reloaded instead). Changes that
+   arrive from collaborators or another tab clear the steps for
+   what they changed, so undo never throws their work away.
+
+   REDRAWING IN PLACE
+   Projects.refresh(detail) sends "projects-refresh" on document:
+   each page reads its data again, redraws and sets
+   event.detail.handled = true. The reason is in detail.reason:
+   "undo", "redo", "sync" (a collaborator's changes arrived),
+   "tab" (another tab saved) or "switch" (the active project
+   changed, without a reload).
    ========================================================= */
 (() => {
 
@@ -689,16 +699,13 @@
   // before = JSON of the value the save replaced (null: there wasn't one)
   // The "shape" of a value: which items a list holds (by id), or an object's keys.
   // Typing changes text but not the shape; adding, removing or reordering items does.
-  function shapeOf(json) {
-    try {
-      const v = JSON.parse(json);
-      if (Array.isArray(v)) return "a:" + v.map(x => x && typeof x === "object" ? (x.id ?? "?") : "·").join(",");
-      if (v && typeof v === "object") return "o:" + Object.keys(v).join(",");
-      return "s";
-    } catch { return "?"; }
+  function shapeOf(v) {
+    if (Array.isArray(v)) return "a:" + v.map(x => x && typeof x === "object" ? (x.id ?? "?") : "·").join(",");
+    if (v && typeof v === "object") return "o:" + Object.keys(v).join(",");
+    return "s";
   }
 
-  // before = JSON of the value the save replaced (null: there wasn't one); after = JSON of the new value
+  // before = JSON of the value the save replaced (null: there wasn't one); after = the new value itself
   function recordStep(id, key, before, after) {
     if (before !== null && before.length > 1_500_000) return;   // too big to keep (e.g. huge transcripts)
     const now = Date.now();
@@ -790,7 +797,7 @@
     const replaced = current === undefined ? null : current === value ? shadow : JSON.stringify(current);
     const justTheFallback = current === undefined && fallbacks.get(viewKey(id, key)) === JSON.stringify(value);
     const afterJSON = JSON.stringify(value);
-    if (replaced !== undefined && replaced !== afterJSON && !justTheFallback) recordStep(id, key, replaced, afterJSON);
+    if (replaced !== undefined && replaced !== afterJSON && !justTheFallback) recordStep(id, key, replaced, value);
 
     // Changed underneath the page? Merge the page's changes into what's there now.
     // "Underneath" means what's stored moved on since the page read or last saved
@@ -1093,6 +1100,11 @@
     snapshot(id) {
       const p = state.projects[id];
       return p ? JSON.parse(JSON.stringify(p.data)) : null;
+    },
+
+    /** A project's data itself, to read only (no copy: search.js walks it on every keystroke). Never change what this returns. */
+    peek(id = state.activeId) {
+      return state.projects[id]?.data || null;
     },
 
     // Replaces all of a project's data at once (after a merge)

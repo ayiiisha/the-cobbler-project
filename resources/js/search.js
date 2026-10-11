@@ -148,7 +148,7 @@
     const input = $("site-search-input");
     const q = needle.trim();
     if (q.length < 2) { box.hidden = true; box.replaceChildren(); input.setAttribute("aria-expanded", "false"); return; }
-    const data = Projects.snapshot?.(Projects.activeId()) || {};
+    const data = Projects.peek?.() || Projects.snapshot?.(Projects.activeId()) || {};   // read only, never changed
     const hits = search(data, q);
     const groups = new Map();
     for (const hit of hits) {

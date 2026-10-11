@@ -9,7 +9,7 @@
              data-scripts="project-ui.js comments.js … my-page.js"></script>
 
    Once Projects.ready has resolved and the page has been parsed,
-   the scripts are loaded in that order, then the page's
+   the scripts are fetched together and run in that order, then the page's
    "DOMContentLoaded" hooks run (the scripts use that event to draw
    the page, as they did when they were ordinary deferred scripts).
    Scripts that don't need the projects (util.js, projects-core.js,
@@ -28,17 +28,20 @@
     else document.addEventListener("DOMContentLoaded", () => resolve(), { once: true });
   });
 
-  const loadScript = (file) => new Promise(resolve => {
+  // All the scripts are requested at once (so they download in parallel) and run in
+  // order: a dynamically added script with async = false behaves like a normal tag
+  const loadAll = () => Promise.all(files.map(file => new Promise(resolve => {
     const script = document.createElement("script");
     script.src = new URL(file, base).href;
+    script.async = false;
     script.onload = resolve;
     script.onerror = () => { console.error(`boot.js: couldn't load ${file}`); resolve(); };
     document.head.append(script);
-  });
+  })));
 
   // window.cobblerReady resolves once everything is up (the test runner waits for it)
   window.cobblerReady = Promise.all([window.Projects?.ready, parsed]).then(async () => {
-    for (const file of files) await loadScript(file);
+    await loadAll();
     document.dispatchEvent(new Event("DOMContentLoaded"));
     document.dispatchEvent(new Event("cobbler-ready"));
   });

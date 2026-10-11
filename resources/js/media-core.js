@@ -41,8 +41,8 @@
    WHERE TRANSCRIPTS ARE KEPT
    Transcripts are the biggest thing in a project. Each one's words
    (its segments) can be kept:
-     "project"  inside the project, like everything else (counts
-                towards the browser's 5 MB)
+     "project"  inside the project, like everything else (shared and
+                synced with the project, so long ones slow that down)
      "browser"  in this browser's file storage (FileStore key
                 "tx-<id>-<version>", lots of room). Shared files and the sync
                 folder carry it like an uploaded file; the key changes

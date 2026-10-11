@@ -1,3 +1,10 @@
+**11 October 2026 (team phone numbers, faster loading, tidier code)**
+
+* Team: the phone number field is marked optional, with an example and a note on where the number shows (the card's tap-to-call link, contact cards, CSV, shot list call sheets)
+* Pages load faster: boot.js now requests all of a page's scripts at once and runs them in order, instead of one after another
+* Search no longer copies the whole project on every keystroke (Projects.peek reads the live data); undo grouping looks at the saved value directly instead of parsing its JSON again
+* The explanatory comments at the top of projects-core.js, project-ui.js, sync.js, music-songs.js and media-core.js describe the current behaviour (redrawing in place, placing notes, where transcripts live); the code guide lists the newer Projects API calls
+
 **11 October 2026 (exports everywhere, sheet switching, chart axes, zine pages, placing notes)**
 
 * PDF and Word exports on Ideas, Research, Pitches, Packaging (the open package), Interviews, Team (with tasks), Resources and Data Analysis (profile, filters and rows), through a shared pair of buttons (DocExport.buttons)

@@ -9,9 +9,15 @@
      4. The New Project dialog (used by both the panel and the + button)
      5. A short confirmation message ("toast") after creating a project
 
+   Switching project, creating one or restoring a backup doesn't
+   reload the page: the page redraws itself from the new active
+   project (Projects.refresh; pages without a listener reload).
+
    Needs projects-core.js (window.Projects) and header.js loaded first.
    Other scripts can open the New Project dialog with:
      ProjectUI.openNewProjectDialog()
+   or make another project active, in place, with:
+     ProjectUI.switchTo(id)
    ========================================================= */
 (() => {
 
