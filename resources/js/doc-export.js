@@ -18,6 +18,9 @@
 
      DocExport.print(blocks, { title, spacing: "double", font })
      DocExport.downloadDocx(blocks, { title, filename })
+     DocExport.buttons({ blocks: () => [...], title, filename, label })
+       → a <span> with "PDF" and "Word" buttons (blocks is called
+         when one is clicked, so it always exports what's on screen)
 
    Needs zip.js (for .docx).
    ========================================================= */
@@ -209,5 +212,26 @@ ${heading("Heading2", "heading 2", 26, 240)}
     download(new Blob([docxBlob(blocks, { title, spacing })], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }), filename);
   }
 
-  window.DocExport = { print, downloadDocx, docxBlob, toHTML, download };
+    /* ---------- Two buttons: the same document as PDF or Word ---------- */
+  function buttons({ blocks, title = "Document", filename = "document", label = "" }) {
+    const button = (text, onclick, tip) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "small-btn"; b.textContent = text; b.title = tip;
+      b.addEventListener("click", () => {
+        const list = typeof blocks === "function" ? blocks() : blocks;
+        if (!list || !list.length) { alert("Nothing to export yet."); return; }
+        onclick(list);
+      });
+      return b;
+    };
+    const wrap = document.createElement("span");
+    wrap.className = "doc-export-buttons";
+    if (label) { const l = document.createElement("span"); l.className = "tool-group"; l.textContent = label; wrap.append(l); }
+    wrap.append(
+      button(label ? "PDF" : "Export PDF", (list) => print(list, { title }), "Opens the print window: choose “Save as PDF”"),
+      button(label ? "Word" : "Export Word", (list) => downloadDocx(list, { title, filename: `${filename}.docx` }), "Downloads a .docx to open in Word, Pages or Google Docs"));
+    return wrap;
+  }
+
+  window.DocExport = { print, downloadDocx, docxBlob, toHTML, download , buttons };
 })();

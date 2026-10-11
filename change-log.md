@@ -1,3 +1,11 @@
+**11 October 2026 (exports everywhere, sheet switching, chart axes, zine pages, placing notes)**
+
+* PDF and Word exports on Ideas, Research, Pitches, Packaging (the open package), Interviews, Team (with tasks), Resources and Data Analysis (profile, filters and rows), through a shared pair of buttons (DocExport.buttons)
+* Data Analysis: the Excel workbook is kept, so a Sheet drop-down switches sheets later; the Rows section is paged (page number and rows per page); the chart controls name the axes explicitly for every chart type, with ⇄ Swap axes (a bar chart turns sideways; the R code follows with coord_flip())
+* Zine Planner: pages can be added or removed one, two or four at a time (and a new zine can have any count from 2); a note says how many blank pages a folded booklet would add at print time
+* Music: notes and rests are placed by clicking on the staff after picking a tool (note or rest), a length (whole to sixteenth, dotted) and an accidental; clicking a note selects it for ↑ ↓, a new length or Delete. The ABC text stays underneath for typing, and the score sits above it
+* Checks: the page runner now fails on an empty or truncated page (one was caught during this work)
+
 **11 October 2026 (shot list with storyboard frames, tutorial tour, first week)**
 
 * Shot List: a Frame column shows each shot's storyboard drawing; click it or “Link frame” to pick a frame from any storyboard (filling in size, movement, scene and seconds where empty). A Board view shows every shot as a card with its frame, reorderable, and prints as a storyboard sheet

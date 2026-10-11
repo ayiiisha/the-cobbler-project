@@ -116,10 +116,16 @@
       el("div", { class: "tool-group view-toggle", role: "group", "aria-label": "View" },
         el("button", { type: "button", dataset: { view: "spread" }, onclick: () => setView("spread") }, "Spread"),
         el("button", { type: "button", dataset: { view: "all" }, onclick: () => setView("all") }, "All pages")),
-      el("div", { class: "tool-group" },
+      el("div", { class: "tool-group zine-page-tools" },
         el("span", { class: "page-count" }),
-        el("button", { type: "button", class: "small-btn", title: "Add 4 pages before the back cover", onclick: addPages }, "+ 4 pages"),
-        el("button", { type: "button", class: "small-btn", dataset: { action: "remove-pages" }, title: "Remove the last 4 inside pages", onclick: removePages }, "− 4 pages")),
+        el("span", { class: "zine-page-buttons", role: "group", "aria-label": "Add or remove pages" },
+          el("button", { type: "button", class: "comment-action", title: "Add 1 page before the back cover", onclick: () => addPages(1) }, "+1"),
+          el("button", { type: "button", class: "comment-action", title: "Add 2 pages before the back cover", onclick: () => addPages(2) }, "+2"),
+          el("button", { type: "button", class: "comment-action", title: "Add 4 pages (one folded sheet) before the back cover", onclick: () => addPages(4) }, "+4"),
+          el("button", { type: "button", class: "comment-action", dataset: { action: "remove-1" }, title: "Remove the last inside page", onclick: () => removePages(1) }, "−1"),
+          el("button", { type: "button", class: "comment-action", dataset: { action: "remove-2" }, title: "Remove the last 2 inside pages", onclick: () => removePages(2) }, "−2"),
+          el("button", { type: "button", class: "comment-action", dataset: { action: "remove-pages" }, title: "Remove the last 4 inside pages", onclick: () => removePages(4) }, "−4")),
+        el("span", { class: "media-muted zine-page-note", role: "status" })),
       el("label", { class: "tool-group" }, guides, "Margin guides"));
   }
 
@@ -133,7 +139,12 @@
     $1("[data-action=next]").disabled = S.view !== "spread" || S.spreadIndex === spreads.length - 1;
     $$(".view-toggle [data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === S.view)));
     $1(".page-count").textContent = plural(count, "page");
-    $1("[data-action=remove-pages]").disabled = count <= 4;
+    // A folded booklet needs a multiple of 4; say how many blanks printing would add
+    const short = (4 - (count % 4)) % 4;
+    $1(".zine-page-note").textContent = short ? `(a folded booklet needs a multiple of 4: ${plural(short, "blank page")} at the end when printed)` : "";
+    $1("[data-action=remove-1]").disabled = count <= 2;
+    $1("[data-action=remove-2]").disabled = count <= 3;
+    $1("[data-action=remove-pages]").disabled = count <= 5;
     $1("[data-action=clear]").disabled = S.view !== "spread";
   }
 
@@ -154,24 +165,25 @@
     renderStage();
   }
 
-  /* ---------- Adding and removing pages (4 at a time = one folded sheet) ---------- */
+  /* ---------- Adding and removing pages (1, 2 or 4 at a time; 4 = one folded sheet) ---------- */
 
-  function addPages() {
+  function addPages(n = 4) {
     const pages = S.zine.pages;
-    pages.splice(pages.length - 1, 0, ...Array.from({ length: 4 }, blankPage));
+    if (pages.length + n > 96) { alert("A zine can have up to 96 pages here."); return; }
+    pages.splice(pages.length - 1, 0, ...Array.from({ length: n }, blankPage));
     S.editor.clearHistory();   // pages moved, so old undo steps no longer fit
     S.save();
-    showPage(pages.length - 5);
+    showPage(pages.length - 1 - n);
   }
 
-  function removePages() {
+  function removePages(n = 4) {
     const pages = S.zine.pages;
-    if (pages.length <= 4) return;
-    const first = pages.length - 5;   // the last four inside pages, before the back cover
-    const doomed = pages.slice(first, first + 4);
+    if (pages.length - n < 2) return;   // keep at least a front and a back
+    const first = pages.length - 1 - n;   // the last n inside pages, before the back cover
+    const doomed = pages.slice(first, first + n);
     if (doomed.some(p => !Sketch.isEmpty(p)) &&
-        !confirm(`Remove pages ${first + 1}–${first + 4}? They have drawings or text on them, and this can't be undone.`)) return;
-    pages.splice(first, 4);
+        !confirm(`Remove ${n === 1 ? `page ${first + 1}` : `pages ${first + 1}–${first + n}`}? ${n === 1 ? "It has" : "They have"} drawings or text, and this can't be undone.`)) return;
+    pages.splice(first, n);
     S.editor.clearHistory();
     S.save();
     S.spreadIndex = Math.min(S.spreadIndex, spreadsFor(pages.length).length - 1);

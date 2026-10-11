@@ -206,6 +206,7 @@
     const form = $("research-form");
 
     $("research-new").addEventListener("click", () => openDialog());
+    if (window.DocExport) $("research-new").after(DocExport.buttons({ blocks: exportBlocks, title: `Research: ${Projects.activeName()}`, filename: `${Cobbler.slug(Projects.activeName())}-research`, label: 'Export notes' }));
     $("research-source-add").addEventListener("click", () => {
       const all = readSources();
       drawSources([...all, ""], all.length);
@@ -244,5 +245,21 @@
   });
 
   // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  /* Every note (as filtered on screen) as a document */
+  function exportBlocks() {
+    const shown = typeof visibleNotes === "function" ? visibleNotes() : notes;
+    return [
+      { t: "title", text: `Research: ${Projects.activeName()}` },
+      { t: "meta", text: `${shown.length} of ${notes.length} notes · ${new Date().toLocaleDateString()}` },
+      ...shown.flatMap(n => [
+        { t: "h2", text: n.title || "Untitled note" },
+        { t: "meta", text: [STATUSES[n.status]?.label || n.status, (n.tags || []).length ? `Tags: ${n.tags.join(", ")}` : ""].filter(Boolean).join(" · ") },
+        n.claim && { t: "fields", items: [["Claim", n.claim]] },
+        n.body && { t: "p", text: n.body },
+        (n.sources || []).length && { t: "list", items: n.sources.map(s => typeof s === "string" ? s : s.title || s.url || JSON.stringify(s)) },
+      ].filter(Boolean)),
+    ];
+  }
+
   document.addEventListener("projects-refresh", (event) => { loadData(); render(); event.detail.handled = true; });
 })();

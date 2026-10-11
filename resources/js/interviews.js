@@ -448,6 +448,19 @@
     setUpDialog();
     setUpQuestions();
     $("iv-add").addEventListener("click", () => openPerson());
+    if (window.DocExport) $("iv-add").after(DocExport.buttons({ blocks: () => [
+      { t: "title", text: `Interviews: ${Projects.activeName()}` },
+      { t: "meta", text: `${people.length} people · ${questions.length} questions · ${new Date().toLocaleDateString()}` },
+      { t: "h2", text: "People" },
+      { t: "table", head: ["Name", "Who", "Stage", "Shoot", "Location", "Release", "Contact"], rows: people.map(p => [p.name, p.role, p.stage, [formatDate(p.shootDate), formatTime(p.shootTime)].filter(Boolean).join(" "), p.location, p.release.status, p.contact]) },
+      ...people.filter(p => p.notes || p.checklist.length || p.questionIds.length).flatMap(p => [
+        { t: "h2", text: p.name || "Unnamed" },
+        p.notes && { t: "p", text: p.notes },
+        p.checklist.length && { t: "checks", items: p.checklist.map(c => ({ text: c.text, done: c.done })) },
+        p.questionIds.length && { t: "list", items: questions.filter(q => p.questionIds.includes(q.id)).map(q => q.text) },
+      ].filter(Boolean)),
+      ...(questions.length ? [{ t: "h2", text: "Question bank" }, ...categories().flatMap(cat => [{ t: "h2", text: cat }, { t: "list", items: questions.filter(q => (q.category || "General") === cat).map(q => q.text) }])] : []),
+    ], title: `Interviews: ${Projects.activeName()}`, filename: `${Cobbler.slug(Projects.activeName())}-interviews`, label: "Document" }));
 
     const tabs = [...document.querySelectorAll("#iv-tabs [role=tab]")];
     tabs.forEach((button, i) => {

@@ -44,6 +44,7 @@
    41. Phones and tablets
    42. Shot list + storyboard view, print and dark mode pass
    43. Tutorial tour (every page)
+   44. Placing notes on the staff, zine page tools, data rows pager, document exports
    ========================================================= */
 
 
@@ -5963,3 +5964,42 @@ main .sl-card-shot-meta, main .sl-card-shot-notes { font-size: 0.85rem; line-hei
 [data-selected-theme="rainbow"] .tour-card { --color-background: #FFFFFF; color: #1E1E24; }
 @media (prefers-reduced-motion: reduce) { .tour-spot { transition: none; } }
 @media print { .tour-spot, .tour-card { display: none !important; } }
+
+
+/* =========================================================
+   44. PLACING NOTES ON THE STAFF (Music), ZINE PAGE TOOLS, DATA ROWS PAGER, DOCUMENT EXPORTS
+   ========================================================= */
+.mu-place { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; align-items: center; margin-bottom: 0.4rem; }
+.mu-place-group { display: inline-flex; gap: 0.25rem; align-items: center; }
+.mu-tool {
+  min-width: 2.2rem;
+  padding: 0.3rem 0.5rem;
+  font: inherit;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--color-text);
+  background: var(--color-background);
+  border: 2px solid var(--color-text);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+}
+.mu-tool[aria-pressed="true"] { background: var(--color-text); color: var(--color-on-text); }
+.mu-tool:is(:hover, :focus-visible) { outline: 3px solid var(--color-accent); outline-offset: 1px; }
+main .mu-place-hint { min-height: 2.7em; margin: 0 0 0.6rem; font-size: 0.9rem; }   /* room for two lines, so the staff doesn't jump when the text changes */
+.mu-score.is-placing svg { cursor: crosshair; }
+.mu-score .mu-selected, .mu-score .mu-selected * { fill: #D0392B !important; stroke: #D0392B !important; }
+[data-selected-theme="dark"] .mu-score .mu-selected, [data-selected-theme="dark"] .mu-score .mu-selected * { fill: #FF9A92 !important; stroke: #FF9A92 !important; }
+.mu-palette-details { margin: 0.4rem 0 0.8rem; }
+.mu-palette-details summary { cursor: pointer; font-size: 0.95rem; }
+.mu-palette-details .mu-palette { margin-top: 0.5rem; }
+
+.zine-page-tools { flex-wrap: wrap; }
+.zine-page-buttons { display: inline-flex; gap: 0.2rem; }
+.zine-page-note { font-size: 0.85rem; }
+
+.da-rows-pager { align-items: center; margin-bottom: 0.5rem; }
+.da-rows-pager .te-seconds { width: 4.5rem; }
+
+.doc-export-buttons { display: inline-flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
+.doc-export-row { margin-bottom: 0.75rem; }
+@media print { .doc-export-buttons, .mu-place, .mu-palette-details, .da-rows-pager { display: none !important; } }

@@ -100,7 +100,7 @@ git push -u origin main</pre>
   <tr><td>Self-tests</td><td><code>tests.html</code>, <code>tests.js</code></td></tr>
   <tr><td>Writing</td><td><code>writing-core.js</code> (state, tabs, templates), <code>writing-draft.js</code>, <code>writing-check.js</code>, <code>writing-story.js</code>, <code>writing-reporting.js</code>, <code>writing-revisions.js</code>, <code>writing-business.js</code> (Business and Goals)</td></tr>
   <tr><td>Screenplay</td><td><code>screenplay.js</code> (editor, page layout, PDF, Final Draft and Fountain)</td></tr>
-  <tr><td>Music</td><td><code>music-core.js</code>, <code>music-songs.js</code> (the song sketchbook), <code>music-business.js</code> (gigs, releases, samples); abcjs for notation</td></tr>
+  <tr><td>Music</td><td><code>music-core.js</code>, <code>music-songs.js</code> (the song sketchbook; placing notes by clicking the staff works out the pitch from the staff's on-screen box, finds the note to the left through abcjs's tune object (<code>abselem.x</code>, <code>startChar</code>/<code>endChar</code>) and edits the ABC text, so the text box stays the source of truth), <code>music-business.js</code> (gigs, releases, samples); abcjs for notation</td></tr>
   <tr><td>Team · Ideas · Pitches · Packaging · Research · Calendar</td><td><code>team.js</code> and <code>team-tasks.js</code> (tasks, credits) · <code>ideas.js</code> · <code>pitches.js</code> · <code>packaging.js</code> · <code>research.js</code> · <code>calendar.js</code></td></tr>
   <tr><td>Interviews</td><td><code>interviews.js</code></td></tr>
   <tr><td>Media &amp; Transcripts</td><td><code>media-core.js</code> (shared engine), <code>media.js</code>, <code>text-edit.js</code>, <code>timeline-export.js</code></td></tr>
@@ -108,7 +108,7 @@ git push -u origin main</pre>
   <tr><td>Storyboarder</td><td><code>storyboarder.js</code></td></tr>
   <tr><td>Shot List</td><td><code>shot-list.js</code> + <code>sketch-core.js</code> for frame thumbnails (shot numbers from scene and order; the Frame column, Board view and frame picker draw linked storyboard frames with <code>Sketch.preview</code>; shots from storyboard frames and screenplay scene headings; CSV, a CSV for scheduling apps, a calendar file with the running order, the shot list PDF and the call sheet as PDF or Word, which pulls the crew from <code>team</code> and the day's contributors from <code>interviewees</code>)</td></tr>
   <tr><td>Zine Planner</td><td><code>zine-planner.js</code>, <code>zine-sketch.js</code>, <code>zine-critique.js</code></td></tr>
-  <tr><td>Data Analysis</td><td><code>data-analysis.js</code>, <code>xlsx-read.js</code> (reads .xlsx workbooks in the browser: unzips with DecompressionStream, reads shared strings, dates from the cell styles; gives each sheet's rows, turned into CSV for the page)</td></tr>
+  <tr><td>Data Analysis</td><td><code>data-analysis.js</code>, <code>xlsx-read.js</code> (reads .xlsx workbooks in the browser: unzips with DecompressionStream, reads shared strings, dates from the cell styles; gives each sheet's rows, turned into CSV for the page). The workbook itself is kept in FileStore (<code>meta.workbook</code>) so the sheet can be switched later; the chart's <code>x</code>, <code>y</code>, <code>group</code> and <code>horizontal</code> live in <code>meta.chart</code>.</td></tr>
   <tr><td>Resources · Settings</td><td><code>resources.js</code> · <code>settings.js</code></td></tr>
 </table>
 
@@ -248,6 +248,8 @@ project.data._activity      Bookkeeping: the activity feed</pre>
   <tr><td><code>file-store.js</code></td><td>Saving uploaded files.</td></tr>
   <tr><td><code>Projects.shareIdOf(id)</code> · <code>replaceData(id, data)</code></td><td>Sharing: every copy of a shared project keeps the same share id; merging replaces a project's data.</td></tr>
 </table>
+<h3>Documents (doc-export.js)</h3>
+<p>Pages describe a document as blocks (title, meta, h1/h2, p, list, checks, fields, table) and <code>DocExport.print(blocks)</code> or <code>DocExport.downloadDocx(blocks, { filename })</code> turn it into a PDF (the print window) or a Word file. <code>DocExport.buttons({ blocks: () =&gt; [...], title, filename, label })</code> gives a page the standard PDF/Word pair; pass a function so the export always reflects what's on screen. The page needs <code>zip.js</code> and <code>doc-export.js</code> on its boot.js tag.</p>
 <h3>Sharing and merging (share.js)</h3>
 <p><code>ProjectShare.download(id)</code> writes a project with its uploaded files (as data URLs) to a .json file. <code>ProjectShare.merge(mine, theirs, base)</code> combines two copies: lists of things with an <code>id</code> are matched item by item, plain lists are combined, and anything changed differently on both sides becomes a difference to choose. <code>base</code> is the last version sent or received, kept in file storage under <code>share-base:&lt;share id&gt;</code>: with it, one-sided changes and deletions are applied without asking. New page data works with merging automatically as long as list items have an <code>id</code>.</p>
 <p>Print layouts: anything inside an element with class <code>print-sheet</code> prints on its own while it has content (style.css section 27).</p>

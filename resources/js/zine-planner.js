@@ -363,9 +363,10 @@
         return;
       }
 
-      // Page count: a multiple of 4 (every folded sheet adds 4 pages), 4–96
-      let pages = Math.round((Number(data.get("pages")) || 8) / 4) * 4;
-      pages = Math.min(96, Math.max(4, pages));
+      // Page count: anything from 2 to 96 (a folded booklet wants a multiple of 4; the Sketch tab says
+      // how many blanks printing would add, and pages can be added or removed 1, 2 or 4 at a time)
+      let pages = Math.round(Number(data.get("pages")) || 8);
+      pages = Math.min(96, Math.max(2, pages));
 
       const zine = {
         id: newId("z"), name, size, orientation,

@@ -60,6 +60,7 @@
 <p><strong>Opening the app.</strong> If it's online (for example on GitHub Pages), just open its address. Your projects still stay on your own computer: the website only sends the app, never your work. Otherwise open <code>pages/index.html</code> in Chrome, Firefox, Safari or Edge. Double-clicking the file works for almost everything. A few features that store files (uploads, datasets, photos behind storyboard frames) and downloading the app as a ZIP work best when the app is opened from a local server; the code guide explains how (it's one command).</p>
 <p><strong>Getting around.</strong> The ☰ button (top left) opens and closes the sidebar, which lists every page. On a computer the sidebar stays open beside the page; on a phone or tablet it slides over the page.</p>
 <p><strong>Search this project.</strong> The box in the sidebar (Ctrl+K or ⌘K jumps to it) looks through everything in the active project: notes, ideas, tasks, people, questions, pitches, packages, transcripts, paper edits, storyboards, zines, drafts, scripts, songs, shot lists, resources and comments. Results are grouped by page; click one to go there (lists, storyboards and zines open straight to the item). Transcripts kept outside the project are searched by title only.</p>
+<p><strong>Exporting as PDF or Word.</strong> Most pages have a pair of <strong>PDF</strong> and <strong>Word</strong> buttons near the top (Ideas, Research, Pitches, Packaging, Interviews, Team, Resources, Data Analysis, Shot List, Calendar, Writing, Screenplay, Storyboarder, Projects). PDF opens the print window, where you choose “Save as PDF”; Word downloads a .docx that opens in Word, Pages or Google Docs. Each export is what's on screen at the time (the open package, the filtered notes, the current dataset).</p>
 <p><strong>Which browser.</strong> The app works best in Chrome or Edge on a computer. Safari and Firefox do nearly everything, but can't sync through a folder or back up to a folder automatically (use Share, Import and the backup download instead), and need recent versions to read Excel files. Settings › This browser lists what yours can do. On a phone or tablet everything works, with the pages laid out for the narrower screen; the shot list becomes a stack of cards.</p>
 <p><strong>The round buttons</strong> at the bottom right are on every page:</p>
 <ul>
@@ -246,7 +247,7 @@
 <h2>15. Zine Planner</h2>
 <ul>
   <li><strong>New zine</strong> with presets (mini, pocket, half-size, digest) on US Letter or A4 paper (US Letter Half, Quarter, Eighth or A5, A6, A7), portrait or landscape.</li>
-  <li><strong>Sketch</strong>: draw and type on every page, shown as booklet spreads or all at once. Add or remove pages four at a time.</li>
+  <li><strong>Sketch</strong>: draw and type on every page, shown as booklet spreads or all at once. Add or remove pages one, two or four at a time; a note says how many blank pages a folded booklet would add when printed if the count isn't a multiple of four.</li>
   <li><strong>Critique</strong>: upload pages, mock-ups, PDFs or video and comment on them. On images, click a spot to pin a comment.</li>
 </ul>
 
@@ -310,6 +311,8 @@
 <h2>18. Music</h2>
 <h3>Songs (the song sketchbook)</h3>
 <p>Each song has a status, key, tempo, time signature and length, and four parts:</p>
+<p><strong>Sheet music.</strong> Pick <strong>Note</strong> or <strong>Rest</strong>, a length (whole, half, quarter, eighth, sixteenth, with a dot for half as long again) and, for notes, a sharp, flat or natural, then <strong>click on the staff</strong> where the note goes: it lands at the pitch under the pointer, after the note to the left of the click (or at the end of the line). Click a note to select it: ↑ and ↓ move it a step, a length button changes its length, and Delete removes it. Underneath, the same music is shown as ABC notation and can be typed or pasted; the two always match.</p>
+
 <ul>
   <li><strong>Lyrics and chords</strong>: write chords in square brackets where they change, <code>[G]Walking down the [C]road</code>, and sections on their own line, <code>[Chorus]</code>. The preview shows chords above the words and syllables per line. <strong>♭ Down</strong> and <strong>♯ Up</strong> transpose by a semitone.</li>
   <li><strong>Sheet music</strong>, written in ABC notation (letters for notes, numbers for lengths, | for bar lines, a <code>w:</code> line for lyrics under the notes); the buttons insert notes and symbols, and the notation is drawn as you type. The note buttons follow the song's key: in D♭ major they read D♭ E♭ F G♭ A♭ B♭ C (the key signature makes them sharp or flat), with the key note highlighted; use = for a natural. <strong>Play</strong> plays it back (the instrument sounds load from the internet).</li>
@@ -325,7 +328,8 @@
 <p>Every sample: the original, what you used, whether it needs the recording owner, the song owner or both, who you're talking to, status (not started → cleared, denied or replaced), fee, terms and where the agreement is filed.</p>
 
 <h2>19. Data Analysis</h2>
-<p>Load a <strong>CSV</strong> or an <strong>Excel file</strong> (.xlsx). For a workbook with several sheets you pick the sheet; numbers, dates and TRUE/FALSE come through as they would from "Save as CSV", and formulas by their last calculated value. The R code then loads the file with <code>readxl::read_excel()</code> and the same sheet.</p>
+<p>Load a <strong>CSV</strong> or an <strong>Excel file</strong> (.xlsx). For a workbook with several sheets you pick the sheet, and a <strong>Sheet</strong> drop-down in the dataset bar switches to another sheet later (the workbook is kept). Numbers, dates and TRUE/FALSE come through as they would from "Save as CSV", and formulas by their last calculated value. The R code loads the file with <code>readxl::read_excel()</code> and the same sheet.</p>
+<p>The <strong>Rows</strong> section shows the filtered rows a page at a time: pick the page number and how many rows per page. The <strong>Chart</strong> controls name the axes: for a scatter chart choose the x axis and y axis variables (and a variable to colour by); for bars, the groups and the height (number of rows, or the sum, average or median of a variable); for a line, what runs along x and what is measured. <strong>⇄ Swap axes</strong> exchanges them, or turns a bar chart sideways. The R code follows whatever you choose.</p>
 <ul>
   <li><strong>Load a CSV</strong> to see a profile of each column (type, missing values, statistics).</li>
   <li><strong>Filter</strong> rows and draw a quick chart: histogram, bar, scatter or line. Hover for values, or show the numbers as a table.</li>

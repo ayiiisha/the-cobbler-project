@@ -333,6 +333,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     setUpDialog();
     $("pitch-new").addEventListener("click", () => openPitch());
+    if (window.DocExport) $("pitch-new").after(DocExport.buttons({ blocks: exportBlocks, title: `Pitches: ${Projects.activeName()}`, filename: `${Cobbler.slug(Projects.activeName())}-pitches`, label: 'Export all' }));
     $("pitch-search").addEventListener("input", (event) => { view.search = event.target.value; render(); });
     render();
 
@@ -351,5 +352,20 @@
   });
 
   // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  /* Every pitch as a document */
+  function exportBlocks() {
+    return [
+      { t: "title", text: `Pitches: ${Projects.activeName()}` },
+      { t: "meta", text: `${pitches.length} pitches · ${new Date().toLocaleDateString()}` },
+      ...pitches.flatMap(p => [
+        { t: "h2", text: p.title || "Untitled pitch" },
+        { t: "meta", text: [p.status, p.format, p.length, p.audience && `For: ${p.audience}`].filter(Boolean).join(" · ") },
+        { t: "fields", items: [["Hook", p.hook], ["The story", p.story], ["Why now", p.whyNow], ["Access", p.access], ["Notes", p.notes]].filter(([, v]) => v && String(v).trim()) },
+        (p.links || []).length && { t: "list", items: p.links },
+        (p.outlets || []).length && { t: "table", head: ["Outlet", "Editor", "Sent", "Status", "Notes"], rows: p.outlets.map(o => [o.name || "", [o.editor, o.email].filter(Boolean).join(" "), o.sentOn || "", o.status || "", o.notes || ""]) },
+      ].filter(Boolean)),
+    ];
+  }
+
   document.addEventListener("projects-refresh", (event) => { loadData(); render(); event.detail.handled = true; });
 })();
