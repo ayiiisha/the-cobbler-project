@@ -120,6 +120,36 @@ await flow("Shot list: numbering, imports, sorting, exports", async ({ page, go,
   check("call sheet blocks include the schedule", /Call sheet: Day 1/.test(sheet) && /Schedule/.test(sheet));
 });
 
+await flow("Shot list and storyboard in one view, and the tour", async ({ page, go }) => {
+  await go("shot-list.html");
+  await page.evaluate(async () => {
+    Projects.getData("storyboards", []); Projects.setData("storyboards", [{ id: "b1", name: "Opening", kind: "video", aspect: "16:9", fps: 24, frames: [
+      { id: "f1", scene: "12", shot: "Wide", move: "Static", duration: 4, action: "The kitchen", dialogue: "", sound: "", strokes: [], texts: [] },
+      { id: "f2", scene: "12", shot: "Close-up", move: "Push in", duration: 2, action: "The kettle", dialogue: "", sound: "", strokes: [], texts: [] }] }]);
+    Projects.getData("shotLists", []); Projects.setData("shotLists", [{ id: "sl1", name: "Day 1", date: "", callTime: "", wrapTime: "", location: "", notes: "", access: "", hospital: "", weather: "", created: 1, updated: 1, shots: [
+      { id: "a", scene: "12", size: "Wide", angle: "", move: "", lens: "", description: "Master", intExt: "", dayNight: "", seconds: "", minutes: "", gear: "", sound: "", notes: "", done: false, storyboardRef: { boardId: "b1", frameId: "f1" } },
+      { id: "b", scene: "", size: "", angle: "", move: "", lens: "", description: "", intExt: "", dayNight: "", seconds: "", minutes: "", gear: "", sound: "", notes: "", done: false, storyboardRef: null }] }]);
+    await Projects.flushed();
+  });
+  await go("about.html"); await go("shot-list.html#list=sl1");
+  check("a linked shot shows its frame", (await page.locator("#sl-body tr").nth(0).locator(".sl-frame canvas").count()) === 1);
+  await page.locator("#sl-body tr").nth(1).locator(".sl-frame").click(); await page.waitForTimeout(200);
+  await page.locator(".sl-frame-pick").nth(1).click(); await page.waitForTimeout(300);
+  const linked = await page.evaluate(() => Projects.getData("shotLists")[0].shots[1]);
+  check("picking a frame links it and fills in size, move and scene", linked.storyboardRef?.frameId === "f2" && linked.size === "Close-up" && linked.move === "Push in" && linked.scene === "12");
+  await page.click("#sl-view-board"); await page.waitForTimeout(300);
+  check("board view shows a card per shot with its frame", (await page.locator(".sl-card-shot .sl-frame canvas").count()) === 2);
+  await page.click("#sl-view-table");
+  await go("index.html");
+  await page.click("#tour-start"); await page.waitForTimeout(400);
+  check("the tour starts on Home", /1 of \d+/.test(await page.textContent(".tour-count")));
+  for (let i = 0; i < 8; i++) { await page.click(".tour-next"); await page.waitForTimeout(150); }
+  await page.click(".tour-next"); await page.waitForTimeout(800); await page.evaluate(() => window.cobblerReady); await page.waitForTimeout(600);
+  check("the tour carries on to the next page", /project-tracker\.html/.test(page.url()) && /10 of/.test(await page.textContent(".tour-count")), page.url());
+  await page.keyboard.press("Escape");
+  check("Esc leaves the tour", await page.evaluate(() => !localStorage.getItem("cobblerTour")));
+});
+
 await flow("Ideas panel and search: available on any page", async ({ page, go }) => {
   await go("research.html");
   await page.evaluate(async () => { Projects.getData("research", []); Projects.setData("research", [{ id: "r1", title: "Rent rose 40%", status: "unverified", notes: "Council data", claim: "", sources: [], tags: [] }]); await Projects.flushed(); });

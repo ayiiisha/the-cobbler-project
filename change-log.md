@@ -1,3 +1,10 @@
+**11 October 2026 (shot list with storyboard frames, tutorial tour, first week)**
+
+* Shot List: a Frame column shows each shot's storyboard drawing; click it or “Link frame” to pick a frame from any storyboard (filling in size, movement, scene and seconds where empty). A Board view shows every shot as a card with its frame, reorderable, and prints as a storyboard sheet
+* Tutorial: a guided tour of every page (Home › Take the tour, or Settings › Tutorial): a spotlight and a card on each stop, Next/Back/Esc, continues across pages and after a break
+* User guide: a “Your first week” section at the top, in the order a project actually unfolds
+* Dark, rainbow and print pass on the newer pages: shot list, call sheet, search results, ideas panel, Settings panels and the tour; the shot list prints as a clean table or sheet, with panels and buttons off the paper
+
 **10 October 2026 (backups, search, phones, accessibility, checks)**
 
 * Backups: Settings › Backups can back up every project automatically to a folder you choose (Chrome, Edge), every day or week, keeping the newest few; the first backup is written at once. Without it, a note once a day reminds you when there's work not backed up for a week. The app also asks the browser, once there's real work, to keep this site's data when the disk runs low (backups.js)

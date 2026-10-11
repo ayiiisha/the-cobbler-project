@@ -88,6 +88,7 @@ git push -u origin main</pre>
   <tr><td><code>undo.js</code></td><td>Cmd/Ctrl+Z and Cmd/Ctrl+Shift+Z on every page (the steps themselves are kept by projects-core.js).</td></tr>
   <tr><td><code>ideas-panel.js</code></td><td>The lightbulb button and the ideas panel on the right (the Ideas page's cards, on any page; <code>ideasPanelOpen</code> in localStorage remembers whether it's open).</td></tr>
   <tr><td><code>search.js</code></td><td>The search box in the sidebar: walks the active project's data (every key in its <code>PAGES</code> table), groups matches by page and links to the item. Ctrl/⌘+K focuses it.</td></tr>
+  <tr><td><code>tour.js</code></td><td>The guided tour: <code>STEPS</code> (page, target selector, title, text), a spotlight and a card, progress in localStorage <code>cobblerTour</code> so it continues across pages. Settings › Tutorial and Home start it.</td></tr>
   <tr><td><code>backups.js</code></td><td>Automatic backups to a chosen folder (handle in FileStore as <code>backup-folder-handle</code>; settings in localStorage <code>cobblerBackups</code>), the weekly reminder, and the one-time <code>navigator.storage.persist()</code> request. Renders Settings › Backups.</td></tr>
 </table>
 <h3>Page scripts</h3>
@@ -105,7 +106,7 @@ git push -u origin main</pre>
   <tr><td>Media &amp; Transcripts</td><td><code>media-core.js</code> (shared engine), <code>media.js</code>, <code>text-edit.js</code>, <code>timeline-export.js</code></td></tr>
   <tr><td>A/V Script</td><td><code>av-script.js</code></td></tr>
   <tr><td>Storyboarder</td><td><code>storyboarder.js</code></td></tr>
-  <tr><td>Shot List</td><td><code>shot-list.js</code> (shot numbers from scene and order; shots from storyboard frames and screenplay scene headings; CSV, a CSV for scheduling apps, a calendar file with the running order, the shot list PDF and the call sheet as PDF or Word, which pulls the crew from <code>team</code> and the day's contributors from <code>interviewees</code>)</td></tr>
+  <tr><td>Shot List</td><td><code>shot-list.js</code> + <code>sketch-core.js</code> for frame thumbnails (shot numbers from scene and order; the Frame column, Board view and frame picker draw linked storyboard frames with <code>Sketch.preview</code>; shots from storyboard frames and screenplay scene headings; CSV, a CSV for scheduling apps, a calendar file with the running order, the shot list PDF and the call sheet as PDF or Word, which pulls the crew from <code>team</code> and the day's contributors from <code>interviewees</code>)</td></tr>
   <tr><td>Zine Planner</td><td><code>zine-planner.js</code>, <code>zine-sketch.js</code>, <code>zine-critique.js</code></td></tr>
   <tr><td>Data Analysis</td><td><code>data-analysis.js</code>, <code>xlsx-read.js</code> (reads .xlsx workbooks in the browser: unzips with DecompressionStream, reads shared strings, dates from the cell styles; gives each sheet's rows, turned into CSV for the page)</td></tr>
   <tr><td>Resources · Settings</td><td><code>resources.js</code> · <code>settings.js</code></td></tr>

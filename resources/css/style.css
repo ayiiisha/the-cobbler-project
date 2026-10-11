@@ -42,6 +42,8 @@
    39. Backups and browser support (Settings)
    40. Search across the project (every page)
    41. Phones and tablets
+   42. Shot list + storyboard view, print and dark mode pass
+   43. Tutorial tour (every page)
    ========================================================= */
 
 
@@ -5831,3 +5833,133 @@ main .sl-notes { font-size: 0.95rem; white-space: pre-wrap; }
   .sl-row.is-drop { outline: 3px dashed var(--color-text); }
   .sl-exports, .sl-tools { gap: 0.4rem; }
 }
+
+
+/* =========================================================
+   42. SHOT LIST + STORYBOARD IN ONE VIEW, PRINT AND DARK MODE PASS
+   ========================================================= */
+
+/* The Frame column: a small drawing of the linked storyboard frame */
+.sl-col-frame { width: 7.5rem; }
+.sl-frame {
+  display: block;
+  width: 7rem;
+  padding: 0;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--color-text);
+  background: var(--color-background);
+  border: 2px solid var(--color-text);
+  border-radius: calc(var(--border-radius) / 2);
+  overflow: hidden;
+  cursor: pointer;
+}
+.sl-frame .sketch-page { border: none; border-radius: 0; }
+.sl-frame.is-empty { display: grid; place-items: center; min-height: 3.9rem; border-style: dashed; opacity: 0.7; }
+.sl-frame:is(:hover, :focus-visible) { outline: 3px solid var(--color-accent); outline-offset: 1px; }
+
+/* Board view: cards like a storyboard sheet */
+.sl-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 1rem; align-items: start; }
+.sl-card-shot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem 0.75rem;
+  color: var(--color-text);
+  background: var(--color-background);
+  border: 2px solid var(--color-text);
+  border-radius: var(--border-radius);
+}
+.sl-card-shot.is-done { opacity: 0.6; }
+.sl-card-shot.is-dragging { opacity: 0.4; }
+.sl-card-shot.is-drop { outline: 3px dashed var(--color-text); outline-offset: 3px; }
+.sl-card-shot-head { display: flex; align-items: center; gap: 0.5rem; }
+.sl-card-shot-head strong { font-size: 1.15rem; }
+.sl-card-shot-head .media-muted { flex: 1; font-size: 0.85rem; }
+.sl-card-shot-head .ideas-drag { cursor: grab; }
+.sl-card-shot-done input { width: 1.2rem; height: 1.2rem; margin: 0; }
+.sl-card-shot .sl-frame { width: 100%; }
+.sl-card-shot .sl-frame.is-empty { min-height: 6rem; }
+main .sl-card-shot-text { font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap; }
+main .sl-card-shot-meta, main .sl-card-shot-notes { font-size: 0.85rem; line-height: 1.35; }
+.sl-card-shot-actions { display: flex; gap: 0.35rem; justify-content: flex-end; }
+
+/* Frame picker */
+.sl-frame-dialog { width: min(52rem, 94vw); }
+.sl-frame-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.6rem; max-height: 50vh; overflow-y: auto; margin: 0.75rem 0; }
+.sl-frame-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  background: var(--color-background);
+  border: 2px solid var(--color-text);
+  border-radius: calc(var(--border-radius) / 2);
+  cursor: pointer;
+}
+.sl-frame-pick .sketch-page { border: none; }
+.sl-frame-pick.is-chosen { background: var(--color-accent); color: #1E1E24; }
+.sl-frame-pick:is(:hover, :focus-visible) { outline: 3px solid var(--color-accent-2); outline-offset: 1px; }
+
+/* Dark theme: the new surfaces keep readable contrast */
+[data-selected-theme="dark"] .sl-frame.is-empty, [data-selected-theme="dark"] .sl-card.is-complete { background: color-mix(in srgb, var(--color-text) 10%, var(--color-background)); }
+[data-selected-theme="dark"] .site-search-snippet mark, [data-selected-theme="dark"] .browser-mark { color: #1E1E24; }
+[data-selected-theme="dark"] .ideas-drawer-card { background: color-mix(in srgb, var(--color-accent) 22%, var(--color-background)); }
+[data-selected-theme="rainbow"] :is(.sl-card, .sl-card-shot, .sl-frame-pick, .sl-table tr) { --color-background: #FFFFFF; }
+[data-selected-theme="rainbow"] .sl-table :is(input, select, textarea) { color: #1E1E24; }
+
+/* Printing: the shot list prints as a clean table (or its cards); panels and buttons stay off the paper */
+@media print {
+  .site-search, .ideas-drawer, .ideas-fab, .fab, .comments-drawer, .sync-toast, #backup-toast, .nav-toggle, .nav-backdrop, .page-footer { display: none !important; }
+  .sl-tools, .sl-exports, .sl-head .small-btn, .sl-card-actions, .sl-card-shot-actions, .sl-col-actions, .sl-col-num .ideas-drag, .sl-card-shot-head .ideas-drag { display: none !important; }
+  .sl-table { min-width: 0; width: 100%; font-size: 9pt; }
+  .sl-table :is(input, select, textarea) { border: none; padding: 0; background: none; appearance: none; font-size: 9pt; }
+  .sl-table select { text-overflow: clip; }
+  .sl-board { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+  .sl-card-shot, .sl-card { break-inside: avoid; }
+  .sl-summary .team-chip { border: 1px solid #000; }
+  .backups-callout .help-downloads, .browser-support .media-muted { display: none; }
+  .ideas-open body, .comments-open body { padding-right: 0 !important; }
+}
+
+
+/* =========================================================
+   43. TUTORIAL TOUR (tour.js, every page)
+   ========================================================= */
+.tour-spot {
+  position: fixed;
+  z-index: 1200;
+  border-radius: calc(var(--border-radius) + 4px);
+  box-shadow: 0 0 0 4px var(--color-accent), 0 0 0 9999px rgba(30, 30, 36, 0.45);
+  pointer-events: none;
+  transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+.tour-card {
+  position: fixed;
+  z-index: 1210;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem 1.1rem;
+  color: var(--color-text);
+  background: var(--color-background);
+  border: 3px solid var(--color-text);
+  border-radius: var(--border-radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  text-align: left;
+}
+.tour-card.is-centered { top: 50% !important; left: 50% !important; width: min(26rem, calc(100vw - 2rem)) !important; transform: translate(-50%, -50%); }
+.tour-card h2 { margin: 0; font-size: 1.3rem; text-align: left; }
+.tour-card p { margin: 0; line-height: 1.45; }
+.tour-count { font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.75; }
+.tour-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.4rem; }
+.tour-actions .comment-action { margin-left: auto; }
+.tour-next { background: var(--color-accent); color: #1E1E24; }
+.tutorial-settings .help-downloads { align-items: center; }
+#tour-start { margin-top: 0.6rem; }
+[data-selected-theme="rainbow"] .tour-card { --color-background: #FFFFFF; color: #1E1E24; }
+@media (prefers-reduced-motion: reduce) { .tour-spot { transition: none; } }
+@media print { .tour-spot, .tour-card { display: none !important; } }

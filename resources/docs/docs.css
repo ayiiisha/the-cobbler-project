@@ -20,3 +20,6 @@ tr { break-inside: avoid; }
 .toc { columns: 2; font-size: 10.5pt; }
 .toc li { break-inside: avoid; }
 .cover { border: 2pt solid #1E1E24; background: #FAA8C1; padding: 14pt 16pt; margin-bottom: 16pt; }
+
+.first-week { margin-top: 1.5rem; }
+.first-week-steps li { margin-bottom: 0.45rem; line-height: 1.45; }
