@@ -162,7 +162,22 @@
     return node;
   }
 
-  document.addEventListener("DOMContentLoaded", () => render());
+  /* The board as a document: one heading per column, the cards beneath */
+  function exportBlocks() {
+    return [
+      { t: "title", text: `Ideas: ${Projects.activeName()}` },
+      { t: "meta", text: `${ideas.filter(i => i.text.trim()).length} ideas · ${new Date().toLocaleDateString()}` },
+      ...columns.flatMap((title, c) => {
+        const cards = ideas.filter(i => i.column === c && i.text.trim());
+        return [{ t: "h2", text: `${title} (${cards.length})` }, cards.length ? { t: "list", items: cards.map(i => i.text.trim()) } : { t: "p", text: "Nothing here yet." }];
+      }),
+    ];
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    render();
+    if (window.DocExport) document.querySelector("#ideas-board")?.before(Cobbler.el("div", { class: "sketch-nav doc-export-row" }, DocExport.buttons({ blocks: exportBlocks, title: `Ideas: ${Projects.activeName()}`, filename: `${Cobbler.slug(Projects.activeName())}-ideas`, label: "Export the board" })));
+  });
 
   // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
   document.addEventListener("projects-refresh", (event) => {

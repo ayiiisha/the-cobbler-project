@@ -27,6 +27,10 @@
    Also here, on every page:
      • the sync status in the sidebar
      • the reminder to share projects you haven't shared lately
+     • the note when a collaborator's changes arrive ("Show them"
+       redraws the page in place), and the redraw when another
+       tab of this browser saves
+     • the storage warning, and the toast() other scripts use
 
    Needs projects-core.js, file-store.js and share.js.
    ========================================================= */

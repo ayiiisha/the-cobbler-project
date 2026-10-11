@@ -120,6 +120,72 @@ await flow("Shot list: numbering, imports, sorting, exports", async ({ page, go,
   check("call sheet blocks include the schedule", /Call sheet: Day 1/.test(sheet) && /Schedule/.test(sheet));
 });
 
+await flow("Shot list and storyboard in one view, and the tour", async ({ page, go }) => {
+  await go("shot-list.html");
+  await page.evaluate(async () => {
+    Projects.getData("storyboards", []); Projects.setData("storyboards", [{ id: "b1", name: "Opening", kind: "video", aspect: "16:9", fps: 24, frames: [
+      { id: "f1", scene: "12", shot: "Wide", move: "Static", duration: 4, action: "The kitchen", dialogue: "", sound: "", strokes: [], texts: [] },
+      { id: "f2", scene: "12", shot: "Close-up", move: "Push in", duration: 2, action: "The kettle", dialogue: "", sound: "", strokes: [], texts: [] }] }]);
+    Projects.getData("shotLists", []); Projects.setData("shotLists", [{ id: "sl1", name: "Day 1", date: "", callTime: "", wrapTime: "", location: "", notes: "", access: "", hospital: "", weather: "", created: 1, updated: 1, shots: [
+      { id: "a", scene: "12", size: "Wide", angle: "", move: "", lens: "", description: "Master", intExt: "", dayNight: "", seconds: "", minutes: "", gear: "", sound: "", notes: "", done: false, storyboardRef: { boardId: "b1", frameId: "f1" } },
+      { id: "b", scene: "", size: "", angle: "", move: "", lens: "", description: "", intExt: "", dayNight: "", seconds: "", minutes: "", gear: "", sound: "", notes: "", done: false, storyboardRef: null }] }]);
+    await Projects.flushed();
+  });
+  await go("about.html"); await go("shot-list.html#list=sl1");
+  check("a linked shot shows its frame", (await page.locator("#sl-body tr").nth(0).locator(".sl-frame canvas").count()) === 1);
+  await page.locator("#sl-body tr").nth(1).locator(".sl-frame").click(); await page.waitForTimeout(200);
+  await page.locator(".sl-frame-pick").nth(1).click(); await page.waitForTimeout(300);
+  const linked = await page.evaluate(() => Projects.getData("shotLists")[0].shots[1]);
+  check("picking a frame links it and fills in size, move and scene", linked.storyboardRef?.frameId === "f2" && linked.size === "Close-up" && linked.move === "Push in" && linked.scene === "12");
+  await page.click("#sl-view-board"); await page.waitForTimeout(300);
+  check("board view shows a card per shot with its frame", (await page.locator(".sl-card-shot .sl-frame canvas").count()) === 2);
+  await page.click("#sl-view-table");
+  await go("index.html");
+  await page.click("#tour-start"); await page.waitForTimeout(400);
+  check("the tour starts on Home", /1 of \d+/.test(await page.textContent(".tour-count")));
+  for (let i = 0; i < 8; i++) { await page.click(".tour-next"); await page.waitForTimeout(150); }
+  await page.click(".tour-next"); await page.waitForTimeout(800); await page.evaluate(() => window.cobblerReady); await page.waitForTimeout(600);
+  check("the tour carries on to the next page", /project-tracker\.html/.test(page.url()) && /10 of/.test(await page.textContent(".tour-count")), page.url());
+  await page.keyboard.press("Escape");
+  check("Esc leaves the tour", await page.evaluate(() => !localStorage.getItem("cobblerTour")));
+});
+
+await flow("Exports, data rows and axes, zine pages, placing notes", async ({ page, go, download }) => {
+  await go("ideas.html");
+  await page.evaluate(async () => { Projects.getData("ideas", []); Projects.setData("ideas", [{ id: "i1", column: 0, text: "Idea one", created: 1 }]); await Projects.flushed(); });
+  await go("ideas.html");
+  const doc = await download(() => page.locator(".doc-export-buttons button:has-text(\"Word\")").first().click());
+  check("Ideas exports a Word document", doc.name.endsWith("-ideas.docx") && doc.text.length > 1000, doc.name);
+  await go("data-analysis.html");
+  const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.click("#da-load")]);
+  await chooser.setFiles(path.join(FIXTURES, "sales.xlsx"));
+  await page.waitForSelector("#da-sheet[open]"); await page.click("#da-sheet-list button:has-text(\"Sales\")"); await page.waitForTimeout(800);
+  await page.selectOption("#da-rows-pager select", "10"); await page.waitForTimeout(200);
+  check("rows are paged", /Rows 1–10 of 12/.test(await page.textContent("#da-rows-note")), await page.textContent("#da-rows-note"));
+  await page.selectOption("#da-sheet-pick", "Staff"); await page.waitForTimeout(800);
+  check("the sheet can be switched later", /1 rows · 1 columns/.test(await page.textContent("#da-summary")));
+  await page.selectOption("#da-sheet-pick", "Sales"); await page.waitForTimeout(800);
+  await page.locator("#da-chart-controls select[aria-label=Chart]").selectOption("scatter"); await page.waitForTimeout(200);
+  const before = await page.evaluate(() => [Projects.getData("datasets")[0].chart.x, Projects.getData("datasets")[0].chart.y]);
+  await page.click("#da-chart-controls button:has-text(\"Swap axes\")"); await page.waitForTimeout(200);
+  const after = await page.evaluate(() => [Projects.getData("datasets")[0].chart.x, Projects.getData("datasets")[0].chart.y]);
+  check("swap axes exchanges x and y", before[0] === after[1] && before[1] === after[0]);
+  await go("zine-planner.html");
+  await page.click("#zine-new"); await page.fill("#zine-form [name=name]", "Z"); await page.fill("#zine-form [name=pages]", "6"); await page.click("#zine-submit"); await page.waitForTimeout(400);
+  await page.click(".zine-page-buttons button[title^=\"Add 1\"]"); await page.waitForTimeout(200);
+  check("a zine can have 6 pages and gain one more", (await page.evaluate(() => Projects.getData("zines")[0].pages.length)) === 7);
+  await go("music.html");
+  await page.click("#mu-panel button:has-text(\"New song\")"); await page.waitForTimeout(400);
+  await page.evaluate(() => { const s = Projects.getData("songs")[0]; s.abc = "X:1\nT:T\nM:4/4\nL:1/8\nK:C\nC2 D2 E2 F2 |"; Projects.setData("songs", Projects.getData("songs")); });
+  await go("music.html"); await page.click("#mu-panel button:has-text(\"Sheet music\")"); await page.waitForTimeout(700);
+  await page.evaluate(() => document.fonts.ready); await page.evaluate(() => document.querySelector(".mu-score").scrollIntoView({ block: "center", behavior: "instant" })); await page.waitForTimeout(300);
+  const geo = await page.evaluate(() => { const b = document.querySelector(".mu-score g.abcjs-staff").getBoundingClientRect(); const notes = [...document.querySelectorAll(".mu-score .abcjs-note")].map(n => n.getBoundingClientRect()); return { top: b.top, h: b.height, right: b.right, lastRight: Math.max(...notes.map(n => n.right)) }; });
+  await page.mouse.click(Math.min(geo.right - 30, geo.lastRight + 40), geo.top - geo.h / 8); await page.waitForTimeout(400);
+  check("a click above the staff places a quarter note g", /F2 g2 \|$/.test((await page.evaluate(() => Projects.getData("songs")[0].abc)).trim()), await page.evaluate(() => Projects.getData("songs")[0].abc.split("\n").pop()));
+  await page.click(".mu-place button[aria-label=\"Move the selected note down\"]"); await page.waitForTimeout(200);
+  check("the selected note moves down to f", /f2/.test(await page.evaluate(() => Projects.getData("songs")[0].abc)));
+});
+
 await flow("Ideas panel and search: available on any page", async ({ page, go }) => {
   await go("research.html");
   await page.evaluate(async () => { Projects.getData("research", []); Projects.setData("research", [{ id: "r1", title: "Rent rose 40%", status: "unverified", notes: "Council data", claim: "", sources: [], tags: [] }]); await Projects.flushed(); });

@@ -37,7 +37,11 @@
    contributors (Interviews page), location, access, weather and
    the nearest hospital; and the project details document (report.js).
 
-   Needs projects-core.js and doc-export.js.
+   The Frame column (and the Board view: every shot as a card) draws
+   the storyboard frame a shot is linked to, with sketch-core.js's
+   preview; any shot can be linked to a frame by hand.
+
+   Needs projects-core.js, doc-export.js and sketch-core.js.
    ========================================================= */
 (() => {
 
@@ -324,7 +328,29 @@
      ========================================================= */
 
   let hideDone = false;
+  let view = (() => { try { return localStorage.getItem("shotListView") === "board" ? "board" : "table"; } catch { return "table"; } })();
   const drag = { item: null };   // the shot being dragged (Cobbler.dragReorder)
+
+  /* ---------- Storyboard frames ---------- */
+  const boards = () => (Projects.getData("storyboards", []) || []).filter(b => b && Array.isArray(b.frames));
+  const frameOf = (shot) => {
+    if (!shot.storyboardRef) return null;
+    const board = boards().find(b => b.id === shot.storyboardRef.boardId);
+    const frame = board?.frames.find(f => f.id === shot.storyboardRef.frameId);
+    return frame ? { board, frame } : null;
+  };
+  // A frame as sketch-core expects it (frames from older saves or imports may lack the arrays)
+  const drawable = (frame) => ({ ...frame, strokes: Array.isArray(frame.strokes) ? frame.strokes : [], texts: Array.isArray(frame.texts) ? frame.texts : [] });
+  const ratioOf = (board) => { const m = /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(board?.aspect || ""); return m ? Number(m[1]) / Number(m[2]) : 16 / 9; };
+  // A small drawing of the frame (sketch-core.js), or an empty box inviting a link
+  function thumbnail(shot, label) {
+    const linked = frameOf(shot);
+    const button = el("button", { type: "button", class: `sl-frame${linked ? "" : " is-empty"}`, title: linked ? `Frame ${linked.board.frames.indexOf(linked.frame) + 1} of “${linked.board.name || "Storyboard"}”. Click to change.` : "Link this shot to a storyboard frame",
+      "aria-label": linked ? `Storyboard frame for shot ${label}: change it` : `Link shot ${label} to a storyboard frame`, onclick: () => openFramePicker(shot) });
+    if (linked && window.Sketch) button.append(Sketch.preview(drawable(linked.frame), ratioOf(linked.board), { image: linked.frame.image }));
+    else button.append(el("span", {}, linked ? "▦" : "+ frame"));
+    return button;
+  }
 
   function renderList() {
     const list = current;
@@ -340,7 +366,80 @@
       t.minutes ? el("span", { class: "team-chip", title: "Shooting time, from the Mins column" }, `about ${hours(t.minutes)} to shoot`) : null);
     $("sl-hide-done").setAttribute("aria-pressed", String(hideDone));
     $("sl-hide-done").textContent = hideDone ? `Show done (${t.done})` : "Hide done";
+    $("sl-view-table").setAttribute("aria-pressed", String(view === "table"));
+    $("sl-view-board").setAttribute("aria-pressed", String(view === "board"));
     renderTable();
+    renderBoard();
+  }
+
+  /* ---------- Board view: every shot as a card with its frame, like a storyboard sheet ---------- */
+  function renderBoard() {
+    const box = $("sl-board");
+    box.hidden = view !== "board";
+    if (view !== "board") { box.replaceChildren(); return; }
+    $("sl-table-wrap").hidden = true;
+    $("sl-empty").hidden = current.shots.length > 0;
+    const labels = numbers(current.shots);
+    const shown = current.shots.map((shot, i) => [shot, i]).filter(([shot]) => !(hideDone && shot.done));
+    box.replaceChildren(...shown.map(([shot, i]) => {
+      const label = labels[i];
+      const done = el("input", { type: "checkbox", checked: shot.done, "aria-label": `Shot ${label} done` });
+      done.addEventListener("change", () => { shot.done = done.checked; touch(current); save(); renderList(); });
+      const card = el("article", { class: `sl-card-shot${shot.done ? " is-done" : ""}`, dataset: { id: shot.id } },
+        el("header", { class: "sl-card-shot-head" },
+          el("span", { class: "ideas-drag", title: "Drag to reorder", "aria-hidden": "true" }, "⠿"),
+          el("strong", {}, label),
+          el("span", { class: "media-muted" }, [short(shot.size), shot.angle, shot.move].filter(Boolean).join(" · ")),
+          el("label", { class: "sl-card-shot-done" }, done, el("span", { class: "visually-hidden" }, "Done"))),
+        thumbnail(shot, label),
+        el("p", { class: "sl-card-shot-text" }, shot.description || el("span", { class: "media-muted" }, "No description yet")),
+        el("p", { class: "sl-card-shot-meta media-muted" }, [shot.lens, [shot.intExt, shot.dayNight].filter(Boolean).join(" "), shot.seconds && `${shot.seconds}s`, shot.minutes && `${shot.minutes} min`, shot.gear, shot.sound].filter(Boolean).join(" · ")),
+        shot.notes && el("p", { class: "sl-card-shot-notes" }, shot.notes),
+        el("div", { class: "sl-card-shot-actions" },
+          el("button", { type: "button", class: "comment-action", onclick: () => { view = "table"; try { localStorage.setItem("shotListView", view); } catch {} renderList(); $("sl-body").querySelector(`tr[data-id="${shot.id}"] .sl-col-description textarea`)?.focus(); } }, "Edit"),
+          el("button", { type: "button", class: "comment-action", onclick: () => openFramePicker(shot) }, shot.storyboardRef ? "Change frame" : "Link frame")));
+      dragReorder(card, { handle: card.querySelector(".ideas-drag"), state: drag, item: shot, text: label, onDrop: (moved, onto) => {
+        current.shots.splice(current.shots.indexOf(moved), 1);
+        current.shots.splice(current.shots.indexOf(onto), 0, moved);
+        touch(current); save(); renderList();
+      } });
+      return card;
+    }));
+  }
+
+  /* ---------- Linking a shot to a frame ---------- */
+  let picking = null;   // the shot whose frame is being chosen
+  function openFramePicker(shot) {
+    const all = boards();
+    if (!all.length) { alert("This project has no storyboards yet (Storyboarder page). Draw one, then link its frames here."); return; }
+    picking = shot;
+    const select = $("sl-frame-board");
+    select.replaceChildren(...all.map(b => el("option", { value: b.id }, `${b.name || "Storyboard"} (${plural(b.frames.length, "frame")})`)));
+    select.value = shot.storyboardRef?.boardId && all.some(b => b.id === shot.storyboardRef.boardId) ? shot.storyboardRef.boardId : all[0].id;
+    $("sl-frame-unlink").hidden = !shot.storyboardRef;
+    drawFrameGrid();
+    $("sl-frame-dialog").showModal();
+  }
+  function drawFrameGrid() {
+    const board = boards().find(b => b.id === $("sl-frame-board").value);
+    const grid = $("sl-frame-grid");
+    if (!board) { grid.replaceChildren(); return; }
+    grid.replaceChildren(...board.frames.map((frame, i) => {
+      const chosen = picking?.storyboardRef?.boardId === board.id && picking?.storyboardRef?.frameId === frame.id;
+      const button = el("button", { type: "button", class: `sl-frame-pick${chosen ? " is-chosen" : ""}`, "aria-pressed": String(chosen), "aria-label": `Frame ${i + 1}${frame.action ? `: ${frame.action}` : ""}`, onclick: () => {
+        picking.storyboardRef = { boardId: board.id, frameId: frame.id };
+        // Fill in what the frame knows and the shot doesn't
+        if (!picking.size) picking.size = sizeFrom(frame.shot);
+        if (!picking.move && frame.move) picking.move = MOVES.includes(frame.move) ? frame.move : frame.move;
+        if (!picking.scene && frame.scene) picking.scene = String(frame.scene);
+        if (!picking.seconds && frame.duration) picking.seconds = String(frame.duration);
+        if (!picking.description && frame.action) picking.description = frame.action;
+        touch(current); save(); $("sl-frame-dialog").close(); renderList();
+      } });
+      if (window.Sketch) button.append(Sketch.preview(drawable(frame), ratioOf(board), { image: frame.image }));
+      button.append(el("span", { class: "sl-frame-pick-label" }, `${i + 1}${frame.shot ? ` · ${short(frame.shot)}` : ""}`));
+      return button;
+    }));
   }
 
   function renderTable() {
@@ -350,7 +449,7 @@
     const rows = list.shots.map((shot, i) => shotRow(shot, i, labels[i])).filter(Boolean);
     body.replaceChildren(...rows);
     $("sl-empty").hidden = list.shots.length > 0;
-    $("sl-table-wrap").hidden = !rows.length;
+    $("sl-table-wrap").hidden = !rows.length || view === "board";
     if (list.shots.length && !rows.length) $("sl-empty").hidden = false;
     $("sl-empty").textContent = list.shots.length
       ? "Every shot is done. “Show done” brings them back."
@@ -407,7 +506,8 @@
       el("th", { scope: "row", class: "sl-col-num" },
         el("span", { class: "ideas-drag", title: "Drag to reorder", "aria-hidden": "true" }, "⠿"),
         el("span", { class: "sl-num" }, label),
-        shot.storyboardRef && el("a", { class: "sl-board-link", href: `storyboarder.html#board=${encodeURIComponent(shot.storyboardRef.boardId)}&frame=${encodeURIComponent(shot.storyboardRef.frameId)}`, title: "Open this shot's storyboard frame", "aria-label": `Storyboard frame for shot ${label}` }, "▦")),
+        shot.storyboardRef && el("a", { class: "sl-board-link", href: `storyboarder.html#board=${encodeURIComponent(shot.storyboardRef.boardId)}&frame=${encodeURIComponent(shot.storyboardRef.frameId)}`, title: "Open this shot's storyboard frame", "aria-label": `Open the storyboard frame for shot ${label}` }, "▦")),
+      el("td", { class: "sl-col-frame", dataset: { label: "Frame" } }, thumbnail(shot, label)),
       ...cells,
       el("td", { class: "sl-col-actions", dataset: { label: "Shot" } },
         el("button", { type: "button", class: "comment-action", "aria-label": `Move shot ${label} up`, disabled: i === 0, onclick: () => move(-1) }, "↑"),
@@ -624,6 +724,12 @@
       touch(current); save(); renderTable();
     });
     $("sl-hide-done").addEventListener("click", () => { hideDone = !hideDone; renderList(); });
+    $("sl-view-table").addEventListener("click", () => { view = "table"; try { localStorage.setItem("shotListView", view); } catch {} renderList(); });
+    $("sl-view-board").addEventListener("click", () => { view = "board"; try { localStorage.setItem("shotListView", view); } catch {} renderList(); });
+    $("sl-frame-board").addEventListener("change", drawFrameGrid);
+    $("sl-frame-unlink").addEventListener("click", () => { if (picking) { picking.storyboardRef = null; touch(current); save(); } $("sl-frame-dialog").close(); renderList(); });
+    $("sl-frame-open").addEventListener("click", () => { const b = $("sl-frame-board").value; $("sl-frame-dialog").close(); location.href = `storyboarder.html#board=${encodeURIComponent(b)}`; });
+    $("sl-frame-dialog").addEventListener("click", (event) => { if (event.target === $("sl-frame-dialog")) $("sl-frame-dialog").close(); });
     $("sl-csv").addEventListener("click", () => download(csv(current), `${Cobbler.slug(current.name, "shot-list")}.csv`, "text/csv"));
     $("sl-csv-apps").addEventListener("click", () => download(schedulingCSV(current), `${Cobbler.slug(current.name, "shot-list")}-for-scheduling.csv`, "text/csv"));
     $("sl-pdf").addEventListener("click", () => printList(current));

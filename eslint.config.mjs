@@ -93,6 +93,7 @@ const browser = Object.fromEntries([
   "CobblerUndo",
   "CobblerIdeas",
   "CobblerBackups",
+  "CobblerTour",
   "CobblerSearch",
   "ShotList",
   "XlsxRead",

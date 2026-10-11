@@ -84,6 +84,9 @@ for (const file of fs.readdirSync(path.join(ROOT, "pages")).filter(f => f.endsWi
     return out;
   });
   problems.push(...a11y);
+  // A page that lost its content (an empty or truncated file) loads "cleanly": make sure it is a real page
+  if (!(await page.$("main h1"))) problems.push("no main heading: the page is empty or didn't build");
+  if (!(await page.evaluate(() => !!window.Projects && !!window.cobblerReady))) problems.push("the app's scripts didn't load on this page");
   const title = await page.title();
   if (problems.length) { console.log(`  ${file} (${title})`); problems.forEach(p => fail(p)); }
   else console.log(`  ✓ ${file}`);

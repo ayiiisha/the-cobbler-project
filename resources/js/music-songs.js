@@ -7,10 +7,12 @@
      sections as a line on their own, e.g. "[Verse 1]". The
      preview shows chords above the words, with syllables per
      line. Transpose up or down a semitone.
-   • Sheet music: written in ABC notation (a plain-text way of
-     writing music; the buttons insert notes for you) and drawn
-     as notation by abcjs. Play it back (needs the internet for
-     the instrument sounds).
+   • Sheet music: drawn by abcjs from ABC notation (a plain-text
+     way of writing music). Notes and rests are placed by clicking
+     on the staff after picking a tool, a length and an accidental;
+     a click on a note selects it to move, relength or delete. The
+     ABC text sits under the score for typing, and is what's saved.
+     Play it back (needs the internet for the instrument sounds).
    • Split sheet: who wrote what share, their performing rights
      organisation and IPI number, publisher, and whether they've
      signed. Export as a PDF to sign.
@@ -298,6 +300,34 @@
     ["Words", [["\nw: ", "lyrics under the line above (hyphens split syllables)"], ["\nP:A\n", "part / section label"]], ""],
   ];
 
+  /* ---------- Placing notes by clicking on the staff ----------
+     A tool (note or rest), a length and an accidental are picked above the
+     score; a click on the staff puts that note at the pitch under the pointer,
+     after the nearest note to the left. Clicking a note selects it: the arrow
+     buttons move it up or down, Delete removes it, a length button changes
+     its length. Everything still goes through the ABC text, so the text box
+     stays the source of truth and undo works as usual. */
+  const LENGTHS = [["1", "𝅝", "whole"], ["1/2", "𝅗𝅥", "half"], ["1/4", "♩", "quarter"], ["1/8", "♪", "eighth"], ["1/16", "𝅘𝅥𝅯", "sixteenth"]];
+  const place = { tool: "note", length: "1/4", dotted: false, accidental: "" };   // shared by every song's editor (what you picked last)
+
+  // The unit note length from the ABC header (L:1/8 unless the user changed it)
+  const unitLength = (abc) => { const m = /^L:\s*(\d+)\/(\d+)/m.exec(abc); return m ? Number(m[1]) / Number(m[2]) : 1 / 8; };
+  const frac = (text) => { const [n, d = 1] = text.split("/").map(Number); return n / d; };
+  // A length as ABC writes it after the note, relative to the unit: 1/4 with L:1/8 → "2"; 1/16 → "/2"; dotted 1/4 → "3"
+  function lengthSuffix(length, dotted, abc) {
+    const ratio = frac(length) * (dotted ? 1.5 : 1) / unitLength(abc);
+    if (Number.isInteger(ratio)) return ratio === 1 ? "" : String(ratio);
+    for (const d of [2, 4, 8, 16, 32]) { const n = ratio * d; if (Number.isInteger(n)) return n === 1 ? `/${d}` : `${n}/${d}`; }
+    return "";
+  }
+  // A pitch number (abcjs: 0 = middle C, one per staff step) as an ABC note name
+  function pitchName(p) {
+    const letter = "CDEFGAB"[((p % 7) + 7) % 7];
+    const octave = Math.floor(p / 7);
+    return octave >= 1 ? letter.toLowerCase() + "'".repeat(octave - 1) : letter + ",".repeat(-octave);
+  }
+  const NOTE_RE = /^([_^=]*)([A-Ga-g])([,']*)(\d*\/?\d*)(-?)$/;
+
   function sheetPart(s, all) {
     const out = el("div", { class: "mu-score", "aria-label": "Sheet music" });
     const warnings = el("p", { class: "media-muted mu-warnings" });
@@ -305,10 +335,16 @@
     if (!s.abc.trim()) s.abc = starterAbc(s);
     box.value = s.abc;
     let timer = 0;
+    let tune = null;
+    let selected = null;   // { startChar, endChar } of the selected note or rest, in s.abc
+    const hint = el("p", { class: "media-muted mu-place-hint", role: "status" });
+
     const draw = () => {
       if (!window.ABCJS) { out.replaceChildren(el("p", { class: "media-empty" }, "The sheet music drawer didn't load.")); return null; }
-      const [tune] = ABCJS.renderAbc(out, s.abc, { responsive: "resize", add_classes: true, foregroundColor: "currentColor" });
+      [tune] = ABCJS.renderAbc(out, s.abc, { responsive: "resize", add_classes: true, foregroundColor: "currentColor",
+        clickListener: (abcElem, tuneNumber, classes, analysis, drag, mouseEvent) => select(abcElem, mouseEvent) });
       warnings.textContent = tune?.warnings?.length ? `Check: ${tune.warnings.map(w => String(w).replace(/<[^>]+>/g, "")).slice(0, 3).join(" · ")}` : "";
+      if (selected) highlightSelected();
       return tune;
     };
     box.addEventListener("input", () => { s.abc = box.value; saveSoon(all); clearTimeout(timer); timer = setTimeout(draw, 250); });
@@ -318,6 +354,135 @@
       box.focus();
       box.dispatchEvent(new Event("input"));
     };
+    // Change the ABC text from the staff tools (saved and redrawn at once)
+    const splice = (from, to, text, { selectInserted = false } = {}) => {
+      s.abc = s.abc.slice(0, from) + text + s.abc.slice(to);
+      box.value = s.abc;
+      const lead = text.length - text.trimStart().length;
+      selected = selectInserted ? { startChar: from + lead, endChar: from + text.trimEnd().length } : null;
+      saveSoon(all);
+      clearTimeout(timer);
+      draw();
+    };
+
+    /* The selected note: its text, and buttons that act on it */
+    const selectedText = () => selected ? s.abc.slice(selected.startChar, selected.endChar) : "";
+    function select(abcElem, mouseEvent) {
+      if (!abcElem || abcElem.startChar == null || !(abcElem.el_type === "note")) return;
+      // abcjs reports the nearest note for a click anywhere on the staff; only a click on the note itself selects it
+      if (mouseEvent?.target && !mouseEvent.target.closest?.(".abcjs-note, .abcjs-rest")) return;
+      selected = { startChar: abcElem.startChar, endChar: abcElem.endChar };
+      highlightSelected();
+      updateHint();
+    }
+    function highlightSelected() {
+      out.querySelectorAll(".mu-selected").forEach(n => n.classList.remove("mu-selected"));
+      if (!selected || !tune) return;
+      for (const line of tune.lines) for (const staff of line.staff || []) for (const voice of staff.voices || []) for (const e of voice) {
+        if (e.startChar === selected.startChar && e.endChar === selected.endChar) e.abselem?.elemset?.forEach?.(n => n.classList?.add("mu-selected"));
+      }
+    }
+    function updateHint() {
+      const text = selectedText().trim();
+      if (text) hint.textContent = `Selected: ${text}. ↑ ↓ move it, a length button changes its length, Delete removes it (Deselect, or the Note/Rest buttons, let go of it).`;
+      else hint.textContent = place.tool === "note" ? "Click on the staff to put a note there (after the note to the left of the click). Click a note to select it." : "Click on the staff to put a rest there.";
+    }
+    function deleteSelected() {
+      if (!selected) return;
+      let { startChar, endChar } = selected;
+      if (s.abc[endChar] === " ") endChar++;   // and the space after it
+      splice(startChar, endChar, "");
+      updateHint();
+    }
+    function moveSelected(steps) {
+      const m = NOTE_RE.exec(selectedText().trim());
+      if (!m) return;
+      const [, acc, letter, marks, len, tie] = m;
+      const octave = (letter === letter.toLowerCase() ? 1 : 0) + (marks.match(/'/g) || []).length - (marks.match(/,/g) || []).length;
+      const p = "CDEFGAB".indexOf(letter.toUpperCase()) + octave * 7 + steps;
+      splice(selected.startChar, selected.endChar, acc + pitchName(p) + len + tie, { selectInserted: true });
+      updateHint();
+    }
+    function relengthSelected() {
+      const text = selectedText().trim();
+      const m = NOTE_RE.exec(text) || /^(z)()()(\d*\/?\d*)()$/.exec(text);
+      if (!m) return;
+      const [, acc, letter, marks, , tie] = m;
+      splice(selected.startChar, selected.endChar, acc + letter + marks + lengthSuffix(place.length, place.dotted, s.abc) + tie, { selectInserted: true });
+      updateHint();
+    }
+
+    /* A click on the staff: which line, which pitch, after which note */
+    function placeAt(event) {
+      if (!tune || event.target.closest(".abcjs-note, .abcjs-rest, .abcjs-lyric, .abcjs-chord")) return;   // notes select themselves
+      if (!out.querySelector("svg")) return;
+      // The nearest staff (each music line is a <g class="abcjs-staff abcjs-l<n>">), measured on screen
+      let best = null;
+      out.querySelectorAll("g.abcjs-staff").forEach(g => {
+        const n = Number((g.getAttribute("class").match(/abcjs-l(\d+)/) || [])[1]);
+        const r = g.getBoundingClientRect();
+        const step = r.height / 8;   // five lines, four gaps, two steps per gap
+        const dist = event.clientY < r.top ? r.top - event.clientY : event.clientY > r.bottom ? event.clientY - r.bottom : 0;
+        if (dist > step * 14) return;   // too far above or below any staff
+        if (!best || dist < best.dist) best = { n, g, rect: r, step, dist };
+      });
+      if (!best || !Number.isFinite(best.n)) return;
+      const pitch = Math.round((best.rect.top - event.clientY) / best.step) + 10;   // the top line is F (pitch 10 above middle C)
+      // The click's x in the drawing's own units (the staff's box is known in both)
+      const box = best.g.getBBox();
+      const x = box.x + (event.clientX - best.rect.left) * (box.width / best.rect.width);
+      // Where in the text: after the last note, rest or bar to the left of the click on that line
+      const voice = tune.lines[best.n]?.staff?.[0]?.voices?.[0] || [];
+      const placed = voice.filter(e => e.startChar != null && e.abselem && typeof e.abselem.x === "number");
+      let at = null;
+      for (const e of placed) if (e.abselem.x <= x) at = e;
+      const token = place.tool === "rest"
+        ? "z" + lengthSuffix(place.length, place.dotted, s.abc)
+        : place.accidental + pitchName(pitch) + lengthSuffix(place.length, place.dotted, s.abc);
+      if (at) {
+        const after = s.abc.slice(at.startChar, at.endChar);
+        const before = s.abc[at.endChar] || "";
+        // Keep one space on each side of the new note, whatever the text around it has
+        const text = (/\s$/.test(after) ? "" : " ") + token + (/^[\s|\]]/.test(before) ? (/\s/.test(before) ? "" : " ") : " ");
+        splice(at.endChar, at.endChar, text, { selectInserted: true });
+      }
+      else if (placed[0]) splice(placed[0].startChar, placed[0].startChar, token + " ", { selectInserted: true });
+      else {
+        // An empty tune: after the K: line
+        const k = s.abc.search(/^K:.*$/m);
+        const end = k >= 0 ? s.abc.indexOf("\n", k) : s.abc.length;
+        splice(end < 0 ? s.abc.length : end, end < 0 ? s.abc.length : end, "\n" + token, { selectInserted: true });
+      }
+      updateHint();
+    }
+    out.addEventListener("click", placeAt);
+    out.classList.add("is-placing");
+
+    /* The tool bar above the score */
+    const toolButton = (label, pressed, onclick, title) => el("button", { type: "button", class: "mu-tool", "aria-pressed": String(pressed), title, "aria-label": title, onclick }, label);
+    const tools = el("div", { class: "mu-place", role: "toolbar", "aria-label": "Place notes" });
+    function drawTools() {
+      tools.replaceChildren(
+        el("span", { class: "mu-place-group" },
+          toolButton("♩ Note", place.tool === "note", () => { place.tool = "note"; selected = null; highlightSelected(); drawTools(); updateHint(); }, "Place notes"),
+          toolButton("𝄽 Rest", place.tool === "rest", () => { place.tool = "rest"; selected = null; highlightSelected(); drawTools(); updateHint(); }, "Place rests")),
+        el("span", { class: "mu-place-group" },
+          LENGTHS.map(([len, glyph, name]) => toolButton(glyph, place.length === len, () => { place.length = len; drawTools(); if (selected) relengthSelected(); }, `${name[0].toUpperCase()}${name.slice(1)} ${place.tool} (${len})`)),
+          toolButton("·", place.dotted, () => { place.dotted = !place.dotted; drawTools(); if (selected) relengthSelected(); }, "Dotted (half as long again)")),
+        el("span", { class: "mu-place-group" },
+          [["", "♮", "No accidental (the key signature decides)"], ["^", "♯", "Sharp"], ["_", "♭", "Flat"], ["=", "♮!", "Natural (cancels the key signature)"]].map(([v, glyph, title]) =>
+            toolButton(glyph, place.accidental === v, () => { place.accidental = v; drawTools(); }, title))),
+        el("span", { class: "mu-place-group" },
+          el("button", { type: "button", class: "comment-action", onclick: () => insert(" | "), title: "Add a bar line at the cursor in the text" }, "Bar line"),
+          el("button", { type: "button", class: "comment-action", disabled: !selected, "aria-label": "Move the selected note up", onclick: () => moveSelected(1) }, "↑"),
+          el("button", { type: "button", class: "comment-action", disabled: !selected, "aria-label": "Move the selected note down", onclick: () => moveSelected(-1) }, "↓"),
+          el("button", { type: "button", class: "comment-action", disabled: !selected, onclick: deleteSelected }, "Delete"),
+          el("button", { type: "button", class: "comment-action", disabled: !selected, onclick: () => { selected = null; highlightSelected(); drawTools(); updateHint(); } }, "Deselect")));
+    }
+    const refreshTools = () => drawTools();
+    out.addEventListener("click", () => setTimeout(refreshTools, 0));
+    drawTools();
+    updateHint();
 
     let synth = null;
     const play = async (button) => {
@@ -340,6 +505,9 @@
 
     setTimeout(draw, 0);
     return el("div", { class: "mu-sheet" },
+      tools,
+      hint,
+      el("details", { class: "mu-palette-details" }, el("summary", {}, "Type ABC instead: notes, lengths, marks and words"),
       el("div", { class: "mu-palette" }, PALETTE.map(([group, items, tip]) => el("div", { class: "mu-palette-group" },
         el("span", { class: "mu-palette-label", title: group === "Notes" ? `In ${s.key || "C"}: ${tip}` : tip }, group),
         items.map(item => {
@@ -353,16 +521,16 @@
           }
           const [text, label] = item;
           return el("button", { type: "button", class: "mu-key", title: label, "aria-label": `Insert ${label}`, onclick: () => insert(text) }, text.trim() || "↵");
-        })))),
+        }))))),
       el("div", { class: "mu-two" },
-        el("div", { class: "mu-col" }, box,
+        el("div", { class: "mu-col" }, out,
           el("div", { class: "comment-actions" },
             el("button", { type: "button", class: "small-btn", onclick: (e) => play(e.currentTarget) }, "▶ Play"),
-            el("button", { type: "button", class: "comment-action", onclick: () => { if (confirm("Start the sheet music again from the template?")) { s.abc = starterAbc(s); box.value = s.abc; saveSongs(all); draw(); } } }, "Start again"),
+            el("button", { type: "button", class: "comment-action", onclick: () => { if (confirm("Start the sheet music again from the template?")) { s.abc = starterAbc(s); box.value = s.abc; selected = null; saveSongs(all); draw(); } } }, "Start again"),
             el("a", { class: "comment-action", href: "https://abcnotation.com/learn", target: "_blank", rel: "noopener" }, "How ABC notation works")),
           warnings),
-        el("div", { class: "mu-col" }, out)),
-      el("p", { class: "media-muted" }, "Notes are letters (C D E… for the octave from middle C, c d e… above it), numbers make them longer, | is a bar line, and a w: line puts lyrics under the notes. Title, time, tempo and key follow the song's details above."));
+        el("div", { class: "mu-col" }, box)),
+      el("p", { class: "media-muted" }, "Pick a note or rest and a length, then click on the staff where it goes; click a note to select it. The text underneath is the same music in ABC notation (letters are notes, numbers make them longer, | is a bar line, a w: line puts lyrics under the notes) and you can type there too. Title, time, tempo and key follow the song's details above."));
   }
 
 

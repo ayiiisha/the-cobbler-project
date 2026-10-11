@@ -255,6 +255,38 @@
   const remembered = () => { try { return localStorage.getItem(currentKey()); } catch { return null; } };
   let currentId = remembered();
   const current = () => packages.find(p => p.id === currentId) || null;
+
+  /* The open package as a document: chosen title and thumbnail first, then everything else */
+  function exportBlocks() {
+    const p = current();
+    if (!p) return [];
+    const list = (a) => Array.isArray(a) ? a : [];
+    const chosen = list(p.titles).find(t => t.chosen);
+    const custom = list(p.deliverables?.custom);
+    const doneIds = p.deliverables?.done || {};
+    return [
+      { t: "title", text: p.name || "Package" },
+      { t: "meta", text: [p.platform, p.keyword && `Keyword: ${p.keyword}`, p.audience && `Audience: ${p.audience}`, new Date().toLocaleDateString()].filter(Boolean).join(" · ") },
+      list(p.titles).length && { t: "h2", text: "Titles" },
+      list(p.titles).length && { t: "list", items: list(p.titles).map(t => `${t.text}${t.chosen ? "  ← chosen" : ""}`) },
+      list(p.thumbs).length && { t: "h2", text: "Thumbnail ideas" },
+      list(p.thumbs).length && { t: "list", items: list(p.thumbs).map(t => `${t.text}${t.notes ? ` (${t.notes})` : ""}${t.chosen ? "  ← chosen" : ""}`) },
+      (p.description || "").trim() && { t: "h2", text: "Description" },
+      (p.description || "").trim() && { t: "p", text: p.description },
+      { t: "fields", items: [
+        ["Tags", list(p.tags).join(", ")], ["Hashtags", list(p.hashtags).join(" ")], ["Keywords", list(p.keywords).join(", ")],
+        ["SEO title", p.seoTitle], ["Meta description", p.metaDescription], ["Slug", p.slug],
+        ["Share title", p.shareTitle], ["Share description", p.shareDescription], ["Preview text", p.previewText],
+      ].filter(([, v]) => v && String(v).trim()) },
+      list(p.images).length && { t: "h2", text: "Image alt text" },
+      list(p.images).length && { t: "table", head: ["Image", "Alt text"], rows: list(p.images).map(i => [i.label || "", i.alt || ""]) },
+      (Object.keys(doneIds).length || custom.length) && { t: "h2", text: "Deliverables" },
+      (Object.keys(doneIds).length || custom.length) && { t: "checks", items: [...Object.entries(doneIds).filter(([, v]) => v).map(([id]) => ({ text: id, done: true })), ...custom.map(c => ({ text: c.text, done: !!c.done }))] },
+      (p.notes || "").trim() && { t: "h2", text: "Notes" },
+      (p.notes || "").trim() && { t: "p", text: p.notes },
+      chosen && { t: "meta", text: `Chosen title: ${chosen.text}` },
+    ].filter(Boolean);
+  }
   const config = (p) => PLATFORMS[p.platform];
   const chosenTitle = (p) => (p.titles.find(t => t.chosen) || p.titles[0])?.text || "";
 
@@ -1006,6 +1038,7 @@
       dialog.showModal();
     };
     $("pk-new").addEventListener("click", () => open());
+    if (window.DocExport) $("pk-new").after(DocExport.buttons({ blocks: exportBlocks, title: `Package: ${current()?.name || ""}`, filename: `${Cobbler.slug(current()?.name || "package")}-package`, label: "Export this package" }));
     $("pk-cancel").addEventListener("click", () => dialog.close());
     dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
 

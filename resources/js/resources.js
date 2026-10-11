@@ -252,6 +252,7 @@
 
     /* ---------- Page elements ---------- */
     const defaultBox = document.getElementById("default-table");
+    let defaultRows = [];   // the default table's rows, once read (for the document export)
     const myBox      = document.getElementById("uploaded-table");
     const toggleBtn  = document.getElementById("toggle-default");
     const fileInput  = document.getElementById("csv-input");
@@ -277,7 +278,7 @@
       : fetchCSV(DEFAULT_CSV_URL).catch(() => fetchCSV(OLD_CSV_URL));
 
     loadDefault
-      .then(text => renderTable(defaultBox, toRecords(parseCSV(text)), "The default table is empty."))
+      .then(text => { defaultRows = toRecords(parseCSV(text)); renderTable(defaultBox, defaultRows, "The default table is empty."); })
       .catch(err => renderTable(defaultBox, [], `Couldn't find ${DEFAULT_CSV_NAME} at the top of the app (${err.message}).`));
 
     /* ---------- Hide / Show button ---------- */
@@ -361,6 +362,16 @@
     });
 
     /* ---------- Export your table as a CSV ---------- */
+    if (window.DocExport) document.getElementById("export-csv").after(DocExport.buttons({ blocks: () => {
+      const table = (rows) => ({ t: "table", head: ["Name", "Description", "Link"], rows: rows.map(r => [r.name || "", r.description || "", String(r.link || "").replace(/^\[([^\]]*)\]\((.*)\)$/, "$1: $2")]) });
+      const defaults = Array.isArray(defaultRows) ? defaultRows : [];
+      return [
+        { t: "title", text: `Resources: ${Projects.activeName()}` },
+        { t: "meta", text: `${myRows.length} of yours${defaults.length ? `, ${defaults.length} default` : ""} · ${new Date().toLocaleDateString()}` },
+        { t: "h2", text: "Your resources" }, myRows.length ? table(myRows) : { t: "p", text: "None yet." },
+        ...(defaults.length ? [{ t: "h2", text: "Default resources" }, table(defaults)] : []),
+      ];
+    }, title: `Resources: ${Projects.activeName()}`, filename: `${Cobbler.slug(Projects.activeName())}-resources`, label: "Document" }));
     document.getElementById("export-csv").addEventListener("click", () => {
       if (!myRows.length) {
         status.textContent = "Nothing to export yet.";

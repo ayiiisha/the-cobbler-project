@@ -27,8 +27,12 @@
      project.data.datasets = [{ id, name, blob, size, rows, cols, added, filters, chart,
                                 sheet }]   ← sheet: for an Excel file, which sheet was read
 
-   Excel files (.xlsx) are read in the browser (xlsx-read.js) and
-   kept as CSV; the R code then uses readxl::read_excel().
+   Excel files (.xlsx) are read in the browser (xlsx-read.js). The
+   workbook itself is kept (FileStore), so the sheet can be switched
+   later from the dataset bar; the R code then uses readxl::read_excel().
+   The Rows section shows the filtered rows a page at a time (pick
+   the page and the page size), and the chart's controls name the
+   axes explicitly, with a swap button.
 
    Needs projects-core.js, file-store.js and xlsx-read.js.
    ========================================================= */
@@ -396,7 +400,7 @@
     if (ch.type === "bar") ch.x = pick(groupLike, ch.x) || pick(() => true, ch.x);
     if (ch.type === "scatter") {
       ch.x = pick(c => numeric(c) || timeLike(c), ch.x);
-      ch.y = pick(c => numeric(c) && c.name !== ch.x, ch.y) || pick(numeric, ch.y);
+      ch.y = pick(c => (numeric(c) || timeLike(c)) && c.name !== ch.x, ch.y) || pick(c => numeric(c) || timeLike(c), ch.y);
     }
     if (ch.type === "line") ch.x = pick(timeLike, ch.x) || pick(numeric, ch.x);
     if (ch.agg !== "count" && ch.type !== "histogram" && ch.type !== "scatter") ch.y = pick(numeric, ch.y);
@@ -418,25 +422,34 @@
       select("Make it with", "tool", [["ggplot", "ggplot2 (R)"], ["datawrapper", "Datawrapper (API, from R)"]]),
       select("Chart", "type", Object.entries(CHART_TYPES)),
     ];
+    // Swap the axes: for scatter and line the two variables change places; for bars the chart turns sideways
+    const swappable = ch.type === "scatter" || (ch.type === "line" && ch.agg !== "count") || ch.type === "bar";
+    const swap = el("button", { type: "button", class: "small-btn", disabled: !swappable, title: ch.type === "bar" ? "Draw the bars sideways" : "Put the x variable on the y axis and the other way round", onclick: () => {
+      if (ch.type === "bar") ch.horizontal = !ch.horizontal;
+      else if (ch.type === "line" && ch.agg !== "count") { ch.type = "scatter"; [ch.x, ch.y] = [ch.y, ch.x]; }
+      else [ch.x, ch.y] = [ch.y, ch.x];
+      changed({ chart: true });
+    } }, "⇄ Swap axes");
     if (ch.type === "histogram") {
-      parts.push(select("Column", "x", colOptions(c => numeric(c) || timeLike(c))));
+      parts.push(select("Variable (x)", "x", colOptions(c => numeric(c) || timeLike(c))));
       const bins = el("input", { type: "number", min: "5", max: "100", value: String(ch.bins), class: "te-seconds", "aria-label": "Bins" });
       bins.addEventListener("change", () => { ch.bins = Math.min(100, Math.max(5, Number(bins.value) || 30)); changed({ chart: true }); });
       parts.push(el("label", { class: "tool-group" }, "Bins", bins));
     }
     if (ch.type === "bar" || ch.type === "line") {
-      parts.push(select(ch.type === "bar" ? "Groups" : "Over", "x", colOptions(ch.type === "bar" ? () => true : (c) => timeLike(c) || numeric(c))));
+      parts.push(select(ch.type === "bar" ? (ch.horizontal ? "Groups (y axis)" : "Groups (x axis)") : "x axis (over)", "x", colOptions(ch.type === "bar" ? () => true : (c) => timeLike(c) || numeric(c))));
       if (ch.type === "line" && timeLike(cols.find(c => c.name === ch.x) || {})) {
         parts.push(select("By", "period", [["day", "Day"], ["week", "Week"], ["month", "Month"], ["year", "Year"]]));
       }
-      parts.push(select("Value", "agg", [["count", "Number of rows"], ["sum", "Sum of…"], ["mean", "Average of…"], ["median", "Median of…"]]));
-      if (ch.agg !== "count") parts.push(select("Of", "y", colOptions(numeric)));
+      parts.push(select(ch.type === "bar" ? (ch.horizontal ? "Length (x axis)" : "Height (y axis)") : "y axis", "agg", [["count", "Number of rows"], ["sum", "Sum of…"], ["mean", "Average of…"], ["median", "Median of…"]]));
+      if (ch.agg !== "count") parts.push(select("Of variable", "y", colOptions(numeric)));
     }
     if (ch.type === "scatter") {
-      parts.push(select("Across (x)", "x", colOptions(c => numeric(c) || timeLike(c))));
-      parts.push(select("Up (y)", "y", colOptions(numeric)));
+      parts.push(select("x axis", "x", colOptions(c => numeric(c) || timeLike(c))));
+      parts.push(select("y axis", "y", colOptions(c => numeric(c) || timeLike(c))));
       parts.push(select("Colour by", "group", [["", "Nothing"], ...colOptions(groupLike)]));
     }
+    parts.push(swap);
     const table = el("input", { type: "checkbox", checked: !!ch.table });
     table.addEventListener("change", () => { ch.table = table.checked; changed({ chart: true }); });
     parts.push(el("label", { class: "tool-group" }, table, "Show as a table"));
@@ -575,7 +588,8 @@
 
     const width = Math.max(320, box.clientWidth || 700);
     const height = 340;
-    const m = { top: 16, right: 18, bottom: data.kind === "bar" ? 78 : 44, left: 64 };
+    const sideways = data.kind === "bar" && !!ch.horizontal;
+    const m = { top: 16, right: 18, bottom: data.kind === "bar" && !sideways ? 78 : 44, left: sideways ? 130 : 64 };
     const W = width - m.left - m.right, H = height - m.top - m.bottom;
     const root = svg("svg", { class: "da-svg", viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": chartTitle(data) });
     const plot = svg("g", { transform: `translate(${m.left} ${m.top})` });
@@ -629,7 +643,32 @@
       xAxisLabel(data.x.name);
     }
 
-    if (data.kind === "bar") {
+    if (data.kind === "bar" && sideways) {
+      // Bars running left to right: labels down the left, values along the bottom
+      const max = Math.max(0, ...data.bars.map(b => b.value));
+      const min = Math.min(0, ...data.bars.map(b => b.value));
+      const xt = niceTicks(min, max);
+      const right = xt[xt.length - 1], left = Math.min(0, xt[0]);
+      const xs = (v) => (v - left) / (right - left) * W;
+      xt.forEach(t => plot.append(
+        svg("line", { class: "da-grid", x1: xs(t), x2: xs(t), y1: 0, y2: H }),
+        svg("text", { class: "da-tick", x: xs(t), y: H + 18, "text-anchor": "middle" }, document.createTextNode(fmt(t)))));
+      xAxisLabel(valueLabel(data));
+      const band = H / data.bars.length;
+      const bh = Math.max(2, Math.min(32, band - 2));
+      data.bars.forEach((b, i) => {
+        const y = i * band + (band - bh) / 2;
+        const x0 = xs(0), x1 = xs(b.value);
+        plot.append(svg("rect", { class: "da-mark", x: Math.min(x0, x1), y, width: Math.abs(x1 - x0), height: bh, rx: 3 }));
+        const label = b.label.length > 18 ? b.label.slice(0, 17) + "…" : b.label;
+        plot.append(svg("text", { class: "da-tick", x: -8, y: y + bh / 2, "text-anchor": "end", "dominant-baseline": "middle" }, document.createTextNode(label)));
+        const hit = svg("rect", { class: "da-hit", x: 0, y: i * band, width: W, height: band });
+        hit.addEventListener("mousemove", (e) => show(e, [b.label, `${valueLabel(data)}: ${fmt(b.value)}`]));
+        hit.addEventListener("mouseleave", hide);
+        plot.append(hit);
+      });
+      plot.append(svg("line", { class: "da-baseline", x1: xs(0), x2: xs(0), y1: 0, y2: H }));
+    } else if (data.kind === "bar") {
       const max = Math.max(0, ...data.bars.map(b => b.value));
       const min = Math.min(0, ...data.bars.map(b => b.value));
       const yt = niceTicks(min, max);
@@ -955,7 +994,9 @@
         `  ggplot(aes(x = reorder(as.character(${x}), -${value}), y = ${value})) +`,
         `  geom_col(fill = "#2a78d6") +`,
         `  labs(title = ${rString(chartTitle(data))}, x = ${rString(data.x.name)}, y = ${rString(valueLabel(data))}) +`,
-        theme + " +", "  theme(axis.text.x = element_text(angle = 35, hjust = 1))");
+        ...(ch.horizontal
+          ? ["  coord_flip() +", theme]
+          : [theme + " +", "  theme(axis.text.x = element_text(angle = 35, hjust = 1))"]));
     }
     if (data.kind === "line") {
       const time = timeLike(data.x);
@@ -1018,10 +1059,33 @@
     saveDatasets();
   }
 
+  /* The rows, a page at a time */
+  const paging = { page: 1, size: 25 };
+  let renderingRows = false;   // (replacing the pager while its own input has focus fires a second change)
   function renderRows() {
-    const shown = S.rows.slice(0, 100);
+    if (renderingRows) return;
+    renderingRows = true;
+    try { drawRows(); } finally { renderingRows = false; }
+  }
+  function drawRows() {
     const cols = S.table.columns;
-    $("da-rows-note").textContent = S.rows.length > 100 ? `First 100 of ${fmtInt(S.rows.length)} rows` : `${fmtInt(S.rows.length)} rows`;
+    const total = S.rows.length;
+    const pages = Math.max(1, Math.ceil(total / paging.size));
+    paging.page = Math.min(pages, Math.max(1, paging.page));
+    const from = (paging.page - 1) * paging.size;
+    const shown = S.rows.slice(from, from + paging.size);
+    $("da-rows-note").textContent = total ? `Rows ${fmtInt(from + 1)}–${fmtInt(from + shown.length)} of ${fmtInt(total)}` : "No rows match";
+    const pageInput = el("input", { type: "number", min: "1", max: String(pages), value: String(paging.page), class: "te-seconds", "aria-label": "Page number" });
+    pageInput.addEventListener("change", () => { paging.page = Number(pageInput.value) || 1; renderRows(); });
+    const sizeSelect = el("select", { class: "team-select", "aria-label": "Rows per page" }, [10, 25, 50, 100, 250].map(n => el("option", { value: String(n), selected: paging.size === n }, `${n} per page`)));
+    sizeSelect.addEventListener("change", () => { paging.size = Number(sizeSelect.value); paging.page = 1; renderRows(); });
+    $("da-rows-pager").replaceChildren(
+      el("button", { type: "button", class: "small-btn", disabled: paging.page <= 1, "aria-label": "First page", onclick: () => { paging.page = 1; renderRows(); } }, "«"),
+      el("button", { type: "button", class: "small-btn", disabled: paging.page <= 1, "aria-label": "Previous page", onclick: () => { paging.page--; renderRows(); } }, "‹"),
+      el("label", { class: "tool-group" }, "Page ", pageInput, ` of ${fmtInt(pages)}`),
+      el("button", { type: "button", class: "small-btn", disabled: paging.page >= pages, "aria-label": "Next page", onclick: () => { paging.page++; renderRows(); } }, "›"),
+      el("button", { type: "button", class: "small-btn", disabled: paging.page >= pages, "aria-label": "Last page", onclick: () => { paging.page = pages; renderRows(); } }, "»"),
+      sizeSelect);
     $("da-rows").replaceChildren(
       el("thead", {}, el("tr", {}, cols.map(c => el("th", { scope: "col", class: c.type === "number" ? "is-num" : null }, c.name)))),
       el("tbody", {}, shown.map(r => el("tr", {}, cols.map(c => {
@@ -1037,6 +1101,34 @@
     $("da-pick-wrap").hidden = !datasets.length;
     $("da-remove").hidden = !S.meta;
     if (S.meta) pick.value = S.meta.id;
+    renderSheetPicker();
+  }
+
+  /* For an Excel dataset whose workbook is kept: a Sheet drop-down to show another sheet */
+  async function renderSheetPicker() {
+    const wrap = $("da-sheet-wrap");
+    const select = $("da-sheet-pick");
+    wrap.hidden = true;
+    if (!S.meta?.workbook) return;
+    const file = await FileStore.get(S.meta.workbook).catch(() => null);
+    if (!file || S.meta.workbook !== S.meta?.workbook) return;
+    let sheets;
+    try { sheets = await XlsxRead.read(file); } catch { return; }
+    if (sheets.length < 2) return;
+    select.replaceChildren(...sheets.map(s => el("option", { value: s.name, selected: s.name === S.meta.sheet }, `${s.name} (${fmtInt(Math.max(0, s.rows.length - 1))} rows)`)));
+    select.onchange = async () => {
+      const chosen = sheets.find(s => s.name === select.value);
+      if (!chosen || !S.meta) return;
+      const text = XlsxRead.toCSV(chosen.rows);
+      try { buildTable(text); } catch (err) { setStatus(`Couldn't read sheet ${chosen.name}: ${err.message}.`); select.value = S.meta.sheet; return; }
+      S.meta.sheet = chosen.name;
+      S.meta.filters = [];   // the columns are different now
+      S.meta.chart = {};
+      try { await FileStore.put(S.meta.blob, new Blob([text], { type: "text/csv" })); } catch {}
+      saveDatasets();
+      await openDataset(S.meta, text);
+    };
+    wrap.hidden = false;
   }
 
   /* Opens a dataset: reads its CSV and draws everything */
@@ -1085,7 +1177,7 @@
   }
 
   async function loadFile(file) {
-    let text, sheet = null;
+    let text, sheet = null, workbook = null;
     if (window.XlsxRead?.isExcel(file.name)) {
       let sheets;
       try { sheets = await XlsxRead.read(file); } catch (err) { setStatus(`Couldn't read ${file.name}: ${err.message}.`); return; }
@@ -1093,13 +1185,15 @@
       if (!chosen) return;
       sheet = chosen.name;
       text = XlsxRead.toCSV(chosen.rows);
+      workbook = newId();   // the workbook is kept too, so the sheet can be changed later
     } else {
       text = await file.text();
     }
     try { buildTable(text); } catch (err) { setStatus(`Couldn't read ${file.name}: ${err.message}.`); return; }
-    const meta = { id: newId(), name: file.name, blob: newId(), size: file.size, added: Date.now(), filters: [], chart: {}, ...(sheet != null ? { sheet } : {}) };
+    const meta = { id: newId(), name: file.name, blob: newId(), size: file.size, added: Date.now(), filters: [], chart: {}, ...(sheet != null ? { sheet, workbook } : {}) };
     try {
       await FileStore.put(meta.blob, new Blob([text], { type: "text/csv" }));
+      if (workbook) await FileStore.put(workbook, file);
     } catch {
       meta.unsaved = true;
       setStatus("This browser can't store files here, so the data will be gone after you reload. Try opening the site from a local server.");
@@ -1122,6 +1216,7 @@
       datasets = datasets.filter(d => d !== gone);
       saveDatasets();
       FileStore.remove(gone.blob).catch(() => {});
+      if (gone.workbook) FileStore.remove(gone.workbook).catch(() => {});
       S.meta = null;
       $("da-work").hidden = true;
       $("da-summary").textContent = "";
@@ -1133,6 +1228,22 @@
       S.meta.filters.push({ col: col.name, op: opsFor(col)[0][0], value: "", value2: "" });
       changed({ filters: true });
     });
+    if (window.DocExport) $("da-remove").after(DocExport.buttons({ blocks: () => {
+      if (!S.table) return [];
+      const cols = S.table.columns;
+      const stat = (p, k) => p[k] == null ? "" : typeof p[k] === "number" && !Number.isInteger(p[k]) ? fmt(p[k]) : String(p[k]);
+      const profile = cols.map(c => { const p = profileOf(c); return [c.name, c.type, fmtInt(p.missing), fmtInt(p.unique), c.type === "number" ? `${stat(p, "min")} – ${stat(p, "max")}, mean ${stat(p, "mean")}, median ${stat(p, "median")}` : (c.type === "date" || c.type === "datetime") ? `${fmtDate(p.min)} – ${fmtDate(p.max)}` : (p.top || []).map(([v, n]) => `${v} (${n})`).join(", ")]; });
+      const rows = S.rows.slice(0, 500);
+      return [
+        { t: "title", text: S.meta.sheet != null ? `${S.meta.name} › ${S.meta.sheet}` : S.meta.name },
+        { t: "meta", text: `${fmtInt(S.table.rowCount)} rows · ${cols.length} columns · ${fmtInt(S.rows.length)} rows after filters · ${new Date().toLocaleDateString()}` },
+        { t: "h2", text: "Columns" },
+        { t: "table", head: ["Column", "Type", "Missing", "Unique", "Summary"], rows: profile },
+        ...(S.meta.filters.length ? [{ t: "h2", text: "Filters" }, { t: "list", items: S.meta.filters.map(f => rFilter(f) || JSON.stringify(f)).filter(Boolean) }] : []),
+        { t: "h2", text: `Rows${S.rows.length > 500 ? " (first 500 after filters)" : ""}` },
+        { t: "table", head: cols.map(c => c.name), rows: rows.map(r => cols.map(c => { const raw = S.table.body[r][c.index] ?? ""; return isMissing(raw) ? "NA" : String(raw); })) },
+      ];
+    }, title: `Data: ${S.meta?.name || ""}`, filename: `${Cobbler.slug(S.meta?.name || "data")}-profile`, label: "Document" }));
     $("da-copy").addEventListener("click", async () => {
       try { await navigator.clipboard.writeText($("da-code").textContent); setStatus("R code copied."); }
       catch { setStatus("Couldn't copy. Select the code and copy it instead."); }

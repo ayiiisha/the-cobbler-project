@@ -18,7 +18,7 @@
 <script src="../resources/js/header.js"></script>
 <script src="../resources/js/color-themes.js"></script>
 <script src="../resources/js/boot.js"
-        data-scripts="project-ui.js search.js comments.js file-store.js share.js sync.js backups.js undo.js account.js ideas-panel.js zip.js team.js team-tasks.js"></script>
+        data-scripts="project-ui.js search.js comments.js file-store.js share.js sync.js backups.js undo.js account.js tour.js doc-export.js ideas-panel.js zip.js team.js team-tasks.js"></script>
 
 <main>
   <h1>Team</h1>
@@ -165,10 +165,11 @@
         <label>Email
           <input name="email" type="email" maxlength="120" autocomplete="off" placeholder="name@example.com">
         </label>
-        <label>Phone
-          <input name="phone" type="tel" maxlength="40" autocomplete="off">
+        <label>Phone <span class="media-muted">(optional)</span>
+          <input name="phone" type="tel" maxlength="40" autocomplete="off" placeholder="+44 7700 900123" aria-describedby="team-phone-help">
         </label>
       </div>
+      <p class="media-muted" id="team-phone-help">Phone numbers show on the person's card as a tap-to-call link, in contact cards and CSV, and on shot list call sheets.</p>
 
       <div class="zine-form-row">
         <label>Preferred contact

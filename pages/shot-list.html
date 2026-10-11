@@ -18,7 +18,7 @@
 <script src="../resources/js/header.js"></script>
 <script src="../resources/js/color-themes.js"></script>
 <script src="../resources/js/boot.js"
-        data-scripts="project-ui.js search.js comments.js file-store.js share.js sync.js backups.js undo.js account.js ideas-panel.js zip.js doc-export.js shot-list.js"></script>
+        data-scripts="project-ui.js search.js comments.js file-store.js share.js sync.js backups.js undo.js account.js tour.js ideas-panel.js zip.js doc-export.js sketch-core.js shot-list.js"></script>
 
 <main class="is-wide">
   <h1>Shot List</h1>
@@ -51,6 +51,10 @@
       <button type="button" class="small-btn" id="sl-from-board">Add from a storyboard</button>
       <button type="button" class="small-btn" id="sl-from-script">Add scenes from the screenplay</button>
       <span class="sl-tools-gap"></span>
+      <div class="tool-group view-toggle" role="group" aria-label="View">
+        <button type="button" id="sl-view-table" aria-pressed="true">Table</button>
+        <button type="button" id="sl-view-board" aria-pressed="false" title="Each shot as a card with its storyboard frame">Board</button>
+      </div>
       <button type="button" class="small-btn" id="sl-sort" title="Order the shots by scene number">Sort by scene</button>
       <button type="button" class="team-chip team-chip--toggle" id="sl-hide-done" aria-pressed="false">Hide done</button>
       <button type="button" class="small-btn research-delete" id="sl-delete">Delete list</button>
@@ -73,6 +77,7 @@
           <tr>
             <th scope="col" class="sl-col-done"><span class="visually-hidden">Done</span>✓</th>
             <th scope="col" class="sl-col-num">#</th>
+            <th scope="col" class="sl-col-frame">Frame</th>
             <th scope="col">Scene</th>
             <th scope="col">Size</th>
             <th scope="col">Angle</th>
@@ -92,7 +97,8 @@
         <tbody id="sl-body"></tbody>
       </table>
     </div>
-    <p class="media-muted">Drag a row by ⠿ (or use ↑ ↓) to reorder. Shots are numbered from the order and their scene: 12A, 12B… Changes save as you type.</p>
+    <div id="sl-board" class="sl-board" hidden></div>
+    <p class="media-muted">Drag a row by ⠿ (or use ↑ ↓) to reorder. Shots are numbered from the order and their scene: 12A, 12B… Changes save as you type. The Frame column shows a shot's storyboard drawing; click it (or “Link frame”) to pick one from a storyboard.</p>
   </section>
 
   <!-- ===== Shot list details ===== -->
@@ -118,6 +124,20 @@
       <div class="dialog-actions">
         <button type="submit" class="small-btn">Save</button>
         <button type="button" class="small-btn" id="sl-cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ===== Link a shot to a storyboard frame ===== -->
+  <dialog id="sl-frame-dialog" class="project-dialog sl-frame-dialog" aria-labelledby="sl-frame-title">
+    <form method="dialog">
+      <h2 id="sl-frame-title">Which frame?</h2>
+      <label class="tool-group">Storyboard <select id="sl-frame-board" class="team-select"></select></label>
+      <div id="sl-frame-grid" class="sl-frame-grid"></div>
+      <div class="dialog-actions">
+        <button type="button" class="small-btn" id="sl-frame-unlink">Unlink</button>
+        <button type="button" class="small-btn" id="sl-frame-open">Open the storyboard</button>
+        <button type="submit" class="small-btn">Cancel</button>
       </div>
     </form>
   </dialog>

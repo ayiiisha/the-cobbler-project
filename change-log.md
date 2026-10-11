@@ -1,3 +1,26 @@
+**11 October 2026 (team phone numbers, faster loading, tidier code)**
+
+* Team: the phone number field is marked optional, with an example and a note on where the number shows (the card's tap-to-call link, contact cards, CSV, shot list call sheets)
+* Pages load faster: boot.js now requests all of a page's scripts at once and runs them in order, instead of one after another
+* Search no longer copies the whole project on every keystroke (Projects.peek reads the live data); undo grouping looks at the saved value directly instead of parsing its JSON again
+* The explanatory comments at the top of projects-core.js, project-ui.js, sync.js, music-songs.js and media-core.js describe the current behaviour (redrawing in place, placing notes, where transcripts live); the code guide lists the newer Projects API calls
+
+**11 October 2026 (exports everywhere, sheet switching, chart axes, zine pages, placing notes)**
+
+* PDF and Word exports on Ideas, Research, Pitches, Packaging (the open package), Interviews, Team (with tasks), Resources and Data Analysis (profile, filters and rows), through a shared pair of buttons (DocExport.buttons)
+* Data Analysis: the Excel workbook is kept, so a Sheet drop-down switches sheets later; the Rows section is paged (page number and rows per page); the chart controls name the axes explicitly for every chart type, with ⇄ Swap axes (a bar chart turns sideways; the R code follows with coord_flip())
+* Zine Planner: pages can be added or removed one, two or four at a time (and a new zine can have any count from 2); a note says how many blank pages a folded booklet would add at print time
+* Music: notes and rests are placed by clicking on the staff after picking a tool (note or rest), a length (whole to sixteenth, dotted) and an accidental; clicking a note selects it for ↑ ↓, a new length or Delete. The ABC text stays underneath for typing, and the score sits above it
+* Checks: the page runner now fails on an empty or truncated page (one was caught during this work)
+
+**11 October 2026 (shot list with storyboard frames, tutorial tour, first week)**
+
+* Shot List: a Frame column shows each shot's storyboard drawing; click it or “Link frame” to pick a frame from any storyboard (filling in size, movement, scene and seconds where empty). A Board view shows every shot as a card with its frame, reorderable, and prints as a storyboard sheet
+* Tutorial: a guided tour of every page (Home › Take the tour, or Settings › Tutorial): a spotlight and a card on each stop, Next/Back/Esc, continues across pages and after a break
+* User guide: a “Your first week” section at the top, in the order a project actually unfolds
+* Edits made straight on GitHub (a CSV, a line of text) used to leave the offline copy's version stale; a CI job on main now bumps it and commits
+* Dark, rainbow and print pass on the newer pages: shot list, call sheet, search results, ideas panel, Settings panels and the tour; the shot list prints as a clean table or sheet, with panels and buttons off the paper
+
 **10 October 2026 (backups, search, phones, accessibility, checks)**
 
 * Backups: Settings › Backups can back up every project automatically to a folder you choose (Chrome, Edge), every day or week, keeping the newest few; the first backup is written at once. Without it, a note once a day reminds you when there's work not backed up for a week. The app also asks the browser, once there's real work, to keep this site's data when the disk runs low (backups.js)

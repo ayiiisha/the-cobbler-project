@@ -20,8 +20,32 @@ jobs:
       - name: Lint
         run: npm run lint
       - name: Service worker version matches the files
+        # On main the "version" job below fixes this on its own; here it guards pull requests and other branches
+        if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
         run: npm run version:check
       - name: Self-tests and every page
         run: npm run test:pages
       - name: End-to-end flows
         run: npm run test:flows
+
+  # Edits made straight on GitHub (a CSV, a tagline) land on main without the offline copy's version
+  # being bumped. This job bumps it and commits, so visitors with the app installed get the change.
+  version:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Bump the service worker version if any app file changed
+        run: |
+          if node tests/version.mjs --check; then exit 0; fi
+          node tests/version.mjs --write
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sw.js
+          git commit -m "Refresh the offline copy's version"
+          git push

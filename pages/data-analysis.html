@@ -18,7 +18,7 @@
 <script src="../resources/js/header.js"></script>
 <script src="../resources/js/color-themes.js"></script>
 <script src="../resources/js/boot.js"
-        data-scripts="project-ui.js search.js comments.js file-store.js share.js sync.js backups.js undo.js account.js ideas-panel.js xlsx-read.js data-analysis.js"></script>
+        data-scripts="project-ui.js search.js comments.js file-store.js share.js sync.js backups.js undo.js account.js tour.js zip.js doc-export.js ideas-panel.js xlsx-read.js data-analysis.js"></script>
 
 <main class="is-wide">
   <h1>Data Analysis</h1>
@@ -28,6 +28,9 @@
     <button type="button" class="small-btn" id="da-load">Load a CSV or Excel file</button>
     <label class="tool-group" id="da-pick-wrap" hidden>Dataset
       <select id="da-pick" class="team-select" aria-label="Dataset"></select>
+    </label>
+    <label class="tool-group" id="da-sheet-wrap" hidden>Sheet
+      <select id="da-sheet-pick" class="team-select" aria-label="Sheet of the workbook"></select>
     </label>
     <button type="button" class="comment-action" id="da-remove" hidden>Remove dataset</button>
     <p class="media-muted" id="da-summary"></p>
@@ -68,6 +71,7 @@
 
     <section class="media-section">
       <div class="media-section-head"><h2>Rows</h2><p class="media-muted" id="da-rows-note"></p></div>
+      <div class="sketch-nav da-rows-pager" id="da-rows-pager" aria-label="Rows pages"></div>
       <div class="tracker-wrap"><table class="tracker-table da-rows" id="da-rows"></table></div>
     </section>
   </div>

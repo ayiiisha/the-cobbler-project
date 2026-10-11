@@ -402,6 +402,7 @@
     $("team-vcf").addEventListener("click", () =>
       download(vcard(visibleMembers()), `${slug(projectName())}-team.vcf`, "text/vcard"));
     $("team-csv").addEventListener("click", exportCSV);
+    if (window.DocExport) $("team-csv").after(DocExport.buttons({ blocks: exportBlocks, title: `Team: ${projectName()}`, filename: `${Cobbler.slug(projectName())}-team`, label: 'Document' }));
 
     $("team-search").addEventListener("input", (event) => { view.search = event.target.value; render(); });
     $("team-sort").addEventListener("change", (event) => { view.sort = event.target.value; render(); });
@@ -413,6 +414,18 @@
   });
 
   // After an undo, or when changes arrive from elsewhere: draw the page again from what's stored
+  /* The team (and its tasks) as a document */
+  function exportBlocks() {
+    const people = team;
+    const tasks = (Projects.getData("tasks", []) || []).filter(t => t && t.text);
+    return [
+      { t: "title", text: `Team: ${TeamPage?.projectName?.() || Projects.activeName()}` },
+      { t: "meta", text: `${people.length} people · ${new Date().toLocaleDateString()}` },
+      { t: "table", head: ["Name", "Roles", "Pronouns", "Email", "Phone", "Location", "Notes"], rows: people.map(p => [p.name || "", (p.roles || []).join(", "), p.pronouns || "", p.email || "", p.phone || "", p.location || "", p.notes || ""]) },
+      ...(tasks.length ? [{ t: "h2", text: "Tasks" }, { t: "table", head: ["Task", "Who", "Due", "Done"], rows: tasks.map(t => [t.text, t.assignee || "", t.due || "", t.done ? "✓" : ""]) }] : []),
+    ];
+  }
+
   document.addEventListener("projects-refresh", (event) => {
     loadTeam();
     render();
