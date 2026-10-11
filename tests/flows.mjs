@@ -177,13 +177,28 @@ await flow("Exports, data rows and axes, zine pages, placing notes", async ({ pa
   await go("music.html");
   await page.click("#mu-panel button:has-text(\"New song\")"); await page.waitForTimeout(400);
   await page.evaluate(() => { const s = Projects.getData("songs")[0]; s.abc = "X:1\nT:T\nM:4/4\nL:1/8\nK:C\nC2 D2 E2 F2 |"; Projects.setData("songs", Projects.getData("songs")); });
-  await go("music.html"); await page.click("#mu-panel button:has-text(\"Sheet music\")"); await page.waitForTimeout(700);
+  await go("music.html"); await page.click(".mu-parts button:has-text(\"Sheet music\")"); await page.waitForTimeout(700);
   await page.evaluate(() => document.fonts.ready); await page.evaluate(() => document.querySelector(".mu-score").scrollIntoView({ block: "center", behavior: "instant" })); await page.waitForTimeout(300);
   const geo = await page.evaluate(() => { const b = document.querySelector(".mu-score g.abcjs-staff").getBoundingClientRect(); const notes = [...document.querySelectorAll(".mu-score .abcjs-note")].map(n => n.getBoundingClientRect()); return { top: b.top, h: b.height, right: b.right, lastRight: Math.max(...notes.map(n => n.right)) }; });
   await page.mouse.click(Math.min(geo.right - 30, geo.lastRight + 40), geo.top - geo.h / 8); await page.waitForTimeout(400);
   check("a click above the staff places a quarter note g", /F2 g2 \|$/.test((await page.evaluate(() => Projects.getData("songs")[0].abc)).trim()), await page.evaluate(() => Projects.getData("songs")[0].abc.split("\n").pop()));
   await page.click(".mu-place button[aria-label=\"Move the selected note down\"]"); await page.waitForTimeout(200);
   check("the selected note moves down to f", /f2/.test(await page.evaluate(() => Projects.getData("songs")[0].abc)));
+  await page.click(".mu-place button[aria-label=\"Move the selected note up an octave\"]"); await page.waitForTimeout(200);
+  check("octave up keeps the bar line apart", /F2 f'2 \|$/.test((await page.evaluate(() => Projects.getData("songs")[0].abc)).trim()), await page.evaluate(() => Projects.getData("songs")[0].abc.split("\n").pop()));
+  await page.click(".mu-place button:has-text(\"Erase\")");
+  const near = await page.evaluate(() => { const r = document.querySelectorAll(".mu-score .abcjs-note")[0].querySelector(".abcjs-notehead").getBoundingClientRect(); return { x: r.right + 12, y: r.bottom + 12 }; });
+  await page.mouse.click(near.x, near.y); await page.waitForTimeout(300);
+  check("Erase deletes a note from a near miss", /^D2 E2 F2 f'2 \|$/.test((await page.evaluate(() => Projects.getData("songs")[0].abc)).split("\n").pop().trim()), await page.evaluate(() => Projects.getData("songs")[0].abc.split("\n").pop()));
+  await page.click(".mu-place button:has-text(\"New line\")"); await page.waitForTimeout(300);
+  check("New line adds an empty line of music", (await page.locator(".mu-score g.abcjs-staff").count()) === 2 && /\nx8 \|$/.test(await page.evaluate(() => Projects.getData("songs")[0].abc)));
+  const line2 = await page.evaluate(() => { const b = [...document.querySelectorAll(".mu-score g.abcjs-staff")].pop().getBoundingClientRect(); return { x: b.left + b.width / 3, y: b.top + b.height / 2 }; });
+  await page.mouse.click(line2.x, line2.y); await page.waitForTimeout(300);
+  check("the first note on the new line replaces its placeholder", /\nB2 \|$/.test(await page.evaluate(() => Projects.getData("songs")[0].abc)), await page.evaluate(() => Projects.getData("songs")[0].abc.split("\n").pop()));
+  await page.click(".mu-export summary");
+  check("Export opens a menu with MIDI", await page.isVisible(".mu-export-menu button:has-text(\"MIDI\")"));
+  const midi = page.waitForEvent("download"); await page.click(".mu-export-menu button:has-text(\"MIDI\")");
+  check("MIDI downloads as a .mid file", (await midi).suggestedFilename().endsWith(".mid"));
 });
 
 await flow("Ideas panel and search: available on any page", async ({ page, go }) => {

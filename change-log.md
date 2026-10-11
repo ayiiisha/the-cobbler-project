@@ -1,3 +1,14 @@
+**11 October 2026 (sheet music: selecting, erasing, octaves, new lines, exports)**
+
+* Music › Sheet music
+  * Select and Erase tools: Select picks the nearest note even from a near miss (before, only a click right on the small note head worked; a slightly-off click placed a new note instead); Erase deletes whatever note you click. In Note and Rest mode a click on or next to a note head still selects it
+  * With a note selected: ↑/↓ Step, Octave ↑/↓, a length or ♯ ♭ ♮ button changes it, Delete removes it (and selects the next note, so Delete can be pressed again), ← → step through the notes. Keyboard on the score: arrows, Shift+↑/↓ for an octave, Delete/Backspace, Enter, Esc
+  * New line adds an empty line of music to click on (or, with a note selected, starts a new line after it); Bar line adds a bar line after the selected note or at the end of the music
+  * The note, rest and tool buttons are drawn as small pictures: the Unicode music symbols they used (whole, half and sixteenth notes, the rest) are missing from most fonts and showed as empty boxes
+  * Moving or relengthing a note no longer swallows the space after it (G2 E2 became g2E2)
+* Export is now a button that opens a menu (it was a drop-down that acted as soon as you picked an option, with no button to press): PDFs as before, plus MIDI (.mid), sheet music as ABC (.abc) or an image (.svg), and lyrics with chords as text (.txt). Export PDF and Export MIDI also sit under the score
+* Checks: 8 new end-to-end checks for the sheet music tools and exports
+
 **11 October 2026 (team phone numbers, faster loading, tidier code)**
 
 * Team: the phone number field is marked optional, with an example and a note on where the number shows (the card's tap-to-call link, contact cards, CSV, shot list call sheets)

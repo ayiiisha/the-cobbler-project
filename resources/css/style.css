@@ -5969,8 +5969,38 @@ main .sl-card-shot-meta, main .sl-card-shot-notes { font-size: 0.85rem; line-hei
 /* =========================================================
    44. PLACING NOTES ON THE STAFF (Music), ZINE PAGE TOOLS, DATA ROWS PAGER, DOCUMENT EXPORTS
    ========================================================= */
-.mu-place { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; align-items: center; margin-bottom: 0.4rem; }
-.mu-place-group { display: inline-flex; gap: 0.25rem; align-items: center; }
+.mu-place { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.4rem; }
+.mu-place-row { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; align-items: center; }
+.mu-place-group { display: inline-flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }
+.mu-place-label { margin-right: 0.15rem; font-size: 0.8rem; font-weight: 700; }
+.mu-icon { display: inline-flex; }
+.mu-icon svg { display: block; }
+.mu-tool { display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; min-height: 2.1rem; }
+.mu-tool-text { font-size: 0.9rem; }
+.mu-tool:disabled { opacity: 0.4; cursor: default; outline: none; }
+.mu-dot { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: currentColor; }
+.mu-score:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+.mu-score.is-picking svg { cursor: pointer; }
+.mu-export { position: relative; }
+.mu-export > summary { list-style: none; cursor: pointer; }
+.mu-export > summary::-webkit-details-marker { display: none; }
+.mu-export-menu {
+  position: absolute;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 16rem;
+  margin-top: 0.3rem;
+  padding: 0.4rem;
+  background: var(--color-background);
+  border: 2px solid var(--color-text);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.15);
+}
+main .mu-export-head { margin: 0.3rem 0.4rem 0.1rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; }
+.mu-export-menu button { padding: 0.35rem 0.5rem; font: inherit; font-size: 0.95rem; text-align: left; color: var(--color-text); background: none; border: 0; border-radius: 4px; cursor: pointer; }
+.mu-export-menu button:is(:hover, :focus-visible) { background: color-mix(in srgb, var(--color-accent-3) 50%, transparent); }
 .mu-tool {
   min-width: 2.2rem;
   padding: 0.3rem 0.5rem;
@@ -6002,4 +6032,4 @@ main .mu-place-hint { min-height: 2.7em; margin: 0 0 0.6rem; font-size: 0.9rem; 
 
 .doc-export-buttons { display: inline-flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
 .doc-export-row { margin-bottom: 0.75rem; }
-@media print { .doc-export-buttons, .mu-place, .mu-palette-details, .da-rows-pager { display: none !important; } }
+@media print { .doc-export-buttons, .mu-place, .mu-palette-details, .mu-export, .da-rows-pager { display: none !important; } }
