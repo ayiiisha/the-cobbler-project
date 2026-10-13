@@ -12,6 +12,7 @@
      on the staff after picking a tool, a length and an accidental;
      a click on a note selects it to move, relength or delete. The
      ABC text sits under the score for typing, and is what's saved.
+     A MIDI keyboard can play notes in (Web MIDI), each sounding as it goes in.
      Play it back (needs the internet for the instrument sounds).
    • Split sheet: who wrote what share, their performing rights
      organisation and IPI number, publisher, and whether they've
@@ -376,6 +377,113 @@
     return found >= 0 ? found : abc.length;
   }
 
+  // How long a stretch of ABC is, in unit lengths (notes, rests and [chords]; chord symbols and !marks! skipped)
+  function unitsIn(text) {
+    let sum = 0;
+    const clean = text.replace(/"[^"]*"/g, "").replace(/![^!]*!/g, "");
+    for (const m of clean.matchAll(/(?:\[[^\]|:]*\]|[_^=]*[A-Ga-gzx][,']*)(\d*)(\/*)(\d*)/g)) {
+      const n = m[1] ? Number(m[1]) : 1;
+      const d = m[3] ? Number(m[3]) : m[2] ? 2 ** m[2].length : 1;
+      sum += n / d;
+    }
+    return sum;
+  }
+  const barUnits = (abc) => frac(barSuffix(abc) || "1");
+
+  /* A MIDI note number (60 = middle C) as an ABC note, spelled for the key:
+     a note of the key is a plain letter (the K: line sharpens or flattens it),
+     a letter the key alters gets = for a natural, and anything else a sharp,
+     or a flat in flat keys. */
+  const NAT_PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  function midiToAbc(midi, key) {
+    const sig = keySignature(key);
+    const shift = (l) => sig[l] === "♯" ? 1 : sig[l] === "♭" ? -1 : 0;
+    const pc = ((midi % 12) + 12) % 12;
+    const letters = [..."CDEFGAB"];
+    let acc = "", sounding;
+    let letter = letters.find(l => (NAT_PC[l] + shift(l) + 12) % 12 === pc);
+    if (letter) sounding = shift(letter);
+    else if ((letter = letters.find(l => NAT_PC[l] === pc && shift(l)))) { acc = "="; sounding = 0; }
+    else {
+      sounding = Object.values(sig).includes("♭") ? -1 : 1;
+      letter = letters.find(l => (NAT_PC[l] + sounding + 12) % 12 === pc);
+      acc = sounding > 0 ? "^" : "_";
+    }
+    const octave = Math.round((midi - sounding - NAT_PC[letter] - 60) / 12);
+    return acc + pitchName(letters.indexOf(letter) + octave * 7);
+  }
+
+  /* ---------- A MIDI keyboard (Web MIDI: Chrome, Edge, Firefox; not Safari) ----------
+     Connected once for the page; whichever sheet music editor is open
+     receives the notes. Keys pressed together (within 50 ms) arrive as a
+     chord. Each key sounds through a small synth built on Web Audio, so
+     it plays at once and needs no internet. */
+  const midi = {
+    supported: typeof navigator !== "undefined" && !!navigator.requestMIDIAccess,
+    access: null, error: "", sound: true,
+    target: null,                 // { enter(notes), refresh(), alive() } from the open editor
+    pending: [], timer: 0,
+    audio: null, voices: new Map(),
+    inputs() { return this.access ? [...this.access.inputs.values()].filter(i => i.state !== "disconnected") : []; },
+    async connect() {
+      // The click that connects also unlocks sound (browsers only start audio after a click)
+      try { this.audio ??= new (window.AudioContext || window.webkitAudioContext)(); this.audio.resume?.(); } catch { /* no sound, notes still arrive */ }
+      try {
+        this.access = await navigator.requestMIDIAccess();
+        this.error = "";
+        this.listen();
+        this.access.onstatechange = () => { this.listen(); this.refresh(); };
+      } catch {
+        this.error = "The browser didn't allow MIDI. Allow it in the address bar's site settings, then try again.";
+      }
+      this.refresh();
+    },
+    listen() { this.inputs().forEach(input => { input.onmidimessage = (e) => this.message(e.data); }); },
+    refresh() { if (this.target?.alive()) this.target.refresh(); },
+    message([status, note, velocity]) {
+      const type = status & 0xf0;
+      if (type === 0x90 && velocity > 0) {
+        this.noteOn(note, velocity);
+        this.pending.push(note);
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => {
+          const notes = [...new Set(this.pending)];
+          this.pending = [];
+          if (this.target?.alive()) this.target.enter(notes);
+        }, 50);
+      } else if (type === 0x80 || type === 0x90) this.noteOff(note);
+    },
+    noteOn(note, velocity = 100) {
+      if (!this.sound || !this.audio) return;
+      this.noteOff(note);
+      const ctx = this.audio, t = ctx.currentTime;
+      const freq = 440 * 2 ** ((note - 69) / 12);
+      const gain = ctx.createGain();
+      const peak = 0.05 + 0.2 * (velocity / 127);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(peak, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(peak * 0.35, t + 0.8);   // a plucked, piano-ish fade while held
+      gain.connect(ctx.destination);
+      const oscs = [["triangle", 1, 1], ["sine", 2, 0.3]].map(([type, mult, level]) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = type; o.frequency.value = freq * mult; g.gain.value = level;
+        o.connect(g).connect(gain); o.start(t);
+        return o;
+      });
+      this.voices.set(note, { gain, oscs });
+    },
+    noteOff(note) {
+      const v = this.voices.get(note);
+      if (!v) return;
+      const t = this.audio.currentTime;
+      v.gain.gain.cancelScheduledValues(t);
+      v.gain.gain.setValueAtTime(Math.max(v.gain.gain.value, 0.0001), t);
+      v.gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+      v.oscs.forEach(o => o.stop(t + 0.35));
+      this.voices.delete(note);
+    },
+  };
+
   function sheetPart(s, all) {
     const out = el("div", { class: "mu-score", "aria-label": "Sheet music. With a note selected: arrow keys move it, Shift+arrow by an octave, Delete removes it, Enter starts a new line after it", tabindex: "0" });
     const warnings = el("p", { class: "media-muted mu-warnings" });
@@ -673,8 +781,95 @@
             action("Deselect", () => setSelected(null), "Deselect", !sel)),
           el("span", { class: "mu-place-group" }, el("span", { class: "mu-place-label" }, "Add"),
             action("| Bar line", addBar, sel ? "Add a bar line after the selected note" : "Add a bar line at the end of the music"),
-            action("↵ New line", newLine, sel ? "Start a new line after the selected note" : "Add an empty line of music at the end"))));
+            action("↵ New line", newLine, sel ? "Start a new line after the selected note" : "Add an empty line of music at the end")),
+          midiControls()));
     }
+
+    /* ---------- Notes from a MIDI keyboard ----------
+       Each key (or chord) goes in at the length picked above, after the
+       selected note or at the end of the music, and becomes the selection,
+       so the next one follows it. A bar line goes in when a bar fills up,
+       and a new line after every four bars. */
+    function midiControls() {
+      const group = el("span", { class: "mu-place-group mu-midi" }, el("span", { class: "mu-place-label" }, "MIDI"));
+      if (!midi.supported) {
+        group.append(el("span", { class: "media-muted" }, "This browser can't use MIDI keyboards: try Chrome, Edge or Firefox."));
+        return group;
+      }
+      if (!midi.access) {
+        group.append(action("Connect MIDI keyboard", () => midi.connect(), "Play notes in from a MIDI keyboard or controller"));
+        if (midi.error) group.append(el("span", { class: "media-muted" }, midi.error));
+        return group;
+      }
+      const names = midi.inputs().map(i => i.name || "MIDI keyboard");
+      group.append(
+        el("span", { class: `mu-midi-status${names.length ? " is-on" : ""}` }, names.length ? `● ${names.join(", ")}` : "No keyboard found: plug one in"),
+        toolButton("Sound", midi.sound, () => { midi.sound = !midi.sound; drawTools(); }, "Play each note as it goes in", " mu-tool-text"));
+      return group;
+    }
+    function enterNotes(notes) {
+      // Spelled for the key the music is in (its K: line, normally the song's key)
+      const k = /^K:\s*([A-G][#b]?)(m(?:in)?\b)?/m.exec(s.abc);
+      const key = k ? k[1] + (k[2] ? "m" : "") : s.key;
+      const names = [...notes].sort((a, b) => a - b).map(n => midiToAbc(n, key));
+      const len = lengthSuffix(place.length, place.dotted, s.abc);
+      const token = names.length > 1 ? `[${names.join("")}]${len}` : names[0] + len;
+      // Where: after the selection, or the end of the music (an empty New line's placeholder is replaced)
+      let at;
+      if (selected) at = selected.startChar + selectedText().trimEnd().length;
+      else {
+        const filler = [...s.abc.matchAll(/(^|[ \t])(x[\d/]*)(?=[ \t|]|$)/gm)].filter(m => m.index >= s.abc.search(/^K:/m) && !/^[A-Za-z]:/.test(s.abc.slice(s.abc.lastIndexOf("\n", m.index) + 1))).pop();
+        if (filler) {
+          const from = filler.index + filler[1].length;
+          splice(from, from + filler[2].length, token, { selectInserted: true });
+          afterEntry();
+          return;
+        }
+        at = musicEnd(s.abc);
+        // Notes added after a final bar |] carry on the music: it becomes a plain bar line
+        const fin = /\|\]\s*$/.exec(s.abc.slice(0, at));
+        if (fin) { s.abc = s.abc.slice(0, fin.index) + "|" + s.abc.slice(fin.index + 2); at -= 1; }
+      }
+      // A full bar before this point: go past its bar line (or add one)
+      let prefix = "";
+      const lineStart = s.abc.lastIndexOf("\n", at - 1) + 1;
+      const bar = s.abc.slice(lineStart, at);
+      const sinceBar = bar.slice(bar.lastIndexOf("|") + 1);
+      if (unitsIn(sinceBar) >= barUnits(s.abc) - 1e-9) {
+        const next = /^[ \t]*(?:\|\]|\|\||:\||\|)/.exec(s.abc.slice(at));
+        if (next) {
+          at += next[0].length;
+          // At the end of a line, carry on at the start of the next line of music (not a w: line)
+          const rest = s.abc.slice(at);
+          const nl = /^[ \t]*\n/.exec(rest);
+          if (nl && !/^[A-Za-z]:|^%/.test(rest.slice(nl[0].length))) at += nl[0].length;
+        } else prefix = "| ";
+      }
+      const before = s.abc[at - 1], after = s.abc[at];
+      const text = (at === 0 || /\s/.test(before) ? "" : " ") + prefix + token + (after == null || /\s/.test(after) ? "" : " ");
+      splice(at, at, text, { selectInserted: true });
+      afterEntry();
+    }
+    function afterEntry() {
+      // The bar is full now: add its bar line, and start a new line after every fourth bar
+      const end = selected.endChar;
+      const lineStart = s.abc.lastIndexOf("\n", end - 1) + 1;
+      const bar = s.abc.slice(lineStart, end);
+      const full = unitsIn(bar.slice(bar.lastIndexOf("|") + 1)) >= barUnits(s.abc) - 1e-9;
+      if (full && !/^[ \t]*\|/.test(s.abc.slice(end))) {
+        const keep = { ...selected };
+        const bars = (bar.match(/\|+\]?|:\|/g) || []).length + 1;
+        // Only at the very end: a line break before an existing one would leave a blank line, which ends the tune in ABC
+        const atEnd = !s.abc.slice(end).trim();
+        splice(end, end, bars >= 4 && atEnd ? " |\n" : " |");
+        selected = keep;
+        highlightSelected();
+      }
+      drawTools();
+      updateHint();
+    }
+    midi.target = { enter: enterNotes, refresh: drawTools, alive: () => out.isConnected };
+
     pickTool(place.tool);
 
     let synth = null;

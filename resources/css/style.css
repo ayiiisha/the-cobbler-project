@@ -5981,6 +5981,10 @@ main .sl-card-shot-meta, main .sl-card-shot-notes { font-size: 0.85rem; line-hei
 .mu-dot { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: currentColor; }
 .mu-score:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
 .mu-score.is-picking svg { cursor: pointer; }
+.mu-midi .media-muted { font-size: 0.85rem; }
+.mu-midi-status { font-size: 0.85rem; }
+.mu-midi-status.is-on { font-weight: 700; color: #2F7D32; }
+[data-selected-theme="dark"] .mu-midi-status.is-on { color: #8FD694; }
 .mu-export { position: relative; }
 .mu-export > summary { list-style: none; cursor: pointer; }
 .mu-export > summary::-webkit-details-marker { display: none; }

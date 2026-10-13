@@ -199,6 +199,23 @@ await flow("Exports, data rows and axes, zine pages, placing notes", async ({ pa
   check("Export opens a menu with MIDI", await page.isVisible(".mu-export-menu button:has-text(\"MIDI\")"));
   const midi = page.waitForEvent("download"); await page.click(".mu-export-menu button:has-text(\"MIDI\")");
   check("MIDI downloads as a .mid file", (await midi).suggestedFilename().endsWith(".mid"));
+  // A MIDI keyboard (a stand-in for the browser's Web MIDI): notes go in spelled for the key, chords together, bar lines when a bar fills
+  await page.fill(".mu-abc", "X:1\nT:T\nM:4/4\nL:1/8\nK:D\n"); await page.waitForTimeout(700);
+  await page.evaluate(() => { window.fakeKeys = { name: "Test keys", state: "connected", onmidimessage: null }; navigator.requestMIDIAccess = async () => ({ inputs: new Map([["1", window.fakeKeys]]), onstatechange: null }); });
+  await page.click(".mu-place button:has-text(\"Connect MIDI keyboard\")"); await page.waitForTimeout(200);
+  check("the keyboard shows as connected", (await page.textContent(".mu-midi-status")).includes("Test keys"));
+  for (const keys of [[62], [66], [73], [62, 66, 69], [65]]) {
+    await page.evaluate((k) => { k.forEach(n => window.fakeKeys.onmidimessage({ data: [0x90, n, 100] })); }, keys); await page.waitForTimeout(120);
+    await page.evaluate((k) => { k.forEach(n => window.fakeKeys.onmidimessage({ data: [0x80, n, 0] })); }, keys);
+  }
+  await page.waitForTimeout(300);
+  const played = (await page.evaluate(() => Projects.getData("songs")[0].abc)).split("\n").pop().trim();
+  check("keys go in spelled for D major, a chord together, a bar line when the bar fills", played === "D2 F2 c2 [DFA]2 | =F2", played);
+  let printedNotes = -1;
+  await page.exposeFunction("sawPrint", (n) => { printedNotes = n; });
+  await page.evaluate(() => { window.print = () => window.sawPrint(document.querySelectorAll("#mu-print .abcjs-note").length); });
+  await page.click(".mu-sheet button:has-text(\"Export PDF\")"); await page.waitForTimeout(300);
+  check("Export PDF puts the score on the print sheet", printedNotes === 5, String(printedNotes));
 });
 
 await flow("Ideas panel and search: available on any page", async ({ page, go }) => {

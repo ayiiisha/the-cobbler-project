@@ -1,3 +1,8 @@
+**13 October 2026 (MIDI keyboard input for sheet music)**
+
+* Music › Sheet music: Connect MIDI keyboard plays notes in from a MIDI keyboard or controller (Chrome, Edge, Firefox). Each key goes in at the picked length after the selected note, or at the end of the music, and sounds as it goes in (a small built-in synth, so it's instant and works offline; Sound turns it off). Keys pressed together become a chord; notes are spelled for the key; bar lines go in as bars fill, with a new line every four bars
+* Checks: an end-to-end check plays notes in through a stand-in keyboard and checks the spelling, chord and bar line, then that Export PDF puts the score on the print sheet
+
 **11 October 2026 (sheet music: selecting, erasing, octaves, new lines, exports)**
 
 * Music › Sheet music
